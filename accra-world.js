@@ -83,6 +83,7 @@
       if (T.big === 2 && inC(T.x - 70, T.z + 70)) { list.push(mk(80, 3.4, 56, T.x - 70, 1.7, T.z + 70, "#d9a21a")); for (let a = 0; a < 8; a++) for (let b = 0; b < 5; b++) list.push(mk(7, 1.6, 7, T.x - 104 + a * 9.6, 2.4 + .8, T.z + 52 + b * 9, ["#c8553d", "#2456a6", "#3f8f7a", "#f2c230"][(a + b) % 4])); }   // Kejetia market stalls
     }
     function tollTask(P, list) {
+      if (window.AccraToll) { const xx = hx(P.z), tt = -Math.atan(slope(P.z)); return window.AccraToll.build(P, list, mk, xx, tt); }
       const x = hx(P.z), th = -Math.atan(slope(P.z)); P.arms = [];
       list.push(mk(30, .8, 16, x, 6.4, P.z, "#e4e6ea", th)); [-15, 15].forEach(o => list.push(mk(1, 6, 1, x + o, 3, P.z, "#9a9a96")));
       [-6.6, -3, 0, 3, 6.6].forEach((o, i) => { if (Math.abs(o) < 1) { list.push(mk(3.2, 1.2, 10, x + o, .6, P.z, "#c9a54a")); return; } if (i % 2 === 0) list.push(mk(1.6, 2.6, 6, x + o + (o < 0 ? -2.3 : 2.3), 1.3, P.z, "#17191c")); });
