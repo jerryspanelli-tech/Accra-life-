@@ -17,15 +17,26 @@
 
     // ----- 2. free-lot test: a lot is free only if nothing solid is already there -----
     const skip = /^(road_|zebra|sig_|lamp_|lp|lh|apt_|fig|ffig|ghanaian|g$|sea|sand|ground)/;
-    function taken(x1, x2, z1, z2) {
+    // measure every solid mesh once (not once per lot), then test lots against those saved boxes
+    let OBS = null;
+    function obstacles() {
+      if (OBS) return OBS;
+      OBS = [];
       for (const m of scene.meshes) {
-        if (!m || m.isDisposed() || skip.test(m.name || "")) continue;
-        if (!m.getBoundingInfo) continue;
+        if (!m || m.isDisposed() || skip.test(m.name || "") || !m.getBoundingInfo) continue;
         m.computeWorldMatrix(true);
         const bb = m.getBoundingInfo().boundingBox;
         const a = bb.minimumWorld, c = bb.maximumWorld;
-        if (c.x < x1 || a.x > x2 || c.z < z1 || a.z > z2) continue;
         if (c.y < .2) continue;                       // flat ground marks do not block a lot
+        OBS.push([a.x, c.x, a.z, c.z]);
+      }
+      return OBS;
+    }
+    function taken(x1, x2, z1, z2) {
+      const list = obstacles();
+      for (let i = 0; i < list.length; i++) {
+        const o = list[i];
+        if (o[1] < x1 || o[0] > x2 || o[3] < z1 || o[2] > z2) continue;
         return true;
       }
       return false;
