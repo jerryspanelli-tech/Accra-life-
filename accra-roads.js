@@ -28,16 +28,16 @@
     const poleM = mat("#3a3d44"), lampM = new B.StandardMaterial("lamp", scene);
     lampM.emissiveColor = B.Color3.FromHexString("#fff2c4"); lampM.diffuseColor = B.Color3.Black();
 
-    // ----- traffic lights: one pole and head at each corner of every junction -----
+    // ----- traffic lights: one pole and head at each corner of every junction (collisions disabled for smooth driving) -----
     const heads = [];                                        // each head has red, yellow and green lamps
     const sourceLamp = B.MeshBuilder.CreateSphere("sig_src", { diameter: .34, segments: 8 }, scene);
     sourceLamp.isVisible = false;
     RR.forEach((x, i) => RR.forEach((z, j) => {
       const px = x + 6.8, pz = z + 6.8;                      // pole sits on the corner, off the road
       const pole = B.MeshBuilder.CreateCylinder("sig_pole", { diameter: .26, height: 5.6, tessellation: 8 }, scene);
-      pole.position.set(px, 2.8, pz); pole.material = poleM; pole.checkCollisions = true;
+      pole.position.set(px, 2.8, pz); pole.material = poleM; pole.checkCollisions = false; pole.isPickable = false;
       const box2 = B.MeshBuilder.CreateBox("sig_box", { width: .5, height: 1.5, depth: .5 }, scene);
-      box2.position.set(px, 5.4, pz); box2.material = poleM; box2.isPickable = false;
+      box2.position.set(px, 5.4, pz); box2.material = poleM; box2.isPickable = false; box2.checkCollisions = false;
       const lamps = {};
       ["red", "yellow", "green"].forEach((k, n) => {
         const l = sourceLamp.createInstance("sig_" + k);
@@ -59,16 +59,16 @@
       });
     }
 
-    // ----- pedestrian crossings: flattened stripes flush with road surface -----
-    const stripeSrc = B.MeshBuilder.CreateBox("zebra_src", { width: 1, height: .01, depth: 1 }, scene);
+    // ----- pedestrian crossings: completely flush stripes to prevent car bumps -----
+    const stripeSrc = B.MeshBuilder.CreateBox("zebra_src", { width: 1, height: .005, depth: 1 }, scene);
     stripeSrc.material = mat("#f2f2f2"); stripeSrc.isVisible = false;
     RR.forEach(x => RR.forEach(z => {
       [[0, 9.5], [0, -9.5], [9.5, 0], [-9.5, 0]].forEach(d => {
         const cx = x + d[0], cz = z + d[1];
         for (let k = -1; k <= 1; k++) {
           const s = stripeSrc.createInstance("zebra");
-          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, .035, cz + k * 1.6); }
-          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, .035, cz); }
+          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, .032, cz + k * 1.6); }
+          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, .032, cz); }
           s.isPickable = false;
           s.checkCollisions = false;
         }
@@ -136,6 +136,6 @@
 
     window.ACCRA_TRAFFIC = { state: () => state(clock), clock: () => clock, cycle: CYCLE };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).roads = 1;
-    console.log("Accra roads, streetlights, and district registries initialized successfully.");
+    console.log("Accra roads, smooth streetlights, and district registries initialized successfully.");
   } catch (err) { console.error("accra-roads failed:", err); }
 })();
