@@ -1,4 +1,4 @@
-/* accra-roads.js - Stage 2: traffic lights, pedestrian crossings, streetlights, and district registries for the Accra road grid.
+/* accra-roads.js - Stage 2: traffic lights, flattened pedestrian crossings, streetlights, and district registries for the Accra road grid.
  * Uses the grid from babylon.html (roads at R = -150, -70, 0, 70, 150). Every junction runs the same timer:
  * north-south green 10 s, yellow 2 s, east-west green 10 s, yellow 2 s (24 s cycle).
  * Exposes window.ACCRA_TRAFFIC.state() and global district/landmark data. */
@@ -59,57 +59,22 @@
       });
     }
 
-    // ----- pedestrian crossings: three stripes across each road, on all four approaches of each junction -----
-    const stripeSrc = B.MeshBuilder.CreateBox("zebra_src", { width: 1, height: .03, depth: 1 }, scene);
+    // ----- pedestrian crossings: flattened stripes flush with road surface -----
+    const stripeSrc = B.MeshBuilder.CreateBox("zebra_src", { width: 1, height: .01, depth: 1 }, scene);
     stripeSrc.material = mat("#f2f2f2"); stripeSrc.isVisible = false;
     RR.forEach(x => RR.forEach(z => {
       [[0, 9.5], [0, -9.5], [9.5, 0], [-9.5, 0]].forEach(d => {
         const cx = x + d[0], cz = z + d[1];
         for (let k = -1; k <= 1; k++) {
           const s = stripeSrc.createInstance("zebra");
-          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, .07, cz + k * 1.6); }
-          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, .07, cz); }
+          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, .035, cz + k * 1.6); }
+          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, .035, cz); }
           s.isPickable = false;
+          s.checkCollisions = false;
         }
       });
     }));
 
     // ----- streetlights: a pole and lamp on both sides of every road, between junctions -----
     const poleSrc = B.MeshBuilder.CreateCylinder("lamp_pole", { diameter: .22, height: 8, tessellation: 6 }, scene);
-    poleSrc.material = poleM; poleSrc.isVisible = false;
-    const headSrc = B.MeshBuilder.CreateSphere("lamp_head", { diameter: .6, segments: 6 }, scene);
-    headSrc.material = lampM; headSrc.isVisible = false;
-    const nearJunction = v => RR.some(r => Math.abs(v - r) < 10);
-    function lampAt(x, z) {
-      const p = poleSrc.createInstance("lp"); p.position.set(x, 4, z); p.checkCollisions = false; p.isPickable = false;
-      const h = headSrc.createInstance("lh"); h.position.set(x, 7.9, z); h.isPickable = false;
-    }
-    RR.forEach(c => {
-      for (let t = -160; t <= 160; t += 25) {
-        if (nearJunction(t)) continue;
-        lampAt(t, c + 6.4); lampAt(t, c - 6.4);
-        lampAt(c + 6.4, t); lampAt(c - 6.4, t);
-      }
-    });
-
-    // ----- run the signals -----
-    let tick = 0;
-    scene.onBeforeRenderObservable.add(() => {
-      clock += Math.min(engine.getDeltaTime() / 1000, .05);
-      if (++tick % 6 === 0) paintLights(clock);
-    });
-    paintLights(0);
-
-    // ----- District & Global Landmarks Registry Integration -----
-    window.ACCRA_DISTRICTS = {
-      AIRPORT_CITY: { x: -200, z: -100, style: 'modern' },
-      OSU: { x: 0, z: -100, style: 'nightlife' },
-      MAKOLA: { x: 0, z: 0, style: 'market' },
-      EAST_LEGON: { x: 200, z: 200, style: 'villas' },
-      CENTRAL_ACCRA: { x: -100, z: 100, style: 'civic' },
-      LABADI: { x: 0, z: 300, style: 'beach' },
-      AMOAMAH_ESTATE: { x: 300, z: 100, style: 'estate' },
-      HIGHWAY_NORTH: { x: -300, z: 400, style: 'highway' }
-    };
-
-    window.ACCRA_LANDMARKS = window.ACCRA_LANDMARKS
+    poleSrc.material = poleM; poleSrc
