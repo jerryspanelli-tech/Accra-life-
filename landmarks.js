@@ -19,8 +19,18 @@
   const h=box(6,1.4,1.4,x,35,z,'#fff6d6',false);h.material=M({emissiveColor:C3('#fff6d6'),disableLighting:true})});
  lbl('ACCRA SPORTS STADIUM',SX,24,SZ+RZ+26,Math.PI,22);
  E.push({n:'Accra Sports Stadium',x:SX,z:SZ});
- // Kotoka airport is built in accra-airport.js
-
+ // ================= KOTOKA INTERNATIONAL AIRPORT (east) =================
+ const RW=280;box(40,.1,420,RW,.06,0,'#2b2d31',false);for(let z=-190;z<=190;z+=20)box(1,.02,8,RW,.12,z,'#f2f2f2',false);
+ box(24,.08,260,248,.05,0,'#4a4c52',false);
+ box(42,16,90,215,8,60,'#cfd8dc');box(.8,12,82,236.4,7,60,glass,false);box(48,.8,96,215,16.4,60,'#9aa5ad',false);
+ box(30,10,60,215,5,-60,'#e8eaed');
+ solidMesh(BABYLON.MeshBuilder.CreateCylinder('ct',{diameter:6,height:30},scene),'#d9dde2').position.set(230,15,130);
+ const pod=solidMesh(BABYLON.MeshBuilder.CreateCylinder('cp2',{diameter:12,height:6},scene),glass);pod.position.set(230,33,130);
+ const plane=(x,z)=>{const f=solidMesh(BABYLON.MeshBuilder.CreateCylinder('pf',{height:22,diameter:3},scene),'#f7f7f4');f.rotation.x=Math.PI/2;f.position.set(x,2.4,z);
+  box(26,.3,4,x,2,z+2,'#e6e9ec');box(.4,5,3,x,5,z-9,'#006b3f',false);box(9,.25,2.5,x,2.6,z-9,'#e6e9ec',false);box(.1,.5,14,x+1.52,2.6,z,'#fcd116',false)};
+ plane(248,-35);plane(248,45);
+ lbl('KOTOKA INTERNATIONAL AIRPORT',215,20,60+46,Math.PI,24);
+ E.push({n:'Kotoka Airport',x:215,z:60});
  // ================= LABADI BEACH AND SEA (south) =================
  const sand=BABYLON.MeshBuilder.CreateGround('sand',{width:300,height:70},scene);sand.position.set(0,.04,222);sand.material=mat('#e3cf9b');sand.receiveShadows=true;
  const sea=BABYLON.MeshBuilder.CreateGround('sea',{width:700,height:300},scene);sea.position.set(0,.12,415);sea.material=M({diffuseColor:C3('#2f7f9f'),specularColor:new BABYLON.Color3(.9,.9,.9),specularPower:60});
