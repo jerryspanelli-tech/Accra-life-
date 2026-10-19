@@ -77,4 +77,65 @@
 
     // ----- streetlights: a pole and lamp on both sides of every road, between junctions -----
     const poleSrc = B.MeshBuilder.CreateCylinder("lamp_pole", { diameter: .22, height: 8, tessellation: 6 }, scene);
-    poleSrc.material = poleM; poleSrc
+    poleSrc.material = poleM; poleSrc.isVisible = false;
+    const headSrc = B.MeshBuilder.CreateSphere("lamp_head", { diameter: .6, segments: 6 }, scene);
+    headSrc.material = lampM; headSrc.isVisible = false;
+    const nearJunction = v => RR.some(r => Math.abs(v - r) < 10);
+    function lampAt(x, z) {
+      const p = poleSrc.createInstance("lp"); p.position.set(x, 4, z); p.checkCollisions = false; p.isPickable = false;
+      const h = headSrc.createInstance("lh"); h.position.set(x, 7.9, z); h.isPickable = false;
+    }
+    RR.forEach(c => {
+      for (let t = -160; t <= 160; t += 25) {
+        if (nearJunction(t)) continue;
+        lampAt(t, c + 6.4); lampAt(t, c - 6.4);
+        lampAt(c + 6.4, t); lampAt(c - 6.4, t);
+      }
+    });
+
+    // ----- run the signals -----
+    let tick = 0;
+    scene.onBeforeRenderObservable.add(() => {
+      clock += Math.min(engine.getDeltaTime() / 1000, .05);
+      if (++tick % 6 === 0) paintLights(clock);
+    });
+    paintLights(0);
+
+    // ----- District & Global Landmarks Registry Integration -----
+    window.ACCRA_DISTRICTS = {
+      AIRPORT_CITY: { x: -200, z: -100, style: 'modern' },
+      OSU: { x: 0, z: -100, style: 'nightlife' },
+      MAKOLA: { x: 0, z: 0, style: 'market' },
+      EAST_LEGON: { x: 200, z: 200, style: 'villas' },
+      CENTRAL_ACCRA: { x: -100, z: 100, style: 'civic' },
+      LABADI: { x: 0, z: 300, style: 'beach' },
+      AMOAMAH_ESTATE: { x: 300, z: 100, style: 'estate' },
+      HIGHWAY_NORTH: { x: -300, z: 400, style: 'highway' }
+    };
+
+    window.ACCRA_LANDMARKS = window.ACCRA_LANDMARKS || [];
+    const landmarks = [
+      { n: "Kotoka International Airport", x: -420, z: -242 },
+      { n: "Accra Mall", x: -150, z: -80 },
+      { n: "Accra Sports Stadium", x: -80, z: 120 },
+      { n: "Accra Central Hospital", x: -120, z: 80 },
+      { n: "Police Headquarters", x: -60, z: 60 },
+      { n: "Accra Motors Showroom", x: -180, z: -40 },
+      { n: "Amoamah Car Dealership", x: 280, z: 110 },
+      { n: "Accra Vibes Pub & VIP Lounge", x: 20, z: -120 },
+      { n: "Labadi Beach & Swimming Zone", x: 0, z: 320 },
+      { n: "Accra Stone Quarry", x: 450, z: -300 },
+      { n: "Galamsey Mining Area", x: -500, z: 500 }
+    ];
+
+    landmarks.forEach(l => {
+      if (!window.ACCRA_LANDMARKS.some(existing => existing.n === l.n)) {
+        window.ACCRA_LANDMARKS.push(l);
+      }
+    });
+
+    window.ACCRA_TRAFFIC = { state: () => state(clock), clock: () => clock, cycle: CYCLE };
+    (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).roads = 1;
+    console.log("Accra roads, streetlights, and district registries initialized successfully.");
+  } catch (err) { console.error("accra-roads failed:", err); }
+})();
