@@ -55,11 +55,12 @@
       const z = P.z, front = z + 8.2;
 
       // overhead canopy with a dark fascia, four columns and a roof
-      list.push(mk(30, .8, 16, x, 6.4, z, "#e4e6ea", th));
-      list.push(mk(30.4, 1.4, .5, x, 6.2, z + 8, "#1f232a", th));
-      list.push(mk(30.4, 1.4, .5, x, 6.2, z - 8, "#1f232a", th));
-      [-14, -5, 5, 14].forEach(o => list.push(mk(1.2, 6.4, 1.2, x + o, 3.2, z - 6, "#9a9a96")));
-      [-14, -5, 5, 14].forEach(o => list.push(mk(1.2, 6.4, 1.2, x + o, 3.2, z + 6, "#9a9a96")));
+      const above = (m) => { m.checkCollisions = false; list.push(m); };   // overhead parts never block the road
+      above(mk(30, .8, 16, x, 6.4, z, "#e4e6ea", th));
+      above(mk(30.4, 1.4, .5, x, 6.2, z + 8, "#1f232a", th));
+      above(mk(30.4, 1.4, .5, x, 6.2, z - 8, "#1f232a", th));
+      // columns stand only at the road edges, outside the lanes
+      [-14, 14].forEach(o => [-6, 6].forEach(dz => { const c = mk(1.2, 6.4, 1.2, x + o, 3.2, z + dz, "#9a9a96"); c.checkCollisions = true; list.push(c); }));
 
       // signs on the front fascia: the main gate sign and two side panels
       list.push(plane("tl_gate", T.gate(P), 16, 4, x, 5.6, front, Math.PI, list));
@@ -67,19 +68,7 @@
       list.push(plane("tl_safe", T.safer, 8, 3, x + 14, 5.6, front, Math.PI, list));
 
       // lane lights under the canopy: green for open lanes, red for the closed lane (as in the reference)
-      LANES.forEach((lx, i) => list.push(mk(1.2, .5, .25, x + lx, 5.7, z - 2, i === 3 ? "#e02424" : "#20c24a", th)));
-
-      // booths, one per lane, with glass fronts
-      LANES.forEach(lx => {
-        list.push(mk(2.2, 1.2, 2.2, x + lx, .6, z - 2, "#f2f2f0", th));
-        list.push(mk(2.0, 1.2, .25, x + lx, 1.9, z - 3.05, "#9fc7d8", th));
-      });
-
-      // yellow and black islands in front of each booth
-      LANES.forEach(lx => {
-        list.push(mk(2.6, .9, 1.6, x + lx, .45, z - 5.6, "#fcd116", th));
-        list.push(mk(2.6, .2, 1.6, x + lx, .95, z - 5.6, "#17191c", th));
-      });
+      LANES.forEach((lx, i) => above(mk(1.2, .5, .25, x + lx, 5.7, z - 2, i === 3 ? "#e02424" : "#20c24a", th)));
 
       // barrier arms across each lane: they are the parts the payment code lifts
       LANES.forEach(lx => {
