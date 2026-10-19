@@ -1,7 +1,7 @@
-/* accra-roads.js - Stage 2: traffic lights, pedestrian crossings and streetlights for the Accra road grid.
+/* accra-roads.js - Stage 2: traffic lights, pedestrian crossings, streetlights, and district registries for the Accra road grid.
  * Uses the grid from babylon.html (roads at R = -150, -70, 0, 70, 150). Every junction runs the same timer:
  * north-south green 10 s, yellow 2 s, east-west green 10 s, yellow 2 s (24 s cycle).
- * Exposes window.ACCRA_TRAFFIC.state() so other systems (AI cars, NPCs) can use the same signal timing. */
+ * Exposes window.ACCRA_TRAFFIC.state() and global district/landmark data. */
 (function () {
   try {
     const B = BABYLON;
@@ -49,8 +49,6 @@
 
     function paintLights(t) {
       const s = state(t);
-      // the head shows the north-south signal for the first junction row and east-west for the second, so drivers
-      // on each approach see a light; all junctions share the same timer.
       const nsPhase = s.ns, ewPhase = s.ew;
       heads.forEach((h, n) => {
         const phase = (n % 2 === 0) ? nsPhase : ewPhase;
@@ -69,8 +67,8 @@
         const cx = x + d[0], cz = z + d[1];
         for (let k = -1; k <= 1; k++) {
           const s = stripeSrc.createInstance("zebra");
-          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, .07, cz + k * 1.6); }   // approach from north or south
-          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, .07, cz); }                // approach from east or west
+          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, .07, cz + k * 1.6); }
+          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, .07, cz); }
           s.isPickable = false;
         }
       });
@@ -89,9 +87,7 @@
     RR.forEach(c => {
       for (let t = -160; t <= 160; t += 25) {
         if (nearJunction(t)) continue;
-        // roads running east-west (along x, at z = c)
         lampAt(t, c + 6.4); lampAt(t, c - 6.4);
-        // roads running north-south (along z, at x = c)
         lampAt(c + 6.4, t); lampAt(c - 6.4, t);
       }
     });
@@ -104,8 +100,16 @@
     });
     paintLights(0);
 
-    window.ACCRA_TRAFFIC = { state: () => state(clock), clock: () => clock, cycle: CYCLE };
-    (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).roads = 1;
-    console.log("Accra roads ready:", heads.length, "signals");
-  } catch (err) { console.error("accra-roads failed:", err); }
-})();
+    // ----- District & Global Landmarks Registry Integration -----
+    window.ACCRA_DISTRICTS = {
+      AIRPORT_CITY: { x: -200, z: -100, style: 'modern' },
+      OSU: { x: 0, z: -100, style: 'nightlife' },
+      MAKOLA: { x: 0, z: 0, style: 'market' },
+      EAST_LEGON: { x: 200, z: 200, style: 'villas' },
+      CENTRAL_ACCRA: { x: -100, z: 100, style: 'civic' },
+      LABADI: { x: 0, z: 300, style: 'beach' },
+      AMOAMAH_ESTATE: { x: 300, z: 100, style: 'estate' },
+      HIGHWAY_NORTH: { x: -300, z: 400, style: 'highway' }
+    };
+
+    window.ACCRA_LANDMARKS = window.ACCRA_LANDMARKS
