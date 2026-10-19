@@ -25,6 +25,8 @@
       if (this.opts.oldPub) this.buildSocialPubsAndNightlife();
       if (this.opts.oldStadium) this.buildAccraSportsStadium();
       this.buildLabadiBeachAndSwimming();
+      
+      return this.landmarks; // <-- Added back so landmarks register properly
     }
 
     // Labadi Beach: uses the sea already in the game (z 203 to 332) instead of a second ocean.
