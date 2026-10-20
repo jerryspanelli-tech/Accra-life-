@@ -75,6 +75,8 @@
     CARS.forEach(c => {
       if (!window.AccraAssets || !window.AccraAssets.createCar) return;
       const node = window.AccraAssets.createCar(scene, c.kind, { color: c.color });
+      // NPC cars are traffic, not walls: no collisions, so the player can walk and drive past them
+      node.getChildMeshes().forEach(m => { m.checkCollisions = false; m.isPickable = false; });
       live.push({ node, route: c.route, d: c.d, v: CRUISE });
     });
 
