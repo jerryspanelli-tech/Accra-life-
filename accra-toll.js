@@ -1,21 +1,22 @@
-/* accra-toll.js - the Accra Gate toll plaza, designed like the reference: a wide overhead canopy with signs,
- * four lanes with glass booths, green and red lane lights, barrier arms, yellow islands, flags and a billboard.
- * accra-world.js calls window.AccraToll.build(P, list, mk, x, th) when a toll chunk streams in. The barrier arms
- * go into P.arms, so the existing payment code still lifts them when the fee is paid. Every mesh goes into the
- * chunk list, so it is cleaned up when the chunk leaves. */
+/* accra-toll.js - the Accra Gate toll plaza with proper boom barriers.
+ * accra-world.js calls window.AccraToll.build(P, list, mk, x, th) when a toll chunk streams in. Each lane has one
+ * boom barrier: it hinges at one end, is striped red and white, and rises as a single piece. P.until (set by the
+ * payment code in accra-world.js) opens every barrier at the same time for 8 seconds. Everything is added to the
+ * chunk list so it is cleaned up when the chunk leaves. */
 (function () {
   try {
     const B = BABYLON;
     const LANES = [-7.5, -2.5, 2.5, 7.5];
+    const ARM_LEN = 3.4, UP = -1.45, OPEN_MS = 8000;
     let texCache = null;
 
     // textures are made once and reused by every toll
     function textures() {
       if (texCache) return texCache;
-      const sign = (t, sub, w, h, fg) => {
+      const sign = (t, sub) => {
         const dt = new B.DynamicTexture("toll_" + t, { width: 1024, height: 256 }, scene, false), c = dt.getContext();
         c.fillStyle = "#15171c"; c.fillRect(0, 0, 1024, 256);
-        c.fillStyle = fg; c.font = "bold 92px system-ui"; c.textAlign = "center"; c.textBaseline = "middle";
+        c.fillStyle = "#ffffff"; c.font = "bold 92px system-ui"; c.textAlign = "center"; c.textBaseline = "middle";
         c.fillText(t, 512, sub ? 92 : 128, 980);
         if (sub) { c.font = "bold 70px system-ui"; c.fillStyle = "#fcd116"; c.fillText(sub, 512, 190, 980); }
         dt.update(); return dt;
@@ -33,9 +34,9 @@
       bc.fillStyle = "#fcd116"; bc.font = "bold 40px system-ui"; bc.fillText("Safer roads. Better Ghana.", 256, 165);
       billDt.update();
       texCache = {
-        gate: (p) => sign("ACCRA GATE TOLL", "GH\u00A2" + p.fee, 0, 0, "#ffffff"),
-        highways: sign("GHANA HIGHWAYS", "AUTHORITY", 0, 0, "#ffffff"),
-        safer: sign("Safer Roads", "Better Ghana", 0, 0, "#ffffff"),
+        gate: (p) => sign("ACCRA GATE TOLL", "GH\u00A2" + p.fee),
+        highways: sign("GHANA HIGHWAYS", "AUTHORITY"),
+        safer: sign("Safer Roads", "Better Ghana"),
         flag: flagDt, bill: billDt
       };
       return texCache;
@@ -49,46 +50,60 @@
       p.material = m; list.push(p); return p;
     }
 
+    // one boom barrier: a hinge pivot with three striped segments (red, white, red) that rise together
+    function boom(x, y, z, list, mk, th) {
+      const pivot = new B.TransformNode("boom_pivot", scene);
+      pivot.position.set(x, y, z);
+      list.push(pivot);
+      const seg = ARM_LEN / 3, cols = ["#c8102e", "#f2f2f0", "#c8102e"];
+      const parts = [];
+      cols.forEach((c, i) => {
+        const b = mk(seg, .22, .22, 0, 0, 0, c, th);      // built at the origin, then placed on the pivot
+        b.parent = pivot;
+        b.position.set(seg * (i + .5), 0, 0);
+        b.checkCollisions = true;
+        parts.push(b); list.push(b);
+      });
+      return { pivot, parts };
+    }
+
     function build(P, list, mk, x, th) {
       const T = textures();
-      P.arms = [];
       const z = P.z, front = z + 8.2;
+      P.arms = [];                                            // the payment code and this module both use P.arms
+      const booms = [];
 
-      // overhead canopy with a dark fascia, four columns and a roof
-      const above = (m) => { m.checkCollisions = false; list.push(m); };   // overhead parts never block the road
+      // overhead canopy and columns (only the columns stand beside the lanes; nothing overhead blocks the road)
+      const above = (m) => { m.checkCollisions = false; list.push(m); };
       above(mk(30, .8, 16, x, 6.4, z, "#e4e6ea", th));
       above(mk(30.4, 1.4, .5, x, 6.2, z + 8, "#1f232a", th));
       above(mk(30.4, 1.4, .5, x, 6.2, z - 8, "#1f232a", th));
-      // columns stand only at the road edges, outside the lanes
-      [-14, 14].forEach(o => [-6, 6].forEach(dz => { const c = mk(1.2, 6.4, 1.2, x + o, 3.2, z + dz, "#9a9a96"); c.checkCollisions = true; list.push(c); }));
+      [-14, 14].forEach(o => [-6, 6].forEach(dz => { const c = mk(1.2, 6.4, 1.2, x + o, 3.2, z + dz, "#9a9a96", th); c.checkCollisions = true; list.push(c); }));
 
-      // signs on the front fascia: the main gate sign and two side panels
+      // signs on the front fascia
       list.push(plane("tl_gate", T.gate(P), 16, 4, x, 5.6, front, Math.PI, list));
       list.push(plane("tl_hwy", T.highways, 8, 3, x - 14, 5.6, front, Math.PI, list));
       list.push(plane("tl_safe", T.safer, 8, 3, x + 14, 5.6, front, Math.PI, list));
 
-      // lane lights under the canopy: green for open lanes, red for the closed lane (as in the reference)
+      // lane lights: green for open lanes, red for the closed one
       LANES.forEach((lx, i) => above(mk(1.2, .5, .25, x + lx, 5.7, z - 2, i === 3 ? "#e02424" : "#20c24a", th)));
 
-      // barrier arms across each lane: they are the parts the payment code lifts
+      // one boom barrier per lane, hinged at the kerb side of the lane
       LANES.forEach(lx => {
-        const a = mk(3.4, .22, .22, x + lx, 1.2, z - 8, "#c8102e", th);
-        a.checkCollisions = true;
-        P.arms.push(a); list.push(a);
+        const b = boom(x + lx - ARM_LEN / 2, 1.2, z - 8, list, mk, th);
+        booms.push(b); P.arms.push(b.pivot);
       });
 
-      // lift every barrier arm together for 8 seconds after each payment, then lower them all
-      // (P.until changes when the fee is paid, so this does not depend on driving)
+      // open all barriers together for 8 seconds after each payment (P.until changes when the fee is paid)
       const gate = { last: P.until, openAt: 0, obs: null };
       gate.obs = scene.onBeforeRenderObservable.add(() => {
-        if (!P.arms || !P.arms.length) return;
-        if (P.arms.every(a => a.isDisposed())) { scene.onBeforeRenderObservable.remove(gate.obs); return; }
-        if (P.until !== gate.last) { gate.last = P.until; if (P.until) gate.openAt = performance.now() + 8000; }
+        if (booms.every(b => b.pivot.isDisposed())) { scene.onBeforeRenderObservable.remove(gate.obs); return; }
+        if (P.until !== gate.last) { gate.last = P.until; if (P.until) gate.openAt = performance.now() + OPEN_MS; }
         const open = performance.now() < gate.openAt;
-        P.arms.forEach(a => {
-          if (a.isDisposed()) return;
-          a.position.y += ((open ? 5 : 1.2) - a.position.y) * .15;
-          a.checkCollisions = !open;
+        booms.forEach(b => {
+          if (b.pivot.isDisposed()) return;
+          b.pivot.rotation.z += ((open ? UP : 0) - b.pivot.rotation.z) * .12;   // rise to vertical, or fall back
+          b.parts.forEach(p => { p.checkCollisions = !open; });
         });
       });
 
@@ -103,6 +118,6 @@
 
     window.AccraToll = { build };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).toll = 1;
-    console.log("Accra toll design ready");
+    console.log("Accra toll boom barriers ready");
   } catch (err) { console.error("accra-toll failed:", err); }
 })();
