@@ -1,47 +1,104 @@
-/* accra-carskin.js - the car you drive. If car.glb is in the repo (next to babylon.html), it is loaded and used.
- * It is scaled to a real car length (4.6 m) and sits on the road. If the file is missing, the built-in sedan stays.
- * CAR_YAW: turn the model by 180 degrees here if it drives backwards. */
+/* accra-carskin.js - Custom car model loader
+ * Loads car.glb if available, scales it to a realistic size (4.6 m long),
+ * and places it correctly on the road. Falls back to the built-in sedan if the file is missing.
+ */
 (function () {
-  const CAR_YAW = Math.PI / 2;   // this model is long along X; the game drives along Z
-  const LENGTH = 4.6;
-  const ensureLoader = () => new Promise((res, rej) => {
-    if (BABYLON.SceneLoader && BABYLON.SceneLoader.IsPluginForExtensionAvailable && BABYLON.SceneLoader.IsPluginForExtensionAvailable(".glb")) return res();
-    const s = document.createElement("script");
-    s.src = "https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.min.js";
-    s.onload = res; s.onerror = rej; document.head.appendChild(s);
+  const CAR_YAW = Math.PI / 2;   // Adjust if the model faces the wrong way
+  const LENGTH = 4.6;            // Real car length in meters
+  const TARGET_HEIGHT = 1.45;    // Approximate real car height
+
+  const ensureLoader = () => new Promise((resolve, reject) => {
+    if (BABYLON.SceneLoader && 
+        BABYLON.SceneLoader.IsPluginForExtensionAvailable && 
+        BABYLON.SceneLoader.IsPluginForExtensionAvailable(".glb")) {
+      return resolve();
+    }
+    const script = document.createElement("script");
+    script.src = "https://cdn.babylonjs.com/loaders/babylon.glTF2FileLoader.min.js";
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
   });
+
   (async function () {
     try {
-      if (typeof car === "undefined" || !window.AccraAssets || !window.AccraAssets.createCar) { console.log("accra-carskin: waiting"); return; }
-      car.getChildMeshes().forEach(m => { m.isVisible = false; });
+      // Wait until the main car and assets are ready
+      if (typeof car === "undefined" || !window.AccraAssets || !window.AccraAssets.createCar) {
+        console.log("accra-carskin: waiting for car / AccraAssets...");
+        return;
+      }
+
+      // Hide original simple car meshes
+      car.getChildMeshes().forEach(m => {
+        m.isVisible = false;
+      });
+
+      // Create a temporary fallback car
       const fallback = window.AccraAssets.createCar(scene, "sedan", { color: "#a3172b" });
-      fallback.parent = car; fallback.rotation.y = -Math.PI / 2; fallback.position.set(0, -.4, 0);
+      fallback.parent = car;
+      fallback.rotation.y = -Math.PI / 2;
+      fallback.position.set(0, -0.4, 0);
+
       try {
         await ensureLoader();
-        const r = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "car.glb", scene);
-        const root = r.meshes[0];
+
+        const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "car.glb", scene);
+        const root = result.meshes[0];
+
+        // Calculate original size
         const bb = root.getHierarchyBoundingVectors(true);
-        const len = Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z);
-        const s = LENGTH / Math.max(len, .001);
+        const sizeX = bb.max.x - bb.min.x;
+        const sizeY = bb.max.y - bb.min.y;
+        const sizeZ = bb.max.z - bb.min.z;
+        const length = Math.max(sizeX, sizeZ);
+
+        // Scale to real car length
+        const scale = LENGTH / Math.max(length, 0.001);
+        // Keep height realistic
+        const heightScale = Math.min(scale, TARGET_HEIGHT / Math.max(sizeY, 0.001));
+
+        // Create a holder node so we can rotate and position cleanly
         const holder = new BABYLON.TransformNode("carmodel", scene);
-        holder.parent = car; holder.rotation.y = CAR_YAW;
+        holder.parent = car;
+        holder.rotation.y = CAR_YAW;
+
         root.parent = holder;
-        // length matches a real car, and the height is squashed to a real car height (about 1.45 m), so it stands on the road
-        const hgt = Math.max(bb.max.y - bb.min.y, .001), sy = Math.min(s, 1.45 / hgt);
-        root.scaling.set(s, sy, s);
-        root.position.set(-(bb.min.x + bb.max.x) / 2 * s, -.8 - bb.min.y * sy, -(bb.min.z + bb.max.z) / 2 * s);
-        // the model came in grey: give every part a proper car colour
+        root.scaling.set(scale, heightScale, scale);
+
+        // Center the model and place it on the ground
+        root.position.set(
+          -(bb.min.x + bb.max.x) / 2 * scale,
+          -0.75 - bb.min.y * heightScale,
+          -(bb.min.z + bb.max.z) / 2 * scale
+        );
+
+        // Apply a proper car colour
         root.getChildMeshes().forEach(m => {
-          if (m.material) { m.material.diffuseColor = BABYLON.Color3.FromHexString("#b3202e"); m.material.specularColor = new BABYLON.Color3(.4, .4, .4); }
+          if (m.material) {
+            m.material.diffuseColor = BABYLON.Color3.FromHexString("#b3202e");
+            m.material.specularColor = new BABYLON.Color3(0.35, 0.35, 0.35);
+          }
         });
+
+        // Remove the temporary fallback
         fallback.dispose();
+
         window.ACCRA_CARSKIN = holder;
-        if (window.ACCRA_LIFE) window.ACCRA_LIFE.api.note("Car model loaded");
+
+        if (window.ACCRA_LIFE && window.ACCRA_LIFE.api && window.ACCRA_LIFE.api.note) {
+          window.ACCRA_LIFE.api.note("Custom car model loaded");
+        }
+
         console.log("Accra car model ready");
       } catch (e) {
-        console.log("accra-carskin: car.glb not found, keeping the built-in car");
+        console.log("accra-carskin: car.glb not found → keeping built-in car");
+        // Keep the fallback car visible
       }
+
       (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).carskin = 1;
-    } catch (err) { console.error("accra-carskin failed:", err); }
+
+    } catch (err) {
+      console.error("accra-carskin failed:", err);
+    }
   })();
 })();
