@@ -54,10 +54,10 @@
    
  // ---------- REAL RADIO STREAMING & JAMBOX ----------
  const STATIONS=[
-  {n:'Joy FM 99.7 (Accra)', u:'https://icecast.gcis.co.za/proxy/joyfm?mp=/stream'},
-  {n:'Peace FM 104.3 (Accra)', u:'https://stream-155.zeno.fm/0r0xa7f7zquuv'},
-  {n:'Adom FM 106.3 (Accra)', u:'https://live.amemedia.org/stream/adomfm'},
-  {n:'Citi FM 97.3 (Accra)', u:'https://audio.citifmonline.com/stream'}
+  {n:'Joy FM 99.7 (Accra)', u:'https://stream.zeno.fm/f3wvbb75zquuv'},
+  {n:'Peace FM 104.3 (Accra)', u:'https://stream.zeno.fm/0r0xa7f7zquuv'},
+  {n:'Adom FM 106.3 (Accra)', u:'https://stream.zeno.fm/9hx87e7zquuv'},
+  {n:'Citi FM 97.3 (Accra)', u:'https://stream.zeno.fm/g3w8bb75zquuv'}
  ];
  let liveAudio=null,currentStation=null;
 
@@ -67,14 +67,24 @@
   if(liveAudio && currentStation === name){stopLiveRadio();toast('Radio stopped');if(tab==='radio')render();return}
   stopLiveRadio();
   toast('Connecting to ' + name + '...');
+  
   liveAudio=new Audio();
-  // NOTE: crossOrigin removed to prevent mobile browser CORS blocking on radio stream servers
   liveAudio.volume=AU.vol;
   liveAudio.src=url;
-  liveAudio.play().then(()=>{currentStation=name;toast('Playing '+name);if(tab==='radio')render()}).catch(e=>{
-    toast('Stream blocked/unavailable. Try JAMBOX music!');
-    liveAudio=null;currentStation=null;if(tab==='radio')render();
-  });
+  liveAudio.preload='auto';
+  
+  const playPromise = liveAudio.play();
+  if (playPromise !== undefined) {
+    playPromise.then(()=>{
+      currentStation=name;
+      toast('Playing '+name);
+      if(tab==='radio')render();
+    }).catch(e=>{
+      toast('Stream unavailable on mobile. Use JAMBOX!');
+      liveAudio=null;currentStation=null;
+      if(tab==='radio')render();
+    });
+  }
  }
 
  const AU={ctx:null,master:null,sg:null,timer:null,step:0,next:0,vol:.6,key:null,noise:null};let OUT=null;
@@ -104,7 +114,7 @@
    if(n==='step')hit(t,520,.05,.14,'lowpass');
    else if(n==='splash')hit(t,900,.2,.25,'bandpass');
    else if(n==='clink'){voice(t,'sine',2400,2000,.25,.14);voice(t+.04,'sine',3100,2600,.2,.1)}
-   else if(n==='punch')hit(t,650,.09,.7,'lowpass');voice(t,'sine',140,50,.14,.7);
+   else if(n==='punch'){hit(t,650,.09,.7,'lowpass');voice(t,'sine',140,50,.14,.7)}
    else if(n==='clap')hit(t,1600,.05,.55,'bandpass');
    else if(n==='cheer'){[0,.12,.24].forEach((d,i)=>voice(t+d,'sawtooth',300+i*90,520+i*90,.28,.05))}
    else if(n==='clang'){voice(t,'square',900,700,.12,.22);hit(t,3000,.08,.3,'highpass')}
@@ -129,14 +139,14 @@
   jobs:()=>'<div class="cd"><b>🏍️ Delivery rider</b><br><small>Pick up a package in one district and deliver it to another. Pay depends on distance.</small><br>'+(job?'<small>Active: '+(job.stage?'deliver to '+esc(job.b.n):'pick up at '+esc(job.a.n))+' · GH₵'+job.pay+'</small><br><button class="bt" data-do="cancel">Cancel</button>':'<button class="bt" data-do="deliv">Start delivery</button>')+'</div>',
   cam:()=>'<button class="bt" data-do="shot">📸 Take photo</button>'+shots.map(x=>'<img src="'+x+'">').join('')+(shots.length?'<small>Press and hold a photo to save it.</small>':'<div class="cd">Photos of the game world appear here.</div>'),
   vyba:()=>'<div class="cd"><b>VYBA</b><br><small>Your photos from the Camera app. Sharing with other players needs the online server (not built yet).</small></div><button class="bt" data-do="shot">📸 Take photo</button>'+shots.map(x=>'<img src="'+x+'">').join(''),
-  msg:()=>{const h=AL.length?AL.map(a=>'<div class="cd'+(a.u?' unr':'')+'">'+esc(a.m)+'</div>').join('')+'<button class="bt" data-do="clr">Clear all</button>':'<div class="cd">No alerts.</div>';AL.forEach(a=>a.u=0);saveAl();setTimeout(badges,0);return h},
-  mart:()=>{const L=window.ACCRA_LIFE;if(!L)return '<div class="cd">Groceries not ready.</div>';return Object.keys(L.food).map(k=>'<div class="cd tx"><span>'+L.food[k][0]+'<br><small>GH₵'+Math.ceil(L.food[k][1]*1.1)+'</small></span><button class="bt" data-buy="'+k+'">Buy</button></div>').join('')},
+  msg:()=>{const h=AL.length?AL.map(a=>'<div class="cd'+(a.u?' unr':'')+'">'+esc(a.m)+'<br><small>'+new Date(a.t).toTimeString().slice(0,5)+'</small></div>').join('')+'<button class="bt" data-do="clr">Clear all</button>':'<div class="cd">No alerts. Rent, health and job updates appear here.</div>';AL.forEach(a=>a.u=0);saveAl();setTimeout(badges,0);return '<div class="cd"><small>Game alerts. Messages from other players need the online server.</small></div>'+h},
+  mart:()=>{const L=window.ACCRA_LIFE;if(!L)return '<div class="cd">Groceries are not ready yet. Reload the game.</div>';return '<div class="cd"><small>Groceries delivered straight to your fridge (10% fee). Cash: GH₵'+S.money.toLocaleString()+'</small></div>'+Object.keys(L.food).map(k=>'<div class="cd tx"><span>'+L.food[k][0]+'<br><small>GH₵'+Math.ceil(L.food[k][1]*1.1)+' · in fridge '+(L.stock()[k]||0)+'</small></span><button class="bt" data-buy="'+k+'">Buy</button></div>').join('')+'<div class="cd"><small>Furniture, appliances and clothes are sold at Accra Mall.</small></div>'},
   radio:()=>'<div class="cd"><small>Tune in to live radio streams from Accra while you cruise or walk around the city.</small></div>'+STATIONS.map(s=>'<div class="cd tx"><span><b>'+s.n+'</b></span><button class="bt" data-radio="'+s.u+'" data-name="'+s.n+'">'+(currentStation===s.n?'■ Stop':'▶ Listen')+'</button></div>').join('')+'<div class="cd"><small>Volume</small><input type="range" min="0" max="100" value="'+Math.round(AU.vol*100)+'" data-vol="1"></div>',
-  jam:()=>'<div class="cd"><small>Generated music, not licensed songs.</small></div>'+Object.keys(STN).map(k=>'<div class="cd tx"><span>'+STN[k].n+'</span><button class="bt" data-st="'+k+'">'+(AU.key===k?'■ Stop':'▶ Play')+'</button></div>').join('')+'<div class="cd"><small>Volume</small><input type="range" min="0" max="100" value="'+Math.round(AU.vol*100)+'" data-vol="1"></div>',
+  jam:()=>'<div class="cd"><small>Generated music, not licensed songs. You can add real tracks later.</small></div>'+Object.keys(STN).map(k=>'<div class="cd tx"><span>'+STN[k].n+'<br><small>'+STN[k].bpm+' BPM</small></span><button class="bt" data-st="'+k+'">'+(AU.key===k?'■ Stop':'▶ Play')+'</button></div>').join('')+'<div class="cd"><small>Volume</small><input type="range" min="0" max="100" value="'+Math.round(AU.vol*100)+'" data-vol="1"></div>',
   bet:()=>betScreen(),date:()=>dateScreen(),
-  set:()=>'<div class="cd tx"><span>Shadows</span><button class="bt" data-do="shd">'+(sun.shadowEnabled?'On':'Off')+'</button></div>'};
+  set:()=>'<div class="cd tx"><span>Shadows</span><button class="bt" data-do="shd">'+(sun.shadowEnabled?'On':'Off')+'</button></div><div class="cd tx"><span>Hide far-away buildings<br><small>Turn off if anything looks missing</small></span><button class="bt" data-do="cull">'+((window.ACCRA_CULL||{on:true}).on?'On':'Off')+'</button></div><div class="cd"><small>Progress (cash, savings, alerts) saves on this device.</small></div><div class="cd"><b>Build 5</b><br><small>'+['upgrade','life','pub','crime','fx','locations'].map(k=>k+' '+((window.ACCRA_MODULES||{})[k]?'✔':'✘')).join(' · ')+'</small></div>'};
  
- // ---------- AccraBet & VybaDate helpers ----------
+ // ---------- AccraBet: play-money betting on made-up matches ----------
  const rng=seed=>{let s=seed>>>0;return()=>((s=(s*1664525+1013904223)>>>0)/4294967296)};
  const TEAMS=['Accra Hearts XI','Kumasi Lions','Cape Coast Stars','Tema Mariners','Takoradi Hawks','Tamale Warriors','Ho Eagles','Koforidua Rams','Sunyani Tigers','Volta United'];
  const strength=n=>{let h=0;for(const c of n)h=(h*31+c.charCodeAt(0))%97;return 3+h%7};
@@ -149,23 +159,32 @@
  const scoreFor=r=>{const w=[[1,0],[2,1],[2,0],[3,1],[3,0]][Math.floor(Math.random()*5)];return r===0?w[0]+'-'+w[1]:r===2?w[1]+'-'+w[0]:(Math.random()<.5?'0-0':'1-1')};
  function placeBet(stake){const m=slip.m,pick=slip.pick;if(stake>S.money)return toast('Not enough cash.');
   const r=Math.random(),res=r<m.p[0]?0:r<m.p[0]+m.p[1]?1:2;
-  add(-stake,'AccraBet stake');BETS.unshift({id:Date.now(),h:m.h,a:m.a,pick,odds:m.o[pick],stake,res,score:scoreFor(res),t:Date.now()+60000,done:0});saveBets();slip=null;toast('Bet placed.')}
- function settle(){let ch=0;BETS.forEach(b=>{if(!b.done&&Date.now()>=b.t){b.done=1;ch=1;const win=b.res===b.pick,pay=Math.round(b.stake*b.odds);if(win)add(pay,'AccraBet win')}});if(ch){saveBets();if(ph.classList.contains('on')&&tab==='bet')render()}}
+  add(-stake,'AccraBet stake');BETS.unshift({id:Date.now(),h:m.h,a:m.a,pick,odds:m.o[pick],stake,res,score:scoreFor(res),t:Date.now()+60000,done:0});saveBets();slip=null;toast('Bet placed. The match is live for 60 seconds.')}
+ function settle(){let ch=0;BETS.forEach(b=>{if(!b.done&&Date.now()>=b.t){b.done=1;ch=1;const win=b.res===b.pick,pay=Math.round(b.stake*b.odds);
+   if(win)add(pay,'AccraBet win');window.ACCRA_NOTIFY&&window.ACCRA_NOTIFY('AccraBet: '+b.h+' '+b.score+' '+b.a+' - '+(win?'you won GH₵'+pay:'your bet lost'),'bet')}});
+  if(ch){saveBets();if(ph.classList.contains('on')&&tab==='bet')render()}}
  setInterval(settle,3000);settle();
  const LBL=['Home','Draw','Away'];
- function betScreen(){const ms=matches();let h='';
-  if(slip){h+='<div class="cd"><b>'+esc(slip.m.h)+' vs '+esc(slip.m.a)+'</b><br><small>'+LBL[slip.pick]+' @ '+slip.m.o[slip.pick]+'</small><br>'+[10,50,100].map(s=>'<button class="bt" data-stake="'+s+'">GH₵'+s+'</button>').join('')+'</div>'}
+ function betScreen(){const ms=matches();
+  let h='<div class="cd"><small>Play money only. Teams and matches are made up and results are random with a house edge. Never bet what you cannot lose.</small></div>';
+  if(slip){h+='<div class="cd"><b>'+esc(slip.m.h)+' vs '+esc(slip.m.a)+'</b><br><small>'+LBL[slip.pick]+' @ '+slip.m.o[slip.pick]+' · choose a stake</small><br>'+[10,50,100,500].map(s=>'<button class="bt" data-stake="'+s+'">GH₵'+s+'</button>').join('')+'<button class="bt" style="background:#555;color:#fff" data-do="slipx">Cancel</button></div>'}
   h+='<h3>Matches</h3>'+ms.map((m,i)=>'<div class="cd"><b>'+esc(m.h)+'</b> vs <b>'+esc(m.a)+'</b><br>'+m.o.map((o,k)=>'<button class="bt" data-pick="'+i+':'+k+'">'+['1','X','2'][k]+' '+o+'</button>').join('')+'</div>').join('');
+  h+='<h3>My bets</h3>'+(BETS.length?BETS.slice(0,8).map(b=>{const left=Math.max(0,Math.ceil((b.t-Date.now())/1000));return '<div class="cd tx"><span>'+esc(b.h)+' v '+esc(b.a)+'<br><small>'+LBL[b.pick]+' @ '+b.odds+' · stake GH₵'+b.stake+'</small></span><b class="'+(!b.done?'':b.res===b.pick?'up':'dn')+'">'+(!b.done?'Live '+left+'s':b.score+(b.res===b.pick?' ✔':' ✘'))+'</b></div>'}).join(''):'<div class="cd">No bets yet</div>');
   return h}
- const PROF=[['Akosua',26,'Nurse','Osu','👩🏾‍⚕️','jollof · highlife'],['Kwame',29,'Designer','East Legon','👨🏾‍🎨','football · art']];
+ // ---------- VybaDate: fictional profiles, likes, matches, chats and dates ----------
+ const PROF=[['Akosua',26,'Nurse','Osu','👩🏾‍⚕️','jollof · highlife · beach walks'],['Kwame',29,'Graphic designer','East Legon','👨🏾‍🎨','football · art · street food'],['Ama',24,'Student','Labadi','👩🏾‍🎓','music · dancing · fashion'],['Kofi',31,'Mechanic','Makola','👨🏾‍🔧','cars · banku · gospel'],['Efua',27,'Teacher','Central Accra','👩🏾‍🏫','books · kenkey · sunsets'],['Yaw',28,'Chef','Airport City','👨🏾‍🍳','cooking · afrobeats · travel'],['Abena',25,'Photographer','Osu','📸','photos · cafes · nightlife'],['Kojo',30,'Trotro driver','Makola','🚐','radio · football · fufu'],['Nana',26,'Fashion designer','Labadi','👩🏾‍🎨','kente · design · markets'],['Selasi',29,'Engineer','Amoamah','👨🏾‍💻','tech · jollof · running']];
  let DT={like:[],pass:[],match:{}};try{DT=Object.assign(DT,JSON.parse(localStorage.getItem('accra-date')))}catch(e){}
  const saveDt=()=>{try{localStorage.setItem('accra-date',JSON.stringify(DT))}catch(e){}};
  let dTab='find',chat=null;
- const VENUES=[['Street food',30,{md:15,hu:10}],['Accra Mall',60,{md:20,hu:15}]];
- function dateScreen(){let h='<div class="tx"><button class="bt" data-dt="find">Discover</button><button class="bt" data-dt="matches">Matches</button></div>';
-  if(dTab==='find'){const left=PROF.map((p,i)=>i).filter(i=>!DT.like.includes(i)&&!DT.pass.includes(i));if(!left.length)return h+'<div class="cd">No more profiles</div>';const p=PROF[left[0]];return h+'<div class="cd" style="text-align:center"><div style="font-size:46px">'+p[4]+'</div><b>'+p[0]+', '+p[1]+'</b><br><button class="bt" data-like="'+left[0]+'">♥ Like</button><button class="bt" data-pass="'+left[0]+'">✕ Pass</button></div>'}
-  return h+'<div class="cd">Matches coming soon</div>'}
- const SAY=[['Thank you!',3,-1]];
+ const VENUES=[['Street food & a walk',30,{md:15,hu:10}],['Accra Mall café',60,{md:20,hu:15}],['Labadi Beach sunset',40,{md:22,en:-5}],['The Accra Vibes Pub',100,{md:26,hu:12}]];
+ function dateScreen(){const api=window.ACCRA_LIFE&&window.ACCRA_LIFE.api;
+  let h='<div class="cd"><small>Fictional people for now. Matching with real players needs the online server.</small></div><div class="tx"><button class="bt" data-dt="find">Discover</button><button class="bt" data-dt="matches">Matches ('+Object.keys(DT.match).length+')</button></div>';
+  if(dTab==='find'){const left=PROF.map((p,i)=>i).filter(i=>!DT.like.includes(i)&&!DT.pass.includes(i));
+   if(!left.length)return h+'<div class="cd">You have seen everyone nearby.<br><button class="bt" data-do="dreset">Look again</button></div>';
+   const p=PROF[left[0]];return h+'<div class="cd" style="text-align:center"><div style="font-size:46px">'+p[4]+'</div><b>'+p[0]+', '+p[1]+'</b><br><small>'+p[2]+' · '+p[3]+'</small><br><small>'+p[5]+'</small><br><button class="bt" data-like="'+left[0]+'">♥ Like</button><button class="bt" style="background:#555;color:#fff" data-pass="'+left[0]+'">✕ Pass</button></div>'}
+  if(chat!==null){const p=PROF[chat],m=DT.match[chat];return h+'<div class="cd"><b>'+p[4]+' '+p[0]+'</b><br><small>Bond '+m.aff+'/100</small><div style="height:6px;background:rgba(255,255,255,.15);border-radius:4px;margin:4px 0"><div style="height:100%;width:'+m.aff+'%;background:#ff4d8d;border-radius:4px"></div></div><div class="cd" style="background:rgba(255,255,255,.06)">'+esc(m.last||'Say hi!')+'</div><button class="bt" data-say="0">Compliment</button><button class="bt" data-say="1">Ask about their day</button><button class="bt" data-say="2">Tell a joke</button><h3>Plan a date</h3>'+VENUES.map((v,i)=>'<button class="bt" data-venue="'+i+'">'+v[0]+' · GH₵'+v[1]+'</button>').join('')+'<br><button class="bt" style="background:#555;color:#fff" data-dt="matches">Back</button></div>'}
+  const ids=Object.keys(DT.match);return h+(ids.length?ids.map(i=>{const p=PROF[i],m=DT.match[i];return '<div class="cd tx"><span>'+p[4]+' '+p[0]+', '+p[1]+'<br><small>'+(m.aff>=100?'In a relationship ❤️':'Bond '+m.aff+'/100')+'</small></span><button class="bt" data-chat="'+i+'">Open</button></div>'}).join(''):'<div class="cd">No matches yet. Like some profiles in Discover.</div>')}
+ const SAY=[['Thank you, that was sweet! 😊',3,-1],['Busy but good! How was yours?',2,0],['Ha, that was actually funny!',2,-2]];
 
  function badges(){const n=unread(),b=$('pbdg');if(b){b.style.display=n?'block':'none';b.textContent=n}if(ph.classList.contains('on')&&tab==='home')render()}
  const home=()=>'<div class="ag">'+APPS.map(a=>'<button class="ai" data-app="'+a[0]+'" style="--c:'+a[3]+'"><i>'+a[1]+(a[0]==='msg'&&unread()?'<u class="bg">'+unread()+'</u>':'')+'</i>'+a[2]+'</button>').join('')+'</div><button class="bal" data-app="cedi"><span>GH₵ '+S.money.toLocaleString()+'</span><b>›</b></button>';
@@ -173,7 +192,7 @@
   bd.innerHTML=ap?'<h3>'+ap[1]+' '+ap[2]+'</h3>'+V2[tab]():home();bd.classList.remove('pin');void bd.offsetWidth;bd.classList.add('pin')}
  const go=t=>{if(t!==tab){stack.push(tab);tab=t}};
  function open(o){ph.classList.toggle('on',o);document.body.classList.toggle('po',o);if(o){tab='home';stack=[];$('ptm2').textContent=new Date().toTimeString().slice(0,5);$('psg').textContent=bars();render()}}
- btn.onclick=()=>open(!ph.classList.contains('on'));$('pcl.onclick')||($('pcl').onclick=()=>open(false));$('phm').onclick=()=>{tab='home';stack=[];render()};$('pbk').onclick=()=>{tab=stack.pop()||'home';render()};
+ btn.onclick=()=>open(!ph.classList.contains('on'));$('pcl').onclick=()=>open(false);$('phm').onclick=()=>{tab='home';stack=[];render()};$('pbk').onclick=()=>{tab=stack.pop()||'home';render()};
  ph.addEventListener('input',e=>{if(e.target.dataset.vol){const v=e.target.value/100;AU.vol=v;if(AU.master)AU.master.gain.value=v;if(liveAudio)liveAudio.volume=v}});
  ph.addEventListener('click',e=>{const b=e.target.closest('[data-app],[data-do],[data-go],[data-buy],[data-st],[data-pick],[data-stake],[data-dt],[data-like],[data-pass],[data-chat],[data-say],[data-venue],[data-radio]');if(!b)return;const d=b.dataset;
   if(d.app)go(d.app);
@@ -181,21 +200,30 @@
   else if(d.stake){placeBet(+d.stake)}
   else if(d.do==='slipx')slip=null
   else if(d.dt){dTab=d.dt;chat=null}
-  else if(d.like!==undefined){DT.like.push(+d.like);if(Math.random()<.5){DT.match[+d.like]={aff:10,last:'',cd:0};toast('It is a match!')}else toast('No match.');saveDt()}
+  else if(d.like!==undefined){const i=+d.like,api=window.ACCRA_LIFE&&window.ACCRA_LIFE.api,md=api?api.st.md:50;DT.like.push(i);
+   if(Math.random()<.4+md/250){DT.match[i]={aff:10,last:'',cd:0};toast('It is a match with '+PROF[i][0]+'!');window.ACCRA_NOTIFY&&window.ACCRA_NOTIFY('VybaDate: you matched with '+PROF[i][0]+'.','date')}else toast('No match this time.');saveDt()}
   else if(d.pass!==undefined){DT.pass.push(+d.pass);saveDt()}
-  else if(d.go!==undefined){setNav(ALLD()[+d.go]);toast('Route set.');open(false);return}
-  else if(d.buy){const r=window.ACCRA_LIFE?window.ACCRA_LIFE.buy(d.buy,true):'Not ready';toast(r==='ok'?'Added to fridge':r)}
+  else if(d.do==='dreset'){DT.like=DT.like.filter(i=>DT.match[i]);DT.pass=[];saveDt()}
+  else if(d.chat!==undefined){chat=+d.chat;dTab='chat'}
+  else if(d.say!==undefined){const m=DT.match[chat],s=SAY[+d.say],g=s[1]-(Math.random()<.25?1:0);m.aff=Math.min(100,Math.max(0,m.aff+g));m.last=s[0];saveDt()}
+  else if(d.venue!==undefined){const m=DT.match[chat],v=VENUES[+d.venue],api=window.ACCRA_LIFE&&window.ACCRA_LIFE.api;
+   if(Date.now()<(m.cd||0))toast('Give them a little time before the next date.');
+   else if(S.money<v[1])toast('Not enough cash for this date.');
+   else{add(-v[1],'Date: '+v[0]);if(api)api.vitals(Object.assign({},v[2]));m.aff=Math.min(100,m.aff+12);m.cd=Date.now()+90000;m.last='That was a lovely time at '+v[0]+'!';saveDt();toast('Great date! Mood up.');if(m.aff>=100)window.ACCRA_NOTIFY&&window.ACCRA_NOTIFY('You are now in a relationship with '+PROF[chat][0]+' ❤️','date')}}
+  else if(d.go!==undefined){setNav(ALLD()[+d.go]);toast('Route set. Follow the gold beam.');open(false);return}
+  else if(d.buy){const r=window.ACCRA_LIFE?window.ACCRA_LIFE.buy(d.buy,true):'Not ready';toast(r==='ok'?'Added to your fridge':r)}
   else if(d.st){if(AU.key===d.st)stopSt();else playSt(d.st)}
   else if(d.radio){playLiveRadio(d.radio,d.name)}
   else if(d.do==='dep'){if(S.money<20)toast('Not enough cash.');else{S.money-=20;S.sav+=20;S.tx.unshift({d:-20,w:'MoMo savings'});save();paint()}}
-  else if(d.do==='wd'){if(S.sav<20)toast('Too low.');else{S.sav-=20;S.money+=20;S.tx.unshift({d:20,w:'MoMo withdrawal'});save();paint()}}
+  else if(d.do==='wd'){if(S.sav<20)toast('MoMo savings are below GH₵20.');else{S.sav-=20;S.money+=20;S.tx.unshift({d:20,w:'MoMo withdrawal'});save();paint()}}
   else if(d.do==='stop')setNav(null);
   else if(d.do==='deliv'){const a=DEST[Math.floor(Math.random()*DEST.length)];let b;do{b=DEST[Math.floor(Math.random()*DEST.length)]}while(b===a);
-   job={a,b,stage:0,pay:Math.min(150,Math.round(40+Math.hypot(a.x-b.x,a.z-b.z)*.4))};setNav(a);toast('Pick up at '+a.n);open(false);return}
+   job={a,b,stage:0,pay:Math.min(150,Math.round(40+Math.hypot(a.x-b.x,a.z-b.z)*.4))};setNav(a);toast('Pick up the package at '+a.n);open(false);return}
   else if(d.do==='cancel'){job=null;setNav(null)}
-  else if(d.do==='shot'){BABYLON.Tools.CreateScreenshot(engine,cam,{precision:.6},data=>{shots.unshift(data);shots.length=Math.min(shots.length,4);if(tab==='cam'||tab==='vyba')render();toast('Photo saved')})}
+  else if(d.do==='shot'){BABYLON.Tools.CreateScreenshot(engine,cam,{precision:.6},data=>{shots.unshift(data);shots.length=Math.min(shots.length,4);if(tab==='cam'||tab==='vyba')render();toast('Photo saved to your phone')})}
   else if(d.do==='clr'){AL=[];saveAl();badges()}
   else if(d.do==='shd')sun.shadowEnabled=!sun.shadowEnabled;
+  else if(d.do==='cull'){window.ACCRA_CULL=window.ACCRA_CULL||{on:true};window.ACCRA_CULL.on=!window.ACCRA_CULL.on}
   render()});
  badges();render();
 })();
