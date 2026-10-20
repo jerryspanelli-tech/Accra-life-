@@ -2,7 +2,7 @@
  * It is scaled to a real car length (4.6 m) and sits on the road. If the file is missing, the built-in sedan stays.
  * CAR_YAW: turn the model by 180 degrees here if it drives backwards. */
 (function () {
-  const CAR_YAW = 0;
+  const CAR_YAW = Math.PI / 2;   // this model is long along X; the game drives along Z
   const LENGTH = 4.6;
   const ensureLoader = () => new Promise((res, rej) => {
     if (BABYLON.SceneLoader && BABYLON.SceneLoader.IsPluginForExtensionAvailable && BABYLON.SceneLoader.IsPluginForExtensionAvailable(".glb")) return res();

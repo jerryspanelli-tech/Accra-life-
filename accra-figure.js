@@ -84,6 +84,7 @@
       const mouthM = MAT("mouth", "#7a2e2e");
 
       const root = new BABYLON.TransformNode("ffig", scene);
+      root.scaling.setAll(1.16);   // about 1.8 m tall, the same height for the player, police and other people
       const g = new BABYLON.TransformNode("fg", scene); g.parent = root;
       const P = (kind, opts, x, y, z, mtl, par) => {
         const m = BABYLON.MeshBuilder["Create" + kind]("cart", opts, scene);
