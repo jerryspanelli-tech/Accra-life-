@@ -1,4 +1,4 @@
-// phone.js - Accra Life smartphone with Ghanaian Cultural Audio (JAMBOX)
+// phone.js - Accra Life smartphone with Live Radio + JAMBOX GH Engine
 (function(){
  const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let S={money:200,sav:0,tx:[]};try{S=Object.assign(S,JSON.parse(localStorage.getItem('accra-bb-save')))}catch(e){}
@@ -57,50 +57,78 @@
    else if(job&&job.stage===1&&n===job.b){const p=job.pay;add(p,'Delivery to '+job.b.n);toast('Delivered! +GH₵'+p);job=null}
    else toast('You have arrived: '+n.n)}});
 
+ // ---------- LIVE RADIO STREAMING ENGINE (MOBILE UNLOCKED) ----------
+ const STATIONS=[
+  {n:'Joy FM 99.7 (Accra)', u:'https://stream.zeno.fm/f3wvbb75zquuv'},
+  {n:'Peace FM 104.3 (Accra)', u:'https://stream.zeno.fm/0r0xa7f7zquuv'},
+  {n:'Adom FM 106.3 (Accra)', u:'https://stream.zeno.fm/9hx87e7zquuv'},
+  {n:'Citi FM 97.3 (Accra)', u:'https://stream.zeno.fm/g3w8bb75zquuv'}
+ ];
+ let liveAudio=null, currentStation=null, mobileAudioUnlocked=false;
+
+ window.addEventListener('pointerdown', function unlockAudio() {
+  if (!mobileAudioUnlocked) {
+    liveAudio = new Audio();
+    liveAudio.play().catch(()=>{}); // Mobile audio engine warmup
+    mobileAudioUnlocked = true;
+    window.removeEventListener('pointerdown', unlockAudio);
+  }
+ }, { once: true });
+
+ function stopLiveRadio(){
+  if(liveAudio){
+    liveAudio.pause();
+    liveAudio.src = '';
+    currentStation = null;
+  }
+ }
+
+ function playLiveRadio(url, name){
+  stopSt(); // Stop Jambox if playing
+  if(currentStation === name){
+    stopLiveRadio();
+    toast('Radio stopped');
+    if(tab==='radio') render();
+    return;
+  }
+  stopLiveRadio();
+  toast('Tuning to ' + name + '...');
+
+  if(!liveAudio) liveAudio = new Audio();
+  liveAudio.volume = AU.vol;
+  liveAudio.src = url;
+
+  const playPromise = liveAudio.play();
+  if (playPromise !== undefined) {
+    playPromise.then(()=>{
+      currentStation = name;
+      toast('📡 Playing ' + name);
+      if(tab==='radio') render();
+    }).catch(()=>{
+      // CORS/HTTP Proxy Fallback
+      const proxiedUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+      liveAudio.src = proxiedUrl;
+      liveAudio.play().then(()=>{
+        currentStation = name;
+        toast('📡 Playing ' + name);
+        if(tab==='radio') render();
+      }).catch(()=>{
+        toast('Station blocked/offline. Try JAMBOX!');
+        stopLiveRadio();
+        if(tab==='radio') render();
+      });
+    });
+  }
+ }
+
  // ---------- GHANAIAN CULTURAL AUDIO ENGINE (JAMBOX) ----------
  const AU={ctx:null,master:null,sg:null,timer:null,step:0,next:0,vol:.6,key:null,noise:null};let OUT=null;
  
  const STN={
-  highlife:{
-    n:'Palm-Wine Highlife',
-    bpm:108,
-    root:220, // A
-    bell:[1,0,1,1,0,1,0,1,1,0,1,0,1,0,1,0], // Agbadza bell
-    kick:[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],
-    snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-    bass:[0,,,,5,,,,7,,,,5,,,,],
-    lead:[12,,16,,19,,16,,14,,17,,21,,17,]
-  },
-  kpanlogo:{
-    n:'Coastal Kpanlogo Drum',
-    bpm:112,
-    root:196, // G
-    bell:[1,0,0,1,0,0,1,0,0,1,0,1,0,0,1,0], // Kpanlogo key bell
-    kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-    snare:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],
-    bass:[0,,,2,,,3,,,5,,,3,,,],
-    lead:[7,,12,,14,,12,,10,,12,,14,,12,]
-  },
-  afrobeats:{
-    n:'Accra Afrobeats',
-    bpm:104,
-    root:174.61, // F
-    bell:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-    kick:[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0], // Log drum style
-    snare:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],
-    bass:[0,,0,,,3,,,5,,,3,,,2,],
-    lead:[,12,,,15,,12,,,19,,,17,,15,]
-  },
-  gospel:{
-    n:'Accra Praise & Joy',
-    bpm:115,
-    root:261.63, // C
-    bell:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-    kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-    snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-    bass:[0,,,,4,,,,5,,,,2,,,,],
-    lead:[12,,16,,19,,21,,19,,16,,12,,14,]
-  }
+  highlife:{n:'Palm-Wine Highlife',bpm:108,root:220,bell:[1,0,1,1,0,1,0,1,1,0,1,0,1,0,1,0],kick:[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],bass:[0,,,,5,,,,7,,,,5,,,,],lead:[12,,16,,19,,16,,14,,17,,21,,17,]},
+  kpanlogo:{n:'Coastal Kpanlogo Drum',bpm:112,root:196,bell:[1,0,0,1,0,0,1,0,0,1,0,1,0,0,1,0],kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],bass:[0,,,2,,,3,,,5,,,3,,,],lead:[7,,12,,14,,12,,10,,12,,14,,12,]},
+  afrobeats:{n:'Accra Afrobeats',bpm:104,root:174.61,bell:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],kick:[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],snare:[0,0,0,0,1,0,0,1,0,0,0,0,1,0,0,0],bass:[0,,0,,,3,,,5,,,3,,,2,],lead:[,12,,,15,,12,,,19,,,17,,15,]},
+  gospel:{n:'Accra Praise & Joy',bpm:115,root:261.63,bell:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],kick:[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],bass:[0,,,,4,,,,5,,,,2,,,,],lead:[12,,16,,19,,21,,19,,16,,12,,14,]}
  };
 
  function audioOn(){
@@ -147,12 +175,9 @@
   const sd=60/P.bpm/4;
   while(AU.next<AU.ctx.currentTime+.15){
    const i=AU.step%16,t=AU.next;
-   // Ghanaian Cowbell / Gankogui synth sound
    if(P.bell&&P.bell[i]) voice(t,'triangle',i%4===0?880:1200,0,.08,.2);
-   // Traditional percussion
    if(P.kick&&P.kick[i]) voice(t,'sine',120,40,.18,.9);
    if(P.snare&&P.snare[i]) hit(t,1400,.12,.45,'bandpass');
-   // Bassline & Lead
    if(P.bass&&P.bass[i]!=null) voice(t,'triangle',P.root/2*Math.pow(2,P.bass[i]/12),0,.25,.5);
    if(P.lead&&P.lead[i]!=null) voice(t,'square',P.root*Math.pow(2,P.lead[i]/12),0,.18,.12);
    AU.next+=sd;AU.step++;
@@ -160,6 +185,7 @@
  }
 
  function playSt(k,v){
+  stopLiveRadio();
   if(!STN[k]||!audioOn())return;
   AU.key=k;
   if(v!=null){AU.vol=v;AU.master.gain.value=v}
@@ -172,13 +198,13 @@
  window.ACCRA_AUDIO={
   play:playSt,
   stop:stopSt,
-  volume:v=>{AU.vol=v;if(AU.master)AU.master.gain.value=v},
+  volume:v=>{AU.vol=v;if(AU.master)AU.master.gain.value=v;if(liveAudio)liveAudio.volume=v},
   now:()=>AU.key,
   unlock:()=>audioOn()
  };
 
  // ---------- APPS ----------
- const APPS=[['bank','💰','Bank','#2e7d32'],['map','🗺️','Map','#1e88e5'],['jobs','💼','Jobs','#6d4c41'],['cam','📷','Camera','#546e7a'],['msg','💬','Messages','#00897b'],['mart','🛍️','JOLLY MART','#1565c0'],['cedi','👛','CEDIPAY','#16a34a'],['jam','🎵','JAMBOX GH','#7c4dff'],['set','⚙️','Settings','#37474f']];
+ const APPS=[['bank','💰','Bank','#2e7d32'],['map','🗺️','Map','#1e88e5'],['jobs','💼','Jobs','#6d4c41'],['cam','📷','Camera','#546e7a'],['msg','💬','Messages','#00897b'],['mart','🛍️','JOLLY MART','#1565c0'],['cedi','👛','CEDIPAY','#16a34a'],['radio','📻','RADIO','#d97706'],['jam','🎵','JAMBOX GH','#7c4dff'],['set','⚙️','Settings','#37474f']];
  let tab='home',stack=[],shots=[];
 
  const txs=()=>S.tx.slice(0,8).map(x=>'<div class="cd tx"><span>'+esc(x.w)+'</span><b class="'+(x.d>0?'up':'dn')+'">'+(x.d>0?'+':'')+x.d+'</b></div>').join('')||'<div class="cd">No transactions yet</div>';
@@ -190,7 +216,8 @@
   jobs:()=>'<div class="cd"><b>🏍️ Delivery rider</b><br><small>Pick up a package in one district and deliver it to another.</small><br>'+(job?'<small>Active: deliver to '+esc(job.b.n)+' · GH₵'+job.pay+'</small><br><button class="bt" data-do="cancel">Cancel</button>':'<button class="bt" data-do="deliv">Start delivery</button>')+'</div>',
   cam:()=>'<button class="bt" data-do="shot">📸 Take photo</button>'+shots.map(x=>'<img src="'+x+'">').join(''),
   msg:()=>{const h=AL.length?AL.map(a=>'<div class="cd">'+esc(a.m)+'</div>').join('')+'<button class="bt" data-do="clr">Clear all</button>':'<div class="cd">No alerts.</div>';AL.forEach(a=>a.u=0);saveAl();setTimeout(badges,0);return h},
-  jam:()=>'<div class="cd"><small><b>Ghana Cultural Sound System</b><br>Offline, zero-blocking high quality traditional rhythms & Highlife beats.</small></div>'+Object.keys(STN).map(k=>'<div class="cd tx"><span><b>'+STN[k].n+'</b><br><small>'+STN[k].bpm+' BPM</small></span><button class="bt" data-st="'+k+'">'+(AU.key===k?'■ Stop':'▶ Play')+'</button></div>').join('')+'<div class="cd"><small>Volume</small><input type="range" min="0" max="100" value="'+Math.round(AU.vol*100)+'" data-vol="1"></div>',
+  radio:()=>'<div class="cd"><small>Tune in to live radio streams from Accra while exploring.</small></div>'+STATIONS.map(s=>'<div class="cd tx"><span><b>'+s.n+'</b></span><button class="bt" data-radio="'+s.u+'" data-name="'+s.n+'">'+(currentStation===s.n?'■ Stop':'▶ Listen')+'</button></div>').join('')+'<div class="cd"><small>Volume</small><input type="range" min="0" max="100" value="'+Math.round(AU.vol*100)+'" data-vol="1"></div>',
+  jam:()=>'<div class="cd"><small><b>Ghana Cultural Sound System</b><br>Offline Highlife & traditional Ghanaian rhythms.</small></div>'+Object.keys(STN).map(k=>'<div class="cd tx"><span><b>'+STN[k].n+'</b><br><small>'+STN[k].bpm+' BPM</small></span><button class="bt" data-st="'+k+'">'+(AU.key===k?'■ Stop':'▶ Play')+'</button></div>').join('')+'<div class="cd"><small>Volume</small><input type="range" min="0" max="100" value="'+Math.round(AU.vol*100)+'" data-vol="1"></div>',
   set:()=>'<div class="cd tx"><span>Shadows</span><button class="bt" data-do="shd">'+(sun.shadowEnabled?'On':'Off')+'</button></div>'
  };
 
@@ -205,10 +232,11 @@
  
  btn.onclick=()=>open(!ph.classList.contains('on'));$('pcl').onclick=()=>open(false);$('phm').onclick=()=>{tab='home';stack=[];render()};$('pbk').onclick=()=>{tab=stack.pop()||'home';render()};
  
- ph.addEventListener('input',e=>{if(e.target.dataset.vol){const v=e.target.value/100;AU.vol=v;if(AU.master)AU.master.gain.value=v}});
- ph.addEventListener('click',e=>{const b=e.target.closest('[data-app],[data-do],[data-go],[data-buy],[data-st]');if(!b)return;const d=b.dataset;
+ ph.addEventListener('input',e=>{if(e.target.dataset.vol){const v=e.target.value/100;AU.vol=v;if(AU.master)AU.master.gain.value=v;if(liveAudio)liveAudio.volume=v}});
+ ph.addEventListener('click',e=>{const b=e.target.closest('[data-app],[data-do],[data-go],[data-buy],[data-st],[data-radio]');if(!b)return;const d=b.dataset;
   if(d.app)go(d.app);
   else if(d.go!==undefined){setNav(ALLD()[+d.go]);toast('Route set.');open(false);return}
+  else if(d.radio){playLiveRadio(d.radio, d.name)}
   else if(d.st){if(AU.key===d.st)stopSt();else playSt(d.st)}
   else if(d.do==='dep'){if(S.money<20)toast('Not enough cash.');else{S.money-=20;S.sav+=20;save();paint()}}
   else if(d.do==='wd'){if(S.sav<20)toast('Savings too low.');else{S.sav-=20;S.money+=20;save();paint()}}
