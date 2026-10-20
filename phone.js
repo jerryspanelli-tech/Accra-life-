@@ -41,14 +41,20 @@
  if(navigator.getBattery)navigator.getBattery().then(b=>{const u=()=>{$('pbat').textContent='🔋'+Math.round(b.level*100)+'%'};u();b.addEventListener('levelchange',u)}).catch(()=>{});
 
  // ---------- DESTINATIONS ----------
- const XS=[-110,-35,35,110],D={};DG.forEach((row,i)=>row.forEach((n,j)=>{(D[n]=D[n]||[]).push([XS[i],XS[j]])}));
+ const XS=[-110,-35,35,110],D={};
+ if (typeof DG !== 'undefined') {
+   DG.forEach((row,i)=>row.forEach((n,j)=>{(D[n]=D[n]||[]).push([XS[i],XS[j]])}));
+ }
  const DEST=Object.entries(D).map(([n,a])=>({n,x:a.reduce((s,p)=>s+p[0],0)/a.length,z:a.reduce((s,p)=>s+p[1],0)/a.length}));
- DEST.push({n:'Your villa',x:VX,z:VZ});DEST.push({n:'Accra Mall',x:35,z:22});DEST.push({n:'Sports Stadium',x:110,z:35});DEST.push({n:'Police Department',x:35,z:82});DEST.push({n:'Accra Hospital',x:110,z:82});DEST.push({n:'Accra Motors (cars)',x:35,z:-52});
- const ALLD=()=>DEST.concat(window.ACCRA_DEST_EXTRA||[]),fd=n=>n>=1000?(n/1000).toFixed(1)+' km':n+' m',pos=()=>(driving?car:player).position,dist=d=>Math.round(Math.hypot(d.x-pos().x,d.z-pos().z));
+ const VX_VAL = typeof VX !== 'undefined' ? VX : 110, VZ_VAL = typeof VZ !== 'undefined' ? VZ : -95;
+ DEST.push({n:'Your villa',x:VX_VAL,z:VZ_VAL});DEST.push({n:'Accra Mall',x:35,z:22});DEST.push({n:'Sports Stadium',x:110,z:35});DEST.push({n:'Police Department',x:35,z:82});DEST.push({n:'Accra Hospital',x:110,z:82});DEST.push({n:'Accra Motors (cars)',x:35,z:-52});
+ const ALLD=()=>DEST.concat(window.ACCRA_DEST_EXTRA||[]),fd=n=>n>=1000?(n/1000).toFixed(1)+' km':n+' m',pos=()=>(typeof driving !== 'undefined' && driving ? car : player).position,dist=d=>Math.round(Math.hypot(d.x-pos().x,d.z-pos().z));
  let nav=null,job=null;
  const bm=BABYLON.MeshBuilder.CreateCylinder('bc',{height:70,diameter:3},scene);bm.material=Object.assign(new BABYLON.StandardMaterial('bcm',scene),{emissiveColor:C3('#c9a54a'),disableLighting:true,alpha:.35,fogEnabled:false});bm.isPickable=false;bm.setEnabled(false);
  function setNav(d){nav=d;bm.setEnabled(!!d);if(d)bm.position.set(d.x,35,d.z);navp.style.display=d?'block':'none'}
 
+ // FIXED: Declared clk variable here!
+ let clk=0;
  scene.onBeforeRenderObservable.add(()=>{
   if(++clk%30===0&&ph.classList.contains('on')){$('ptm2').textContent=new Date().toTimeString().slice(0,5);$('psg').textContent=bars()}
   if(!nav)return;const m=dist(nav);navp.textContent='➤ '+nav.n+' · '+fd(m);
@@ -57,7 +63,7 @@
    else if(job&&job.stage===1&&n===job.b){const p=job.pay;add(p,'Delivery to '+job.b.n);toast('Delivered! +GH₵'+p);job=null}
    else toast('You have arrived: '+n.n)}});
 
- // ---------- LIVE RADIO STREAMING ENGINE (MOBILE UNLOCKED) ----------
+ // ---------- LIVE RADIO STREAMING ENGINE ----------
  const STATIONS=[
   {n:'Joy FM 99.7 (Accra)', u:'https://stream.zeno.fm/f3wvbb75zquuv'},
   {n:'Peace FM 104.3 (Accra)', u:'https://stream.zeno.fm/0r0xa7f7zquuv'},
@@ -69,7 +75,7 @@
  window.addEventListener('pointerdown', function unlockAudio() {
   if (!mobileAudioUnlocked) {
     liveAudio = new Audio();
-    liveAudio.play().catch(()=>{}); // Mobile audio engine warmup
+    liveAudio.play().catch(()=>{}); 
     mobileAudioUnlocked = true;
     window.removeEventListener('pointerdown', unlockAudio);
   }
@@ -84,7 +90,7 @@
  }
 
  function playLiveRadio(url, name){
-  stopSt(); // Stop Jambox if playing
+  stopSt(); 
   if(currentStation === name){
     stopLiveRadio();
     toast('Radio stopped');
@@ -105,7 +111,6 @@
       toast('📡 Playing ' + name);
       if(tab==='radio') render();
     }).catch(()=>{
-      // CORS/HTTP Proxy Fallback
       const proxiedUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
       liveAudio.src = proxiedUrl;
       liveAudio.play().then(()=>{
