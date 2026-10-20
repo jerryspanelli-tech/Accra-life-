@@ -117,7 +117,7 @@
       // toll barriers lift when you pay
       if (L.driving) TOLLS.forEach(P => { if (!P.arms) return; const d = Math.abs(car.position.z - (P.z - 8)); const near2 = d < 14 && Math.abs(car.position.x - hx(P.z)) < 14;
         if (near2 && !(P.until > st.play)) { if (cash() >= P.fee) { pay(P.fee, P.n); P.until = st.play + 8; note(P.n + ": GH\u00A2" + P.fee + " paid. Safe travels!"); } else if (!P.warn || P.warn < st.play) { P.warn = st.play + 5; note(P.n + " costs GH\u00A2" + P.fee + ". Not enough cash."); } }
-        P.arms.forEach(a => { const up = P.until > st.play; a.position.y += ((up ? 5 : 1.2) - a.position.y) * .12; a.checkCollisions = !up; }); });
+        /* barrier arms are lifted by accra-toll.js */ });
     });
 
     // ---------- 3. intercity buses (fast travel): the stop list and fares ----------

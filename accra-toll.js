@@ -77,6 +77,21 @@
         P.arms.push(a); list.push(a);
       });
 
+      // lift every barrier arm together for 8 seconds after each payment, then lower them all
+      // (P.until changes when the fee is paid, so this does not depend on driving)
+      const gate = { last: P.until, openAt: 0, obs: null };
+      gate.obs = scene.onBeforeRenderObservable.add(() => {
+        if (!P.arms || !P.arms.length) return;
+        if (P.arms.every(a => a.isDisposed())) { scene.onBeforeRenderObservable.remove(gate.obs); return; }
+        if (P.until !== gate.last) { gate.last = P.until; if (P.until) gate.openAt = performance.now() + 8000; }
+        const open = performance.now() < gate.openAt;
+        P.arms.forEach(a => {
+          if (a.isDisposed()) return;
+          a.position.y += ((open ? 5 : 1.2) - a.position.y) * .15;
+          a.checkCollisions = !open;
+        });
+      });
+
       // Ghana flags on poles at each side of the plaza, and a billboard
       [-19, 19].forEach(o => {
         list.push(mk(.18, 9, .18, x + o, 4.5, z - 8, "#9a9a96", th));
