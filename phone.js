@@ -1,4 +1,4 @@
-// phone.js - Accra Life smartphone: Bank, Map, Jobs, Camera, Accra Vibe, Messages, VYBA, CHIRP, LOOP, PING, JOLLY MART, CEDIPAY, JAMBOX, RADIO, Settings
+// phone.js - Accra Life smartphone: Bank, Map, Jobs, Camera, Accra Vibe, Messages, VYBA, CHIRP, LOOP, PING, JOLLY MART, CEDIPAY, RADIO, JAMBOX, Settings
 (function(){
  const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let S={money:200,sav:0,tx:[]};try{S=Object.assign(S,JSON.parse(localStorage.getItem('accra-bb-save')))}catch(e){}
@@ -54,26 +54,34 @@
    
  // ---------- REAL RADIO STREAMING & JAMBOX ----------
  const STATIONS=[
-  {n:'Joy FM 99.7 (Accra)', u:'https://stream.zeno.fm/f3wvbb75zquuv'},
-  {n:'Peace FM 104.3 (Accra)', u:'https://stream.zeno.fm/0r0xa7f7zquuv'},
-  {n:'Adom FM 106.3 (Accra)', u:'https://stream.zeno.fm/9hx87e7zquuv'},
-  {n:'Citi FM 97.3 (Accra)', u:'https://stream.zeno.fm/g3w8bb75zquuv'}
+  {n:'Joy FM 99.7 (Accra)', u:'https://icecast.gcis.co.za/proxy/joyfm?mp=/stream'},
+  {n:'Peace FM 104.3 (Accra)', u:'https://stream-155.zeno.fm/0r0xa7f7zquuv'},
+  {n:'Adom FM 106.3 (Accra)', u:'https://live.amemedia.org/stream/adomfm'},
+  {n:'Citi FM 97.3 (Accra)', u:'https://audio.citifmonline.com/stream'}
  ];
  let liveAudio=null,currentStation=null;
+
+ function stopLiveRadio(){if(liveAudio){liveAudio.pause();liveAudio=null;currentStation=null}}
+ function playLiveRadio(url,name){
+  stopSt(); // Stop Jambox if playing
+  if(liveAudio && currentStation === name){stopLiveRadio();toast('Radio stopped');if(tab==='radio')render();return}
+  stopLiveRadio();
+  toast('Connecting to ' + name + '...');
+  liveAudio=new Audio();
+  liveAudio.crossOrigin='anonymous';
+  liveAudio.volume=AU.vol;
+  liveAudio.src=url;
+  liveAudio.play().then(()=>{currentStation=name;toast('Playing '+name);if(tab==='radio')render()}).catch(e=>{
+    toast('Stream blocked/unavailable. Try JAMBOX music!');
+    liveAudio=null;currentStation=null;if(tab==='radio')render();
+  });
+ }
 
  const AU={ctx:null,master:null,sg:null,timer:null,step:0,next:0,vol:.6,key:null,noise:null};let OUT=null;
  const STN={highlife:{n:'Highlife Sunrise',bpm:108,root:196,kick:[1,0,0,0,0,0,1,0,1,0,0,0,0,0,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],hat:[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],bass:[0,,,,5,,,,7,,,,5,,,,],lead:[12,,16,,19,,16,,14,,17,,21,,17,]},
   afro:{n:'Afro Groove',bpm:102,root:175,kick:[1,0,0,1,0,0,1,0,0,0,1,0,0,1,0,0],snare:[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1],hat:[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],bass:[0,,0,,,3,,,5,,,3,,,2,],lead:[,12,,,15,,12,,,19,,,17,,15,]},
   chill:{n:'Accra FM Chill',bpm:78,root:196,kick:[1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],snare:[],hat:[0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0],bass:[0,,,,,,,,-3,,,,,,,],lead:[12,,,,16,,,,19,,,,16,,,]}};
  
- function stopLiveRadio(){if(liveAudio){liveAudio.pause();liveAudio=null;currentStation=null}}
- function playLiveRadio(url,name){
-  stopSt(); // Stop Jambox if playing
-  if(liveAudio){stopLiveRadio();toast('Radio stopped');if(tab==='radio')render();return}
-  liveAudio=new Audio(url);liveAudio.crossOrigin='anonymous';liveAudio.volume=AU.vol;
-  liveAudio.play().then(()=>{currentStation=name;toast('Playing '+name);if(tab==='radio')render()}).catch(e=>{toast('Station failed to stream');liveAudio=null});
- }
-
  function audioOn(){if(!AU.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return false;AU.ctx=new C();AU.master=AU.ctx.createGain();AU.master.gain.value=AU.vol;AU.master.connect(AU.ctx.destination);AU.sg=AU.ctx.createGain();AU.sg.gain.value=.9;AU.sg.connect(AU.ctx.destination);
    const b=AU.ctx.createBuffer(1,AU.ctx.sampleRate*.3,AU.ctx.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;AU.noise=b}
   if(AU.ctx.state==='suspended')AU.ctx.resume();return true}
