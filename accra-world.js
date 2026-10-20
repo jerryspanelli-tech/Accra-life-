@@ -113,7 +113,7 @@
         for (let x = cx - 3; x <= cx + 3; x++) for (let z = cz - 3; z <= cz + 3; z++) if (near(x, z)) { want.add(x + "," + z); request(x, z); }
         for (const k of [...chunks.keys()]) if (!want.has(k)) drop(k);
       }
-      const t0 = performance.now(); while (queue.length && performance.now() - t0 < 4) queue.shift()();
+      const t0 = performance.now(); while (queue.length && performance.now() - t0 < 8) queue.shift()();
       // toll barriers lift when you pay
       if (L.driving) TOLLS.forEach(P => { if (!P.arms) return; const d = Math.abs(car.position.z - (P.z - 8)); const near2 = d < 14 && Math.abs(car.position.x - hx(P.z)) < 14;
         if (near2 && !(P.until > st.play)) { if (cash() >= P.fee) { pay(P.fee, P.n); P.until = st.play + 8; note(P.n + ": GH\u00A2" + P.fee + " paid. Safe travels!"); } else if (!P.warn || P.warn < st.play) { P.warn = st.play + 5; note(P.n + " costs GH\u00A2" + P.fee + ". Not enough cash."); } }
