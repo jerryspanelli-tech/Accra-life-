@@ -26,8 +26,14 @@
         const holder = new BABYLON.TransformNode("carmodel", scene);
         holder.parent = car; holder.rotation.y = CAR_YAW;
         root.parent = holder;
-        root.scaling.setAll(s);
-        root.position.set(-(bb.min.x + bb.max.x) / 2 * s, -.8 - bb.min.y * s, -(bb.min.z + bb.max.z) / 2 * s);
+        // length matches a real car, and the height is squashed to a real car height (about 1.45 m), so it stands on the road
+        const hgt = Math.max(bb.max.y - bb.min.y, .001), sy = Math.min(s, 1.45 / hgt);
+        root.scaling.set(s, sy, s);
+        root.position.set(-(bb.min.x + bb.max.x) / 2 * s, -.8 - bb.min.y * sy, -(bb.min.z + bb.max.z) / 2 * s);
+        // the model came in grey: give every part a proper car colour
+        root.getChildMeshes().forEach(m => {
+          if (m.material) { m.material.diffuseColor = BABYLON.Color3.FromHexString("#b3202e"); m.material.specularColor = new BABYLON.Color3(.4, .4, .4); }
+        });
         fallback.dispose();
         window.ACCRA_CARSKIN = holder;
         if (window.ACCRA_LIFE) window.ACCRA_LIFE.api.note("Car model loaded");
