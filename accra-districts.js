@@ -102,6 +102,19 @@
       box(w * .7, .3, d * .65, cx, h + .15, cz, "#8f9296", false);                           // tin roof
     }
 
+    // ----- landmark areas: the districts must not build inside them (they have their own buildings) -----
+    const LANDMARK_ZONES = [
+      { n: "mall", x1: 4, x2: 66, z1: 4, z2: 66 },            // Accra Mall (Makola)
+      { n: "pub", x1: -142, x2: -74, z1: -70, z2: -22 },      // The Accra Vibes Pub, its VIP lodge and car park
+      { n: "police", x1: 14, x2: 56, z1: 80, z2: 116 },       // Police Department
+      { n: "hospital", x1: 82, x2: 140, z1: 78, z2: 124 },    // Accra Hospital
+      { n: "stadium", x1: 78, x2: 142, z1: 2, z2: 68 },       // Sports Stadium
+      { n: "dealership", x1: 12, x2: 58, z1: -54, z2: -16 },  // Accra Motors
+      { n: "amoamah", x1: 78, x2: 142, z1: -64, z2: -6 },     // Amoamah Estate plots (own houses)
+      { n: "villa", x1: VX - 26, x2: VX + 26, z1: VZ - 26, z2: VZ + 26 }
+    ];
+    const inLandmark = (x, z) => LANDMARK_ZONES.some(a => x > a.x1 && x < a.x2 && z > a.z1 && z < a.z2);
+
     // ----- 4. build each district -----
     const pitch = { "Airport City": 26, "Osu": 16, "Makola": 10, "East Legon": 28, "Central Accra": 30, "Labadi": 16, "Amoamah Estate": 24 };
     let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
@@ -112,6 +125,7 @@
       for (let x = x0 + p / 2; x <= x1 - p / 2; x += p) for (let z = z0 + p / 2; z <= z1 - p / 2; z += p) {
         const lx1 = x - p / 2 + 1, lx2 = x + p / 2 - 1, lz1 = z - p / 2 + 1, lz2 = z + p / 2 - 1;
         if (Math.hypot(x - VX, z - VZ) < 26) continue;                          // keep the villa plot free
+        if (inLandmark(x, z)) continue;                                         // landmarks build their own buildings
         if (taken(lx1, lx2, lz1, lz2)) continue;
         const cx = x, cz = z;
         if (name === "Airport City") tower(cx, cz, p * .6, p * .6, rnd);
