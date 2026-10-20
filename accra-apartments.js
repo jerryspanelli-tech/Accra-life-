@@ -48,11 +48,13 @@
       const head = K.ttl("\uD83C\uDFE2 Apartment Agency") + "<small>Cash GH\u00A2" + K.cash().toLocaleString() + ". Deposit = two months' rent when you move in.</small>";
       const curLine = cur
         ? '<div style="margin:6px 0;padding:6px 8px;border-radius:10px;background:rgba(201,165,74,.18)"><b>You live at: ' + cur.name + "</b><br><small>Rent GH\u00A2" + cur.rent.toLocaleString() + " each game month. Next rent in " + Math.max(0, Math.ceil((home.paidUntil - Date.now()) / 60000)) + " min.</small></div>" +
+          '<button data-lock="1" style="' + K.BS + '">' + (isLocked(home.stars) ? "\uD83D\uDD13 Unlock door" : "\uD83D\uDD12 Lock door") + '</button>' +
           '<button data-leave="1" style="' + K.BS + '">Give up this apartment</button>'
         : "<small>You do not have an apartment yet.</small>";
       const rows = TIERS.map(t => '<button data-tier="' + t.stars + '" style="' + K.BS + '">' + stars(t.stars) + " " + t.name + "<br><small>" + price(t) + " a month \u00B7 " + t.beds + "</small></button>").join("");
       K.show(head + curLine + rows + CLOSE, d => {
         if (d.x) return K.hide();
+        if (d.lock) { if (!home) return K.note("You have no apartment."); setLocked(home.stars, !isLocked(home.stars)); K.note(isLocked(home.stars) ? "Door locked" : "Door unlocked"); return menu(); }
         if (d.leave) { if (!home) return K.note("You have no apartment."); home = null; save(null); K.note("You gave up your apartment."); return menu(); }
         if (d.tier) return details(+d.tier);
       });
@@ -77,6 +79,106 @@
           if (window.ACCRA_NOTIFY) window.ACCRA_NOTIFY("You moved into the " + t.name + ". Rent is GH\u00A2" + t.rent + " a month.", "home");
         }
       });
+    }
+
+    // ----- the five apartment buildings, built on free land west of the city (x -196, z -120 to -32) -----
+    // each building: its own height and colour, a sign with its name, floors, windows, balconies, gate and entrance
+    const SITE_X = -196, Z0 = -120, PITCH = 22;
+    const BUILD = [
+      { tier: 5, h: 24, floors: 6, col: "#d6cfc4", roof: "#3a3f48", sign: "ACCRA SKYLINE", sub: "Luxury Apartments", pool: true },
+      { tier: 4, h: 20, floors: 5, col: "#e8e0d0", roof: "#4a4f58", sign: "OCEAN VIEW", sub: "Apartments", pool: false },
+      { tier: 3, h: 16, floors: 4, col: "#e0cfb4", roof: "#5a4c3e", sign: "RIVERSIDE", sub: "Apartments", pool: false },
+      { tier: 2, h: 12, floors: 3, col: "#c8553d", roof: "#7a3428", sign: "SUNSET", sub: "Apartments", pool: false },
+      { tier: 1, h: 8, floors: 2, col: "#7fa6c4", roof: "#5a6b78", sign: "COMMUNITY", sub: "Apartments", pool: false }
+    ];
+    const signTex = (t, sub) => {
+      const dt = new B.DynamicTexture("apt_sign_" + t, { width: 512, height: 160 }, scene, false), c = dt.getContext();
+      c.fillStyle = "#17191c"; c.fillRect(0, 0, 512, 160);
+      c.fillStyle = "#ffffff"; c.font = "bold 58px system-ui"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(t, 256, 60, 490);
+      c.fillStyle = "#c9a54a"; c.font = "bold 36px system-ui"; c.fillText(sub, 256, 118, 490); dt.update();
+      const m = new B.StandardMaterial("apt_signM_" + t, scene); m.diffuseTexture = dt; m.emissiveTexture = dt; m.disableLighting = true; m.backFaceCulling = false; return m;
+    };
+    BUILD.forEach((b, i) => {
+      const x = SITE_X, z = Z0 + i * PITCH, W = 14, H = b.h;
+      box(W, H, W, x, H / 2, z, b.col, true);                                                  // main block
+      box(W + .8, .5, W + .8, x, H + .25, z, b.roof, false);                                  // roof
+      for (let f = 1; f < b.floors; f++) box(W + .3, .3, W + .3, x, f * H / b.floors, z, "#f4f1ea", false);   // floor bands
+      for (let f = 0; f < b.floors; f++) {                                                    // windows on the front face
+        const y = f * H / b.floors + 1.6;
+        [-4.5, -1.5, 1.5, 4.5].forEach(dx => box(1.6, 1.4, .12, x + dx, y, z + W / 2 + .05, "#1d3042", false));
+        if (b.tier >= 3 && f > 0) box(W - 1, .12, 1.6, x, y - .8, z + W / 2 + .8, "#6d4c2f", false);   // balconies
+      }
+      box(2.6, 2.7, .15, x, 1.35, z + W / 2 + .07, "#3a2a1a", false);                        // entrance door
+      if (b.tier >= 4) {                                                                       // gate and boundary wall
+        box(16, 1.6, .3, x, .8, z + W / 2 + 3, "#e6e0d0", false);
+        [-7.6, 7.6].forEach(dx => box(.8, 2.4, .8, x + dx, 1.2, z + W / 2 + 3, "#c9b79a", false));
+      }
+      if (b.pool) { box(8, .05, 5, x, .06, z - W / 2 - 4, "#46b6d9", false); box(2, 2.2, .4, x + 9, 1.1, z + 2, "#6d4c2f", false); }
+      const sn = B.MeshBuilder.CreatePlane("apt_sign", { width: 12, height: 3.8 }, scene);     // sign on the front
+      sn.position.set(x, H - 3, z + W / 2 + .3); sn.rotation.y = Math.PI; sn.isPickable = false;
+      sn.material = signTex(b.sign, b.sub);
+      K.points.push({ x, z: z + W / 2 + 5, r: 5, t: "\uD83C\uDFE2 " + b.sign + " \u00B7 " + stars(b.tier) + " (" + price(TIERS[b.tier - 1]) + ")", f: () => doorAt(b.tier) });
+    });
+
+    // ----- the lock: your own door can be locked; you need to unlock it to walk in -----
+    const lockState = () => { try { return JSON.parse(localStorage.getItem("accra-apt-lock")) || {}; } catch (e) { return {}; } };
+    const isLocked = n => !!lockState()[n];
+    const setLocked = (n, v) => { const o = lockState(); o[n] = !!v; try { localStorage.setItem("accra-apt-lock", JSON.stringify(o)); } catch (e) {} };
+
+    // ----- the apartments' rooms, built once for each tier, in their own space far to the west -----
+    // room size grows with the tier: 1 star 8 m, 2 star 9 m, 3 star 11 m, 4 star 12 m, 5 star 14 m
+    const ROOM = { 1: 8, 2: 9, 3: 11, 4: 12, 5: 14 };
+    const IX = -720, IZ = -140;                          // interiors sit on their own ground, out of the city
+    const interior = {};
+    function buildRoom(t) {
+      const S = ROOM[t], cx = IX, cz = IZ + (t - 1) * 26, h = 3.2, th = .3;
+      const wall = (x, z, w, d) => box(w, h, d, x, h / 2, z, "#efe9dd", true);
+      box(S, .1, S, cx, .05, cz, "#c9b79a", false);                                    // floor
+      box(S, .1, S, cx, h + .05, cz, "#f7f5f0", false);                                 // ceiling
+      wall(cx, cz - S / 2, S, th);                                                       // back wall
+      wall(cx - S / 2, cz, th, S); wall(cx + S / 2, cz, th, S);                          // side walls
+      const gap = 2.2;                                                                   // front wall with a doorway
+      wall(cx - (S / 2 + gap / 2) / 2, cz + S / 2, (S - gap) / 2, th); wall(cx + (S / 2 + gap / 2) / 2, cz + S / 2, (S - gap) / 2, th);
+      box(gap, .02, .3, cx, .05, cz + S / 2, "#8a8a84", false);
+      const it = (id, x, z, ry) => { K.collider(id, cx + x, cz + z, ry, 1); K.item(id, cx + x, cz + z, ry, false, 1); };
+      const q = S / 4;
+      // living room (front half): sofa, TV, coffee table
+      it("sofa", -q, q, 0); it("tv", -q, -q * .35, Math.PI / 2); it("coffee", 0, q * .3, 0); it("chair", q * 1.3, q * 1.2, -Math.PI / 2);
+      // kitchen (right side)
+      it("counter", S / 2 - 1.2, -q * .5, -Math.PI / 2); it("fridge", S / 2 - 1.1, -q * 1.8, -Math.PI / 2); it("kit2", S / 2 - 1.2, q * .6, -Math.PI / 2);
+      // bedroom (back half): bed(s) and a wardrobe
+      if (t >= 3) { it("bed2", -q * 1.2, -S / 2 + 2.6, 0); it("bed1", q * .9, -S / 2 + 2.6, 0); }
+      else it("bed1", -q * .6, -S / 2 + 2.6, 0);
+      it("wardrobe", -S / 2 + 1.2, -q * 2.4, Math.PI / 2);
+      // bathroom (front-left corner): bathtub and vanity, behind a short wall
+      wall(cx - S / 2 + 2.2, cz + S / 2 - 3.2, 2.2, th);
+      it("bath", -S / 2 + 1.1, S / 2 - 1.6, 0); it("vanity", -S / 2 + 1.2, S / 2 - 3.6, Math.PI / 2);
+      if (t >= 4) { it("fan", q * 1.6, -q * 1.1, 0); it("shelf", S / 2 - 1.0, S / 2 - 1.6, -Math.PI / 2); }
+      // the way out, just inside the front doorway
+      const exitPt = { x: cx, z: cz + S / 2 - 1.4 };
+      interior[t] = { cx, cz, S, exitPt };
+      K.points.push({ x: exitPt.x, z: exitPt.z, r: 1.8, t: "\uD83D\uDEAA Leave apartment", f: () => leave(t) });
+    }
+    const TOP = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 };
+    [1, 2, 3, 4, 5].forEach(buildRoom);
+    function enter(t) {
+      if (!home || home.stars !== t) return K.note("This is not your apartment.");
+      if (isLocked(t)) return K.note("The door is locked. Unlock it from the apartment menu first.");
+      const r = interior[t], L = window.ACCRA_LIFE && window.ACCRA_LIFE.api;
+      K.hide();
+      if (!L) return K.note("Not ready yet.");
+      L.fade(700, () => L.tp(r.exitPt.x, r.exitPt.z - 1.2), () => K.note("Welcome home! Lock the door from the menu when you leave."));
+    }
+    function leave(t) {
+      const b = BUILD[t - 1], L = window.ACCRA_LIFE && window.ACCRA_LIFE.api;
+      if (!L) return;
+      const ox = SITE_X, oz = Z0 + (t - 1) * PITCH + 14 / 2 + 2.5;
+      L.fade(700, () => L.tp(ox, oz), () => K.note("You left " + b.sign + ". " + (isLocked(t) ? "The door is locked." : "The door is unlocked.")));
+    }
+    // the entrance: walk in if it is your apartment, otherwise open the tier details
+    function doorAt(t) {
+      if (home && home.stars === t) { if (isLocked(t)) return K.note("Your door is locked. Unlock it from the apartment menu, then walk in."); return enter(t); }
+      details(t);
     }
 
     // the agency sits on the Makola road, in front of the mall entrance
