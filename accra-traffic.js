@@ -98,6 +98,8 @@
           if (o === c || o.route !== c.route) return;
           let gap = o.d - c.d; if (gap < 0) gap += path.total;
           if (gap < GAP + 6) target = Math.min(target, o.v * (gap < GAP ? .3 : .8));
+          // hard minimum gap: a car that is too close is held back and moved behind the car ahead
+          if (gap < 7) { target = 0; c.v = Math.min(c.v, o.v); c.d = o.d - 7; }
         });
         c.v += (target - c.v) * Math.min(1, dt * 2.5);
         c.d += c.v * dt;

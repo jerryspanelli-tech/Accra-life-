@@ -117,6 +117,7 @@
       const sn = B.MeshBuilder.CreatePlane("apt_sign", { width: 12, height: 3.8 }, scene);     // sign on the front
       sn.position.set(x, H - 3, z + W / 2 + .3); sn.rotation.y = Math.PI; sn.isPickable = false;
       sn.material = signTex(b.sign, b.sub);
+      (window.ACCRA_DEST_EXTRA = window.ACCRA_DEST_EXTRA || []).push({ n: b.sign + " apartments (" + b.tier + " star)", x, z: z + W / 2 + 5 });
       K.points.push({ x, z: z + W / 2 + 5, r: 5, t: "\uD83C\uDFE2 " + b.sign + " \u00B7 " + stars(b.tier) + " (" + price(TIERS[b.tier - 1]) + ")", f: () => doorAt(b.tier) });
     });
 
