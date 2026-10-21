@@ -363,7 +363,8 @@
       if (built[u.id]) return built[u.id];
       const T = TPL[u.tpl], s = u.sz || 1;
       const n = Object.keys(built).length;
-      const sx = -285 + (n % 4) * 35, sz = -285 + Math.floor(n / 4) * 35;
+      // homes are built in the empty land east of the city, well away from the airport
+      const sx = 420 + (n % 4) * 35, sz = -120 + Math.floor(n / 4) * 35;
       const W = T.W * s, D = T.D * s, H = 3.2;
       const hsh = [...u.id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) | 0, 7) >>> 0;
       const WALLS = ["#efe7d2", "#e8d9c0", "#dfe6ea", "#f0dcd0", "#e2e8d8"];
@@ -985,12 +986,12 @@
     const ADMIN_CODE = "ACCRA-ADMIN-2026";
     const TELE = {
       mall: [35, 12], stadium: [110, 12], hospital: [110, 80], police: [35, 80],
-      villa: [VX, VZ + 12], airport: [-60, -66],
+      villa: [VX, VZ + 12], airport: [-375, -244],
       "Labadi beach": [-90, 190], "Amoamah estate": [110, -30],
       "Car dealership": [35, -35], "Gold works": [196, 120], "Stone quarry": [190, -150],
       "Accra North (highway)": [-60, -180], "Nsawam": [-120, -3470],
       "Suhum": [-120, -6470], "Nkawkaw": [-120, -12970],
-      "Konongo": [-120, -18970], "Ejisu": [-760, -22470], "Kumasi (Kejetia)": [-820, -24470]
+      "Konongo": [-120, -18970], "Ejisu": [-2340, -22470], "Kumasi (Kejetia)": [-2400, -24470]
     };
 
     function adminPanel() {
@@ -1136,9 +1137,6 @@
     window.addEventListener("keydown", e => {
       if (e.key === "/" && cmdBox.style.display !== "flex") { e.preventDefault(); openCmd(); }
     });
-
-    window.addEventListener("pagehide", save);
-    document.addEventListener("visibilitychange", () => { if (document.hidden) save(); });
 
     console.log("Accra life loaded:", LISTS.length, "property doors");
     note("Life systems on \u2014 watch your health, energy and hunger");
