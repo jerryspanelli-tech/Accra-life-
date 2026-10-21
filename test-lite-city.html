@@ -24,12 +24,13 @@ const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z),C3
 const engine=new BABYLON.Engine($('c'),true,{adaptToDeviceRatio:true});if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(2);
 if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.5);
 const scene=new BABYLON.Scene(engine);
-sun.shadowEnabled=false;scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);scene.collisionsEnabled=true;
+scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);scene.collisionsEnabled=true;
 const ipc=scene.imageProcessingConfiguration;ipc.toneMappingEnabled=true;ipc.toneMappingType=BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;ipc.exposure=1.05;ipc.contrast=1.15;
 scene.fogMode=BABYLON.Scene.FOGMODE_LINEAR;scene.fogColor=C3('#cfe3f2');scene.fogStart=110;scene.fogEnd=300;
 const hemi=new BABYLON.HemisphericLight('h',V(0,1,0),scene);hemi.intensity=.75;hemi.groundColor=C3('#8d8a80');hemi.diffuse=C3('#dfeeff');
 const sun=new BABYLON.DirectionalLight('s',V(-.5,-1,-.4),scene);sun.intensity=1.3;sun.diffuse=C3('#fff1d6');sun.position=V(40,80,32);sun.autoUpdateExtends=false;sun.shadowMinZ=1;sun.shadowMaxZ=220;sun.orthoLeft=-55;sun.orthoRight=55;sun.orthoTop=55;sun.orthoBottom=-55;
 const sg=new BABYLON.ShadowGenerator(512,sun);sg.usePercentageCloserFiltering=true;sg.bias=.0008;sg.normalBias=.02;sg.darkness=.35;
+sun.shadowEnabled=false;
 const PHONE=/iPhone|iPad|Android/i.test(navigator.userAgent);if(PHONE)sun.shadowEnabled=false;   // phones: no shadows, to save memory
 const mats={};
 const mat=h=>mats[h]||(mats[h]=Object.assign(new BABYLON.StandardMaterial('m'+h,scene),{diffuseColor:C3(h),specularColor:new BABYLON.Color3(.05,.05,.05)}));
