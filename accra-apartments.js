@@ -131,7 +131,7 @@
     const ROOM = { 1: 8, 2: 9, 3: 11, 4: 12, 5: 14 };
     const IX = -720, IZ = -140;                          // interiors sit on their own ground, out of the city
     const interior = {};
-    function buildRoom(t) {
+    function buildRoomMeshes(t) {
       const S = ROOM[t], cx = IX, cz = IZ + (t - 1) * 26, h = 3.2, th = .3;
       const wall = (x, z, w, d) => box(w, h, d, x, h / 2, z, "#efe9dd", true);
       box(S, .1, S, cx, .05, cz, "#c9b79a", false);                                    // floor
@@ -155,26 +155,30 @@
       wall(cx - S / 2 + 2.2, cz + S / 2 - 3.2, 2.2, th);
       it("bath", -S / 2 + 1.1, S / 2 - 1.6, 0); it("vanity", -S / 2 + 1.2, S / 2 - 3.6, Math.PI / 2);
       if (t >= 4) { it("fan", q * 1.6, -q * 1.1, 0); it("shelf", S / 2 - 1.0, S / 2 - 1.6, -Math.PI / 2); }
-      // the way out, just inside the front doorway
-      const exitPt = { x: cx, z: cz + S / 2 - 1.4 };
-      interior[t] = { cx, cz, S, exitPt };
-      K.points.push({ x: exitPt.x, z: exitPt.z, r: 1.8, t: "\uD83D\uDEAA Leave apartment", f: () => leave(t) });
     }
-    const TOP = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 5 };
-    [1, 2, 3, 4, 5].forEach(buildRoom);
+    // the rooms are only planned at startup (cheap). The furniture is built the first time you enter that apartment.
+    const built_ = {};
+    let currentIn = null;
+    [1, 2, 3, 4, 5].forEach(t => {
+      const S = ROOM[t], cx = IX, cz = IZ + (t - 1) * 26, exitPt = { x: cx, z: cz + S / 2 - 1.4 };
+      interior[t] = { cx, cz, S, exitPt };
+      K.points.push({ x: exitPt.x, z: exitPt.z, r: 1.8, t: "\uD83D\uDEAA Leave apartment", ok: () => currentIn === t, f: () => leave(t) });
+    });
+    function ensureRoom(t) { if (!built_[t]) { built_[t] = true; buildRoomMeshes(t); } }
     function enter(t) {
       if (!home || home.stars !== t) return K.note("This is not your apartment.");
       if (isLocked(t)) return K.note("The door is locked. Unlock it from the apartment menu first.");
       const r = interior[t], L = window.ACCRA_LIFE && window.ACCRA_LIFE.api;
       K.hide();
       if (!L) return K.note("Not ready yet.");
-      L.fade(700, () => L.tp(r.exitPt.x, r.exitPt.z - 1.2), () => K.note("Welcome home! Lock the door from the menu when you leave."));
+      ensureRoom(t);
+      L.fade(700, () => { currentIn = t; L.tp(r.exitPt.x, r.exitPt.z - 1.2); }, () => K.note("Welcome home! Lock the door from the menu when you leave."));
     }
     function leave(t) {
       const b = BUILD[t - 1], L = window.ACCRA_LIFE && window.ACCRA_LIFE.api;
       if (!L) return;
       const ox = SITE_X, oz = Z0 + (t - 1) * PITCH + 14 / 2 + 2.5;
-      L.fade(700, () => L.tp(ox, oz), () => K.note("You left " + b.sign + ". " + (isLocked(t) ? "The door is locked." : "The door is unlocked.")));
+      L.fade(700, () => { currentIn = null; L.tp(ox, oz); }, () => K.note("You left " + b.sign + ". " + (isLocked(t) ? "The door is locked." : "The door is unlocked.")));
     }
     // the entrance: walk in if it is your apartment, otherwise open the tier details
     function doorAt(t) {
