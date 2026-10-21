@@ -8,6 +8,7 @@
     if (!L) { console.log("accra-world: life API not ready"); return; }
     const B = BABYLON, { st, cash, pay, note, show, hide, ttl, BS, CLOSE, points, fade, tp } = L;
     const END = -24500, DRIFT = -2400, CH = 256;
+    const HW_START = -260;                                                                 // the highway starts north of the city grid, never across city roads
     const S = t => t * t * (3 - 2 * t);
     const hx = z => DRIFT * S(Math.min(1, Math.max(0, (-z - 165) / (-END - 165))));        // highway centre line x at z
     const slope = z => (hx(z - 8) - hx(z + 8)) / 16;
@@ -21,7 +22,7 @@
     scene.fogStart = 260; scene.fogEnd = 950;
     const mwc = car.moveWithCollisions.bind(car);
     let carF = 1, lx = car.position.x, lz = car.position.z;
-    car.moveWithCollisions = v => { const onHw = car.position.z < -260 && Math.abs(car.position.x - hx(car.position.z)) < 16; carF += ((onHw ? 2.3 : 1) - carF) * .06; return mwc(new B.Vector3(v.x * carF, v.y, v.z * carF)); };
+    car.moveWithCollisions = v => { const onHw = car.position.z < HW_START && Math.abs(car.position.x - hx(car.position.z)) < 16; carF += ((onHw ? 2.3 : 1) - carF) * .06; return mwc(new B.Vector3(v.x * carF, v.y, v.z * carF)); };
     scene.onBeforeRenderObservable.add(() => { const dt = Math.max(engine.getDeltaTime() / 1000, .001), sp = Math.hypot(car.position.x - lx, car.position.z - lz) / dt; lx = car.position.x; lz = car.position.z;
       const el = document.getElementById("spd"); if (L.driving && el && sp < 90) el.textContent = Math.round(sp * 3.6) + " km/h"; });
 
@@ -39,7 +40,7 @@
     function roadTask(z0, list) {
       const surf = [], bars = [];
       for (let z = z0; z > z0 - CH; z -= 64) {
-        if (z - 32 > -150) continue;                               // nothing north of the city avenue is skipped; the city core keeps its own roads
+        if (z - 32 > HW_START) continue;                           // the road only starts north of the city grid
         const zm = z - 32, x = hx(zm), th = -Math.atan(slope(zm)), cs = Math.cos(th), sn = Math.sin(th);
         const add = (arr, w, h, d, ox, y, oz, m) => { const b = mk(w, h, d, x + cs * ox + sn * oz, y, zm - sn * ox + cs * oz, m, th); arr.push(b); };
         add(surf, 20, .08, 66, 0, .05, 0, asphalt); add(surf, .25, .09, 66, -9.7, .06, 0, white); add(surf, .25, .09, 66, 9.7, .06, 0, white);
@@ -48,7 +49,7 @@
       }
       const a = merge(surf, false), b = merge(bars, true); if (a) list.push(a); if (b) list.push(b);
       // distance gantry every 2 km
-      const gz = Math.round((z0 - 128) / 2000) * 2000 - 165; if (gz <= z0 && gz > z0 - CH && gz < -300) {
+      const gz = Math.round((z0 - 128) / 2000) * 2000 - 165; if (gz <= z0 && gz > z0 - CH && gz < HW_START) {
         const x = hx(gz); [-11, 11].forEach(o => list.push(mk(.5, 7.5, .5, x + o, 3.75, gz, "#555")));
         const n = mk(16, 2.4, .2, x, 7, gz, "#555"), s1 = B.MeshBuilder.CreatePlane("gs", { width: 14, height: 2 }, scene), s2 = s1.clone("gs2");
         s1.position.set(x, 7, gz + .15); s1.rotation.y = Math.PI; s1.material = gantryTex("KUMASI " + Math.max(0, 250 - realKm(gz)) + " km"); s2.position.set(x, 7, gz - .15); s2.material = gantryTex("ACCRA " + realKm(gz) + " km");
@@ -57,7 +58,7 @@
     }
     function propsTask(cx, cz, list) {       // trees, fields and farmhouses beside the road
       const r = rng(hash(cx, cz, 7)), farm = cz * CH < -7000 && cz * CH > -17000;
-      for (let i = 0; i < (farm ? 7 : 16); i++) { const z = cz * CH + r() * CH; if (z > -160) continue; const side = r() < .5 ? -1 : 1, x = hx(z) + side * (16 + r() * 70);
+      for (let i = 0; i < (farm ? 7 : 16); i++) { const z = cz * CH + r() * CH; if (z > HW_START) continue; const side = r() < .5 ? -1 : 1, x = hx(z) + side * (16 + r() * 70);
         if (TOWNS.some(t => Math.hypot(x - t.x, z - t.z) < t.R + 30)) continue;
         const t = treeSrc.createInstance("tr"); t.position.set(x, 0, z); t.scaling.setAll(.8 + r() * .8); t.isPickable = false; list.push(t); }
       if (farm) for (let i = 0; i < 3; i++) { const z = cz * CH + 30 + r() * (CH - 60), side = r() < .5 ? -1 : 1, x = hx(z) + side * (50 + r() * 60);
@@ -74,7 +75,6 @@
         const h = T.big === 2 ? 8 + r() * (Math.hypot(i, j) < 3 ? 40 : 14) : 4 + r() * 8, w = 14 + r() * 8, d = 14 + r() * 8, col = P[Math.floor(r() * P.length)];
         const b = B.MeshBuilder.CreateBox("tb", { width: w, height: h, depth: d }, scene); b.position.set(x, h / 2, z); b.material = facMat(col, Math.max(1, Math.round(h / 6)), Math.max(1, Math.round(w / 7))); b.checkCollisions = true; b.isPickable = false; list.push(b);
         list.push(mk(w + .6, .5, d + .6, x, h + .25, z, "#7b4b33")); }
-      const clip = (a0, a1) => [Math.max(a0, 0), Math.min(a1, 0)];
       // town streets: one north-south and one east-west, plus a link road to the highway
       const ns0 = Math.max(T.z - T.R, z0), ns1 = Math.min(T.z + T.R, z0 + CH); if (T.x >= x0 - 6 && T.x < x0 + CH + 6 && ns1 > ns0) list.push(mk(10, .06, ns1 - ns0, T.x, .06, (ns0 + ns1) / 2, asphalt));
       const ew0 = Math.max(T.x - T.R, x0), ew1 = Math.min(T.x + T.R, x0 + CH); if (T.z >= z0 - 6 && T.z < z0 + CH + 6 && ew1 > ew0) list.push(mk(ew1 - ew0, .06, 10, (ew0 + ew1) / 2, .06, T.z, asphalt));
@@ -93,7 +93,7 @@
     }
 
     const chunks = new Map(), queue = [];
-    const near = (cx, cz) => { const zc = cz * CH + CH / 2; if (zc > -120) return false; if (zc < END - 400) return false; const hxc = hx(zc);
+    const near = (cx, cz) => { const zc = cz * CH + CH / 2; if (zc > HW_START) return false; if (zc < END - 400) return false; const hxc = hx(zc);
       return Math.abs(cx * CH + CH / 2 - hxc) < CH + 120 || TOWNS.some(t => Math.abs(cx * CH + CH / 2 - t.x) < t.R + CH && Math.abs(zc - t.z) < t.R + CH); };
     function request(cx, cz) {
       const k = cx + "," + cz; if (chunks.has(k)) return; const list = []; chunks.set(k, list);
