@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>Minimal test</title>
+<style>html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee}#c{position:fixed;inset:0;width:100%;height:100%}#msg{position:fixed;top:10px;left:10px;right:10px;color:#fff;background:#222;padding:8px;font:14px system-ui;border-radius:8px}</style>
+</head><body>
+<canvas id="c"></canvas>
+<div id="msg">Loading engine…</div>
+<script>
+window.addEventListener('error',e=>{document.getElementById('msg').style.background='#800';document.getElementById('msg').textContent='ERROR: '+e.message+' (line '+e.lineno+')'});
+</script>
+<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script>
+const msg=document.getElementById('msg');
+try{
+  const engine=new BABYLON.Engine(document.getElementById('c'),true);
+  const scene=new BABYLON.Scene(engine);
+  scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);
+  const cam=new BABYLON.ArcRotateCamera('cam',-Math.PI/2,1.1,10,BABYLON.Vector3.Zero(),scene);
+  cam.attachControl(document.getElementById('c'),true);
+  new BABYLON.HemisphericLight('h',new BABYLON.Vector3(0,1,0),scene);
+  const g=BABYLON.MeshBuilder.CreateGround('g',{width:40,height:40},scene);
+  g.material=new BABYLON.StandardMaterial('gm',scene);g.material.diffuseColor=BABYLON.Color3.FromHexString('#6f9448');
+  const b=BABYLON.MeshBuilder.CreateBox('b',{size:2},scene);b.position.y=1;
+  engine.runRenderLoop(()=>scene.render());
+  addEventListener('resize',()=>engine.resize());
+  msg.textContent='Engine running: ground and box should show';
+  setTimeout(()=>{msg.style.display='none'},4000);
+}catch(err){msg.style.background='#800';msg.textContent='FAILED: '+err.message}
+</script></body></html>
