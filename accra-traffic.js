@@ -93,14 +93,18 @@
         const signal = nj.axis === "ew" ? sig.ew : sig.ns;
         if (nj.dist < STOP_ZONE && nj.dist > 1 && signal === "red") target = 0;
         if (nj.dist < STOP_ZONE && nj.dist > 1 && signal === "yellow" && c.v < 6) target = 0;
-        // gap to the next car on the same loop
+        // car following: find the nearest car ahead on the same loop (distance measured round the loop)
+        let lead = null, lgap = 1e9;
         live.forEach(o => {
           if (o === c || o.route !== c.route) return;
-          let gap = o.d - c.d; if (gap < 0) gap += path.total;
-          if (gap < GAP + 6) target = Math.min(target, o.v * (gap < GAP ? .3 : .8));
-          // hard minimum gap: a car that is too close is held back and moved behind the car ahead
-          if (gap < 7) { target = 0; c.v = Math.min(c.v, o.v); c.d = o.d - 7; }
+          let g = (o.d - c.d) % path.total; if (g < 0) g += path.total;
+          if (g < lgap) { lgap = g; lead = o; }
         });
+        if (lead) {
+          // keep a comfortable gap: slow down as we get closer, stop when too close, never jump
+          if (lgap < 6) target = 0;
+          else target = Math.min(target, Math.max(0, lead.v + (lgap - 6) * 1.1));
+        }
         c.v += (target - c.v) * Math.min(1, dt * 2.5);
         c.d += c.v * dt;
 
