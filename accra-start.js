@@ -1,5 +1,6 @@
 /* accra-start.js - the start screen. The player picks gender, name, skin tone, shirt colour, hairstyle and hat,
- * sees a preview, and presses Start Game. The choice is saved, and the player's figure is rebuilt with it. */
+ * sees a preview, and presses Start Game. The screen closes first, then the figure is rebuilt a moment later,
+ * so the phone does not do two heavy jobs at the same time. */
 (function () {
   try {
     const SKINS = ["#6b4028", "#8d5a3b", "#a8754f", "#c68a5e", "#e0b48a"];
@@ -31,15 +32,16 @@
 
     // preview drawn from the choices
     function drawPreview(cv) {
+      if (!cv) return;
       const c = cv.getContext("2d"); c.clearRect(0, 0, 200, 260);
       const g = c.createLinearGradient(0, 0, 0, 260); g.addColorStop(0, "#cfe6f5"); g.addColorStop(1, "#eaf4fb"); c.fillStyle = g; c.fillRect(0, 0, 200, 260);
       const fem = sel.gender === "female";
-      c.fillStyle = sel.shirtHex; c.fillRect(fem ? 66 : 62, 92, fem ? 68 : 76, 86);                    // torso
-      c.fillStyle = "#15171c"; c.fillRect(70, 176, 26, 40); c.fillRect(104, 176, 26, 40);               // shorts
-      c.fillStyle = sel.skinTone; c.fillRect(70, 214, 22, 30); c.fillRect(108, 214, 22, 30);           // legs
-      c.fillStyle = "#f4f4f2"; c.fillRect(64, 244, 30, 12); c.fillRect(106, 244, 30, 12);             // sneakers
-      c.fillStyle = sel.shirtHex; c.fillRect(46, 96, 14, 70); c.fillRect(140, 96, 14, 70);             // sleeves
-      c.fillStyle = sel.skinTone; c.beginPath(); c.arc(100, 72, 24, 0, Math.PI * 2); c.fill();         // head
+      c.fillStyle = sel.shirtHex; c.fillRect(fem ? 66 : 62, 92, fem ? 68 : 76, 86);
+      c.fillStyle = "#15171c"; c.fillRect(70, 176, 26, 40); c.fillRect(104, 176, 26, 40);
+      c.fillStyle = sel.skinTone; c.fillRect(70, 214, 22, 30); c.fillRect(108, 214, 22, 30);
+      c.fillStyle = "#f4f4f2"; c.fillRect(64, 244, 30, 12); c.fillRect(106, 244, 30, 12);
+      c.fillStyle = sel.shirtHex; c.fillRect(46, 96, 14, 70); c.fillRect(140, 96, 14, 70);
+      c.fillStyle = sel.skinTone; c.beginPath(); c.arc(100, 72, 24, 0, Math.PI * 2); c.fill();
       c.fillStyle = "#1a1410";
       if (sel.hairStyle === "dreads") for (let i = -3; i <= 3; i++) c.fillRect(100 + i * 8 - 2, 88, 4, 28);
       if (sel.hairStyle === "braids") for (let i = -3; i <= 3; i++) c.fillRect(100 + i * 8 - 1, 88, 3, 34);
@@ -84,12 +86,20 @@
     function startGame() {
       const name = (sel.name || "").slice(0, 16) || "Citizen";
       localStorage.setItem("accra-name", name);
-      if (window.ACCRA_AVATAR) {
-        Object.assign(window.ACCRA_AVATAR.look, { gender: sel.gender, skinTone: sel.skinTone, shirtHex: sel.shirtHex, hairStyle: sel.hairStyle, hatStyle: sel.hatStyle });
-        if (window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply();
-      }
+      const look = window.ACCRA_AVATAR && window.ACCRA_AVATAR.look;
+      if (look) Object.assign(look, { gender: sel.gender, skinTone: sel.skinTone, shirtHex: sel.shirtHex, hairStyle: sel.hairStyle, hatStyle: sel.hatStyle });
+      // 1. close the start screen straight away, so the player sees the city
       ov.remove();
-      if (window.ACCRA_LIFE && window.ACCRA_LIFE.api) window.ACCRA_LIFE.api.note("Welcome to Accra, " + name);
+      // 2. rebuild the figure a moment later, in its own step, with errors shown instead of a freeze
+      setTimeout(() => {
+        try {
+          if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply();
+          if (window.ACCRA_LIFE && window.ACCRA_LIFE.api) window.ACCRA_LIFE.api.note("Welcome to Accra, " + name);
+        } catch (err) {
+          console.error("accra-start: figure rebuild failed", err);
+          if (window.ACCRA_LIFE && window.ACCRA_LIFE.api) window.ACCRA_LIFE.api.note("Character step failed: " + (err.message || err));
+        }
+      }, 400);
     }
 
     render();
