@@ -10,11 +10,12 @@
     const S = t => t * t * (3 - 2 * t);
     const hx = z => DRIFT * S(Math.min(1, Math.max(0, (-z - 165) / (-END - 165))));
 
-    const SPACING = 40;
+    const SPACING = 90;             // lights were too close together; now one pole every 90 m
     const SECTION = 400;
     const SHOW_RANGE = 480;
     const POLE_H = 9;
     const BULB_OFFSET = 5.5;
+    const POOL_D = 16;               // diameter of the pool of light on the road under each pole
 
     const makeMat = (hex, emissiveHex) => {
       const m = new B.StandardMaterial("hwMat_" + hex, scene);
@@ -36,9 +37,22 @@
     bar.material = makeMat("#8c949c");
     bar.isVisible = false; bar.isPickable = false;
 
-    const bulb = B.MeshBuilder.CreateSphere("hw_bulb", { diameter: 0.48, segments: 6 }, scene);
-    bulb.material = makeMat("#000000", "#fff4c8");
+    // bulbs: bigger and bright white-yellow, so they stand out at night
+    const bulb = B.MeshBuilder.CreateSphere("hw_bulb", { diameter: 0.9, segments: 8 }, scene);
+    bulb.material = makeMat("#000000", "#ffffe0");
     bulb.isVisible = false; bulb.isPickable = false;
+
+    // pool of light on the road, drawn flat (no real light, so the phone stays fast)
+    const poolMat = new B.StandardMaterial("hwPoolMat", scene);
+    poolMat.emissiveColor = B.Color3.FromHexString("#ffe9a0");
+    poolMat.diffuseColor = B.Color3.Black();
+    poolMat.specularColor = B.Color3.Black();
+    poolMat.alpha = 0.32;
+    poolMat.backFaceCulling = false;
+    const pool = B.MeshBuilder.CreateDisc("hw_pool", { radius: POOL_D / 2, tessellation: 20 }, scene);
+    pool.rotation.x = Math.PI / 2;
+    pool.material = poolMat;
+    pool.isVisible = false; pool.isPickable = false;
 
     const sections = [];
     for (let z0 = -150; z0 > END; z0 -= SECTION) {
@@ -50,6 +64,8 @@
         p.parent = node; p.position.set(x, POLE_H / 2, z); p.isPickable = false;
         const b = bar.createInstance("hw_b");
         b.parent = node; b.position.set(x, POLE_H - 0.18, z); b.isPickable = false;
+        const pl = pool.createInstance("hw_pl");
+        pl.parent = node; pl.position.set(x, 0.07, z); pl.isPickable = false;
         [-BULB_OFFSET, BULB_OFFSET].forEach(off => {
           const u = bulb.createInstance("hw_u");
           u.parent = node; u.position.set(x + off, POLE_H - 0.55, z); u.isPickable = false;
