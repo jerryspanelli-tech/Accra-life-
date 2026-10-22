@@ -98,6 +98,7 @@
             player.setEnabled(true);
             player.position.set(s.p.x, .91, s.p.z);
             L.note("You got off at " + s.n + ".");
+            if (window.ACCRA_AUDIO) { ACCRA_AUDIO.engine(false); ACCRA_AUDIO.stop(); ACCRA_AUDIO.sfx("cheer"); }
             ride = null;
           } else {
             player.setEnabled(false);
@@ -119,6 +120,7 @@
           if (L.cash() < f) return L.note("Not enough cash for the fare (GH\u00A2" + f + ").");
           L.hide();
           L.pay(f, "Trotro to " + STOPS[j].n);
+          if (window.ACCRA_AUDIO) { ACCRA_AUDIO.unlock(); ACCRA_AUDIO.play("afro", .45); ACCRA_AUDIO.engine(true, 6); }
           ride = { veh: waiting, from: i, to: j };
           L.note("On the trotro to " + STOPS[j].n + " \u00B7 fare GH\u00A2" + f + ".");
         });
