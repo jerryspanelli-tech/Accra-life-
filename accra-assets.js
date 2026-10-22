@@ -194,7 +194,7 @@
     const root = new B.TransformNode("car_" + type, scene);
     root.position = new B.Vector3(...o.position); root.rotation.y = o.rotY;
     const paint = mat(o.color || d.paint);
-    const glass = mat("#14202a"), tyre = mat("#121212"), hub = mat("#c9ccd1");
+    const glass = mat("#0a1218"), tyre = mat("#121212"), hub = mat("#c9ccd1");
     const dark = mat("#1a1a1a"), chrome = mat("#d6dade"), stripeM = mat(o.stripe || "#c8102e"), plate = mat("#f7f7f2");
     const lit = hex => { const m = new B.StandardMaterial("lit" + hex + Math.random(), scene); m.diffuseColor = B.Color3.FromHexString(hex); m.emissiveColor = B.Color3.FromHexString(hex); return m; };
     const lampW = lit("#fff6d6"), lampR = lit("#ff2a2a");
@@ -216,7 +216,7 @@
 
     // glass: one dark tinted skin that follows the cabin outline and sits flush with the paint
     const G = d.glass;
-    ext(G.map(p => new B.Vector3(p[0], p[1], 0)), [new B.Vector3(0, 0, -half - .012), new B.Vector3(0, 0, half + .012)], glass);
+    ext(G.map(p => new B.Vector3(p[0], p[1], 0)), [new B.Vector3(0, 0, -half - .04), new B.Vector3(0, 0, half + .04)], glass);
 
     // stripes and type details
     if (d.bus) {
