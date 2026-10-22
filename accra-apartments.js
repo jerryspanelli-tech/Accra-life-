@@ -92,11 +92,11 @@
     // each building: its own height and colour, a sign with its name, floors, windows, balconies, gate and entrance
     const SITE_X = -196, Z0 = -120, PITCH = 22;
     const BUILD = [
-      { tier: 5, h: 24, floors: 6, col: "#d6cfc4", roof: "#3a3f48", sign: "ACCRA SKYLINE", sub: "Luxury Apartments", pool: true },
-      { tier: 4, h: 20, floors: 5, col: "#e8e0d0", roof: "#4a4f58", sign: "OCEAN VIEW", sub: "Apartments", pool: false },
-      { tier: 3, h: 16, floors: 4, col: "#e0cfb4", roof: "#5a4c3e", sign: "RIVERSIDE", sub: "Apartments", pool: false },
-      { tier: 2, h: 12, floors: 3, col: "#c8553d", roof: "#7a3428", sign: "SUNSET", sub: "Apartments", pool: false },
-      { tier: 1, h: 8, floors: 2, col: "#7fa6c4", roof: "#5a6b78", sign: "COMMUNITY", sub: "Apartments", pool: false }
+      { tier: 5, h: 24, floors: 6, col: "#8a7a6a", roof: "#3a3f48", sign: "ACCRA SKYLINE", sub: "Luxury Apartments", pool: true },
+      { tier: 4, h: 20, floors: 5, col: "#e6dccb", roof: "#4a4f58", sign: "OCEAN VIEW", sub: "Apartments", pool: false },
+      { tier: 3, h: 16, floors: 4, col: "#e4d6bc", roof: "#5a4c3e", sign: "RIVERSIDE", sub: "Apartments", pool: false },
+      { tier: 2, h: 12, floors: 3, col: "#c97a55", roof: "#7a3428", sign: "SUNSET", sub: "Apartments", pool: false },
+      { tier: 1, h: 8, floors: 2, col: "#7f9fb4", roof: "#5a6b78", sign: "COMMUNITY", sub: "Apartments", pool: false }
     ];
     const signTex = (t, sub) => {
       const dt = new B.DynamicTexture("apt_sign_" + t, { width: 512, height: 160 }, scene, false), c = dt.getContext();
@@ -138,6 +138,14 @@
         if (t >= 3 && f > 0) box(W - 1, .12, 1.6, x, y - .8, z + W / 2 + .8, "#6d4c2f", false);
       }
       box(2.6, 2.7, .15, x, 1.35, z + W / 2 + .07, "#3a2a1a", false);        // entrance door
+      if (t >= 2) for (let f = 1; f < b.floors; f++) {                           // balcony slab and glass railing on each floor
+        const y = f * H / b.floors;
+        box(W + 1.2, .25, 2.2, x, y, z + W / 2 + 1.1, "#e8e2d0", false);
+        box(W + 1.2, 1, .08, x, y + .6, z + W / 2 + 2.2, "#dfe6ea", false);
+        [-W / 2 - .6, W / 2 + .6].forEach(dx => box(.12, 1, .12, x + dx, y + .6, z + W / 2 + 2.2, "#6d6d70", false));
+      }
+      if (t === 1) for (let s = 0; s < 8; s++) box(3.2, .2, .7, x + W / 2 + 1.6, s * .4 + .1, z - 3 + s * .5, "#9a9a94", false);   // external staircase to the upper floor
+      if (t === 5) box(W - 2, .15, W - 2, x, H + .6, z, "#46b6d9", false);     // rooftop pool
       // landscaping: hedges at the corners, palms at the back
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(p => box(2.4, 1, 2.4, x + p[0] * (W / 2 + 1.6), .5, z + p[1] * (W / 2 + 1.6), "#3f8f3a", false));
       if (ac && ac.createTree) {
@@ -187,12 +195,14 @@
     // 3 star: living room, kitchen, two bedrooms (one en suite), balcony
     // 4 star: living and dining, modern kitchen, two bedrooms (both en suite), office corner
     // 5 star: spacious living, island kitchen, three bedrooms (all en suite), office, lounge
-    const BEDS = { 1: 0, 2: 1, 3: 2, 4: 2, 5: 3 };
+    const BEDS = { 1: 1, 2: 1, 3: 2, 4: 2, 5: 3 };
+    const FLOOR = { 1: "#b7a48a", 2: "#b7a48a", 3: "#a77f5b", 4: "#e8e2d6", 5: "#e8e2d6" };   // tile, timber or marble
     function buildRoomMeshes(t) {
       const S = ROOM[t], cx = IX, cz = IZ + (t - 1) * 26, h = 3.2, th = .3, half = S / 2;
       const wall = (x, z, w, d) => box(w, h, d, cx + x, h / 2, cz + z, "#efe9dd", true);
       const it = (id, x, z, ry) => { K.collider(id, cx + x, cz + z, ry, 1); K.item(id, cx + x, cz + z, ry, false, 1); };
-      box(S, .1, S, cx, .05, cz, "#c9b79a", false);                       // floor
+      box(S, .1, S, cx, .05, cz, FLOOR[t], false);                         // floor
+      box(.8, .1, .8, cx, h - .1, cz, "#fff6d6", false);                 // ceiling light
       box(S, .1, S, cx, h + .05, cz, "#f7f5f0", false);                   // ceiling
       wall(0, -half, S, th); wall(-half, 0, th, S); wall(half, 0, th, S); // back and side walls
       const gap = 2.2;                                                      // front wall with a doorway
@@ -203,13 +213,12 @@
       const frontZ = -half + bedD;                                          // front zone starts here
       // dividing walls between the back rooms
       for (let i = 1; i < beds; i++) wall(-half + S * i / beds, -half + bedD / 2, th, bedD);
-      if (t === 1) { wall(-half + S * .72, -half + S * .28, th, S * .56); }  // one bathroom, in the back-right corner
       // bedrooms with a bed and a wardrobe each
       for (let i = 0; i < beds; i++) {
         const x0 = -half + S * (i + .5) / beds;
         it(i === 0 ? "bed2" : "bed1", x0, -half + 2.4, 0);
         it("wardrobe", x0 + (i % 2 ? -.9 : .9), -half + bedD - 1.0, 0);
-        if (t >= 3) {                                                       // en suite: a bathroom tucked into each bedroom's corner
+        if (t === 5 || (t >= 3 && i === 0)) {                               // en suite: 5 star all rooms, 3 and 4 star the main bedroom
           const bx = -half + S * (i + 1) / beds - 1.6;
           it("bath", bx - 0.2, -half + 1.2, 0); it("vanity", bx + 1.2, -half + 1.6, Math.PI);
         }
@@ -223,7 +232,7 @@
       if (t === 5) { it("island", kx - 2.2, frontZ + 4, 0); }
       it("counter", kx, frontZ + 1.2, -Math.PI / 2);
       it("fridge", kx, frontZ - 1.2, -Math.PI / 2);
-      if (t >= 2) it("kit2", kx, frontZ + 4.6, -Math.PI / 2);
+      if (t >= 2) it("kit2", kx, frontZ + 4.6, -Math.PI / 2);             // 1 star has a basic kitchen only
       // dining (4 and 5 star)
       if (t >= 4) { it("dining", -1, frontZ + 3.8, 0); }
       // bathroom for 1 and 2 star: front-left corner, behind a short wall
