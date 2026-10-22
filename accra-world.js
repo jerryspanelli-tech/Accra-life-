@@ -43,7 +43,7 @@
         if (z - 32 > HW_START) continue;                           // the road only starts north of the city grid
         const zm = z - 32, x = hx(zm), th = -Math.atan(slope(zm)), cs = Math.cos(th), sn = Math.sin(th);
         const add = (arr, w, h, d, ox, y, oz, m) => { const b = mk(w, h, d, x + cs * ox + sn * oz, y, zm - sn * ox + cs * oz, m, th); arr.push(b); };
-        add(surf, 20, .08, 66, 0, .05, 0, asphalt); add(surf, .25, .09, 66, -9.7, .06, 0, white); add(surf, .25, .09, 66, 9.7, .06, 0, white);
+        add(surf, 20, .05, 66, 0, .03, 0, asphalt); add(surf, .25, .09, 66, -9.7, .06, 0, white); add(surf, .25, .09, 66, 9.7, .06, 0, white);
         for (let oz = -28; oz <= 28; oz += 12) { add(surf, .2, .09, 4, -5.1, .07, oz, white); add(surf, .2, .09, 4, 5.1, .07, oz, white); }
         // no median or guard rails across the junction, so cars can turn in from the city avenue
         if (Math.abs(zm - HW_START) > 18) { add(bars, 3, .35, 66, 0, .2, 0, conc); add(bars, .15, .7, 66, -10.6, .4, 0, rail); add(bars, .15, .7, 66, 10.6, .4, 0, rail); }
