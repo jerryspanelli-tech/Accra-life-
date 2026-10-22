@@ -5,6 +5,13 @@
 (function () {
   try {
     const K = window.ACCRA_KIT;
+    const B = BABYLON;
+    const box = (w, h, d, x, y, z, col, solid) => {
+      const m = B.MeshBuilder.CreateBox("apt", { width: w, height: h, depth: d }, scene);
+      m.position.set(x, y, z); m.material = mat(col); m.checkCollisions = !!solid; m.isPickable = false;
+      if (h > .1 && typeof sg !== "undefined") sg.addShadowCaster(m);
+      return m;
+    };
     if (!K) { console.log("accra-apartments: waiting for the game"); return; }
     const MONTH_MS = 10 * 60 * 1000;
     const TIERS = [
@@ -131,30 +138,62 @@
     const ROOM = { 1: 8, 2: 9, 3: 11, 4: 12, 5: 14 };
     const IX = -720, IZ = -140;                          // interiors sit on their own ground, out of the city
     const interior = {};
+    // Layout by star rating (rooms grow with the tier):
+    // 1 star: one room with living area, kitchen and a bathroom (studio style)
+    // 2 star: living room, kitchen, one bedroom, bathroom
+    // 3 star: living room, kitchen, two bedrooms (one en suite), balcony
+    // 4 star: living and dining, modern kitchen, two bedrooms (both en suite), office corner
+    // 5 star: spacious living, island kitchen, three bedrooms (all en suite), office, lounge
+    const BEDS = { 1: 0, 2: 1, 3: 2, 4: 2, 5: 3 };
     function buildRoomMeshes(t) {
-      const S = ROOM[t], cx = IX, cz = IZ + (t - 1) * 26, h = 3.2, th = .3;
-      const wall = (x, z, w, d) => box(w, h, d, x, h / 2, z, "#efe9dd", true);
-      box(S, .1, S, cx, .05, cz, "#c9b79a", false);                                    // floor
-      box(S, .1, S, cx, h + .05, cz, "#f7f5f0", false);                                 // ceiling
-      wall(cx, cz - S / 2, S, th);                                                       // back wall
-      wall(cx - S / 2, cz, th, S); wall(cx + S / 2, cz, th, S);                          // side walls
-      const gap = 2.2;                                                                   // front wall with a doorway
-      wall(cx - (S / 2 + gap / 2) / 2, cz + S / 2, (S - gap) / 2, th); wall(cx + (S / 2 + gap / 2) / 2, cz + S / 2, (S - gap) / 2, th);
-      box(gap, .02, .3, cx, .05, cz + S / 2, "#8a8a84", false);
+      const S = ROOM[t], cx = IX, cz = IZ + (t - 1) * 26, h = 3.2, th = .3, half = S / 2;
+      const wall = (x, z, w, d) => box(w, h, d, cx + x, h / 2, cz + z, "#efe9dd", true);
       const it = (id, x, z, ry) => { K.collider(id, cx + x, cz + z, ry, 1); K.item(id, cx + x, cz + z, ry, false, 1); };
-      const q = S / 4;
-      // living room (front half): sofa, TV, coffee table
-      it("sofa", -q, q, 0); it("tv", -q, -q * .35, Math.PI / 2); it("coffee", 0, q * .3, 0); it("chair", q * 1.3, q * 1.2, -Math.PI / 2);
-      // kitchen (right side)
-      it("counter", S / 2 - 1.2, -q * .5, -Math.PI / 2); it("fridge", S / 2 - 1.1, -q * 1.8, -Math.PI / 2); it("kit2", S / 2 - 1.2, q * .6, -Math.PI / 2);
-      // bedroom (back half): bed(s) and a wardrobe
-      if (t >= 3) { it("bed2", -q * 1.2, -S / 2 + 2.6, 0); it("bed1", q * .9, -S / 2 + 2.6, 0); }
-      else it("bed1", -q * .6, -S / 2 + 2.6, 0);
-      it("wardrobe", -S / 2 + 1.2, -q * 2.4, Math.PI / 2);
-      // bathroom (front-left corner): bathtub and vanity, behind a short wall
-      wall(cx - S / 2 + 2.2, cz + S / 2 - 3.2, 2.2, th);
-      it("bath", -S / 2 + 1.1, S / 2 - 1.6, 0); it("vanity", -S / 2 + 1.2, S / 2 - 3.6, Math.PI / 2);
-      if (t >= 4) { it("fan", q * 1.6, -q * 1.1, 0); it("shelf", S / 2 - 1.0, S / 2 - 1.6, -Math.PI / 2); }
+      box(S, .1, S, cx, .05, cz, "#c9b79a", false);                       // floor
+      box(S, .1, S, cx, h + .05, cz, "#f7f5f0", false);                   // ceiling
+      wall(0, -half, S, th); wall(-half, 0, th, S); wall(half, 0, th, S); // back and side walls
+      const gap = 2.2;                                                      // front wall with a doorway
+      wall(-(half + gap / 2) / 2, half, (S - gap) / 2, th); wall((half + gap / 2) / 2, half, (S - gap) / 2, th);
+      box(gap, .02, .3, cx, .05, cz + half, "#8a8a84", false);
+
+      const beds = BEDS[t], bedD = S * .42;                                 // bedrooms run along the back wall
+      const frontZ = -half + bedD;                                          // front zone starts here
+      // dividing walls between the back rooms
+      for (let i = 1; i < beds; i++) wall(-half + S * i / beds, -half + bedD / 2, th, bedD);
+      if (t === 1) { wall(-half + S * .72, -half + S * .28, th, S * .56); }  // one bathroom, in the back-right corner
+      // bedrooms with a bed and a wardrobe each
+      for (let i = 0; i < beds; i++) {
+        const x0 = -half + S * (i + .5) / beds;
+        it(i === 0 ? "bed2" : "bed1", x0, -half + 2.4, 0);
+        it("wardrobe", x0 + (i % 2 ? -.9 : .9), -half + bedD - 1.0, 0);
+        if (t >= 3) {                                                       // en suite: a bathroom tucked into each bedroom's corner
+          const bx = -half + S * (i + 1) / beds - 1.6;
+          it("bath", bx - 0.2, -half + 1.2, 0); it("vanity", bx + 1.2, -half + 1.6, Math.PI);
+        }
+      }
+      // living room: front-left
+      it("sofa", -half + 2.8, frontZ + 3.4, 0);
+      it("tv", -half + 2.8, frontZ + .6, Math.PI / 2);
+      it("coffee", -half + 4.6, frontZ + 2.2, 0);
+      // kitchen along the right wall
+      const kx = half - 1.2;
+      if (t === 5) { it("island", kx - 2.2, frontZ + 4, 0); }
+      it("counter", kx, frontZ + 1.2, -Math.PI / 2);
+      it("fridge", kx, frontZ - 1.2, -Math.PI / 2);
+      if (t >= 2) it("kit2", kx, frontZ + 4.6, -Math.PI / 2);
+      // dining (4 and 5 star)
+      if (t >= 4) { it("dining", -1, frontZ + 3.8, 0); }
+      // bathroom for 1 and 2 star: front-left corner, behind a short wall
+      if (t <= 2) {
+        wall(-half + 2.2, half - 3.2, 2.2, th);
+        it("bath", -half + 1.1, half - 1.6, 0); it("vanity", -half + 1.2, half - 3.6, Math.PI / 2);
+      }
+      // office corner (4 and 5 star)
+      if (t >= 4) { it("desk", half - 2.6, -frontZ + .5 + frontZ - 3.2, Math.PI); it("shelf", half - 1.0, half - 2.4, -Math.PI / 2); }
+      // 5 star: lounge fan and a shelf by the entrance
+      if (t === 5) it("fan", -half + 1.4, half - 1.4, 0);
+      // 3 star and up: balcony strip on the front (decorative)
+      if (t >= 3) box(S - 2, .08, 1.4, cx, .04, cz + half + .7, "#8a6a4a", false);
     }
     // the rooms are only planned at startup (cheap). The furniture is built the first time you enter that apartment.
     const built_ = {};
