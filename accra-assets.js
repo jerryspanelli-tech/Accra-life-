@@ -214,25 +214,9 @@
     const body = ext(d.body.map(p => new B.Vector3(p[0], p[1], 0)), [new B.Vector3(0, 0, -half), new B.Vector3(0, 0, half)], paint);
     body.checkCollisions = true; if (typeof sg !== "undefined") sg.addShadowCaster(body);
 
-    // glass: the windscreen (front slope), the rear window and dark side windows follow the glass outline
-    const G = d.glass, segs = [];
-    for (let k = 0; k < G.length - 1; k++) {
-      const a = G[k], b2 = G[k + 1];
-      segs.push({ k, mx: (a[0] + b2[0]) / 2, my: (a[1] + b2[1]) / 2, len: Math.hypot(b2[0] - a[0], b2[1] - a[1]), ang: Math.atan2(b2[1] - a[1], b2[0] - a[0]) });
-    }
-    const front = segs.reduce((m, s) => s.mx > m.mx ? s : m, segs[0]);
-    const back = segs.reduce((m, s) => s.mx < m.mx ? s : m, segs[0]);
-    segs.forEach(s => {
-      if (s === front && segs.length > 1) put(s.len * 1.02, .06, half * 1.75, s.mx, s.my, 0, glass, s.ang);     // windscreen, across the car
-      else if (s === back && segs.length > 1) put(s.len * 1.02, .06, half * 1.75, s.mx, s.my, 0, glass, s.ang); // rear window
-      else [-1, 1].forEach(side => put(s.len, .32, .07, s.mx, s.my, side * (half + .03), glass, s.ang));        // side windows
-    });
-    // door seams and a window pillar on each side
-    [-1, 1].forEach(side => {
-      const mid = G[Math.floor(G.length / 2)];
-      put(.04, Math.max(.6, topY - .8), .06, mid[0], (topY + .4) / 2, side * (half + .03), dark);
-      put(.04, .9, .06, mid[0] - 1.4, .8, side * (half + .03), dark);
-    });
+    // glass: one dark tinted skin that follows the cabin outline and sits flush with the paint
+    const G = d.glass;
+    ext(G.map(p => new B.Vector3(p[0], p[1], 0)), [new B.Vector3(0, 0, -half - .012), new B.Vector3(0, 0, half + .012)], glass);
 
     // stripes and type details
     if (d.bus) {
@@ -259,7 +243,7 @@
     // number plates (white, so they read at a distance), mirrors (dark), headlights and tail lights (bright)
     put(.04, .22, .5, frontX + .03, .55, 0, plate);
     put(.04, .22, .5, rearX - .03, .55, 0, plate);
-    const mirrorX = (segs.length ? G[G.length - 1][0] : frontX) - .15, mirrorY = (segs.length ? G[G.length - 1][1] : topY) - .25;
+    const mirrorX = G[G.length - 1][0] - .15, mirrorY = G[G.length - 1][1] - .25;
     [-1, 1].forEach(s => {
       put(.2, .16, .14, mirrorX, mirrorY, s * (half + .14), dark);                       // side mirrors
       put(.1, .22, .34, frontX - .02, .8, s * (half - .3), lampW);                       // headlights
