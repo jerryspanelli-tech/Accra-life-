@@ -8,7 +8,7 @@
     if (!L) { console.log("accra-world: life API not ready"); return; }
     const B = BABYLON, { st, cash, pay, note, show, hide, ttl, BS, CLOSE, points, fade, tp } = L;
     const END = -24500, DRIFT = -2400, CH = 256;
-    const HW_START = -260;                                                                 // the highway starts north of the city grid, never across city roads
+    const HW_START = -150;   // the highway road begins at the city's north avenue junction, and joins it                                                                 // the highway starts north of the city grid, never across city roads
     const S = t => t * t * (3 - 2 * t);
     const hx = z => DRIFT * S(Math.min(1, Math.max(0, (-z - 165) / (-END - 165))));        // highway centre line x at z
     const slope = z => (hx(z - 8) - hx(z + 8)) / 16;
@@ -45,7 +45,8 @@
         const add = (arr, w, h, d, ox, y, oz, m) => { const b = mk(w, h, d, x + cs * ox + sn * oz, y, zm - sn * ox + cs * oz, m, th); arr.push(b); };
         add(surf, 20, .08, 66, 0, .05, 0, asphalt); add(surf, .25, .09, 66, -9.7, .06, 0, white); add(surf, .25, .09, 66, 9.7, .06, 0, white);
         for (let oz = -28; oz <= 28; oz += 12) { add(surf, .2, .09, 4, -5.1, .07, oz, white); add(surf, .2, .09, 4, 5.1, .07, oz, white); }
-        add(bars, 3, .35, 66, 0, .2, 0, conc); add(bars, .15, .7, 66, -10.6, .4, 0, rail); add(bars, .15, .7, 66, 10.6, .4, 0, rail);
+        // no median or guard rails across the junction, so cars can turn in from the city avenue
+        if (Math.abs(zm - HW_START) > 18) { add(bars, 3, .35, 66, 0, .2, 0, conc); add(bars, .15, .7, 66, -10.6, .4, 0, rail); add(bars, .15, .7, 66, 10.6, .4, 0, rail); }
       }
       const a = merge(surf, false), b = merge(bars, true); if (a) list.push(a); if (b) list.push(b);
       // distance gantry every 2 km
@@ -93,7 +94,7 @@
     }
 
     const chunks = new Map(), queue = [];
-    const near = (cx, cz) => { const zc = cz * CH + CH / 2; if (zc > HW_START) return false; if (zc < END - 400) return false; const hxc = hx(zc);
+    const near = (cx, cz) => { const zc = cz * CH + CH / 2; if (zc > -120) return false; if (zc < END - 400) return false; const hxc = hx(zc);
       return Math.abs(cx * CH + CH / 2 - hxc) < CH + 120 || TOWNS.some(t => Math.abs(cx * CH + CH / 2 - t.x) < t.R + CH && Math.abs(zc - t.z) < t.R + CH); };
     function request(cx, cz) {
       const k = cx + "," + cz; if (chunks.has(k)) return; const list = []; chunks.set(k, list);

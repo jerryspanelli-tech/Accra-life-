@@ -55,7 +55,7 @@
     pool.isVisible = false; pool.isPickable = false;
 
     const sections = [];
-    for (let z0 = -260; z0 > END; z0 -= SECTION) {   // start north of the city grid so the highway never crosses city roads
+    for (let z0 = -175; z0 > END; z0 -= SECTION) {   // start just north of the city's north-avenue junction
       const z1 = Math.max(z0 - SECTION, END);
       const node = new B.TransformNode("hw_section", scene);
       for (let z = z0; z > z1; z -= SPACING) {
