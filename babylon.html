@@ -109,12 +109,17 @@ const mk=(o)=>Object.assign(new BABYLON.StandardMaterial('cm',scene),o);
 const carPaint=mk({diffuseColor:C3('#a3172b'),specularColor:new BABYLON.Color3(.7,.7,.7),specularPower:80}),glassM=mk({diffuseColor:C3('#10202c'),specularColor:new BABYLON.Color3(1,1,1),specularPower:120,alpha:.92}),lightM=mk({emissiveColor:C3('#fff6d6'),disableLighting:true}),tailM=mk({emissiveColor:C3('#ff2a2a'),disableLighting:true});
 function part(w,h,d,x,y,z,m){const q=BABYLON.MeshBuilder.CreateBox('cp',{width:w,height:h,depth:d},scene);q.parent=car;q.position.set(x,y,z);q.material=typeof m==='string'?mat(m):m;q.checkCollisions=false;q.isPickable=false;sg.addShadowCaster(q);return q}
 const wheels=[];
-if(window.AccraAssets&&window.AccraAssets.createCar){
-  // your car uses the new shared model; its body stays linked to carPaint so painting and job colours still work
+// the car builder (accra-assets.js) loads after this script, so wait until it is ready, then build your car
+const attachCarModel=()=>{
+  if(!window.AccraAssets||!window.AccraAssets.createCar){setTimeout(attachCarModel,300);return}
   const model=window.AccraAssets.createCar(scene,'sedan',{color:'#a3172b'});
-  model.parent=car;model.rotation.y=-Math.PI/2;model.position.set(0,-.8,0);
+  // NOT a child of the car: old scripts hide every child of the car, which made the model invisible.
+  // Instead the model is placed on the car every frame (see carModelFollow in the game loop).
+  model.parent=null;window.__carModel=model;
   model.getChildMeshes().forEach(m=>{m.checkCollisions=false;m.isPickable=false;if(m.material&&m.material===mat('#a3172b'))m.material=carPaint;});
-}
+};
+attachCarModel();
+function carModelFollow(){const m=window.__carModel;if(!m)return;m.setEnabled(true);m.position.set(car.position.x,car.position.y-.8,car.position.z);m.rotation.y=car.rotation.y-Math.PI/2;}
 // ---------- input ----------
 let jx=0,jy=0,jid=null,vy=0,spd=0,heading=0,driving=false,jump=0;
 const joy=$('joy'),kn=$('knob');
@@ -150,6 +155,7 @@ function update(dt){
   if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);
   focus=player.position;
  }
+ carModelFollow();
  camT.position.set(focus.x,focus.y+(driving?.9:.7),focus.z);
  sun.position.set(focus.x+40,80,focus.z+32);clouds.forEach(c=>{c.position.x+=dt*1.2;if(c.position.x>220)c.position.x=-220});
  const near=!driving&&BABYLON.Vector3.Distance(player.position,car.position)<6;
