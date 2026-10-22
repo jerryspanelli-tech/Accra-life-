@@ -487,7 +487,7 @@
       sign(3.4, .8, -10, 3.4, 8.7, (c, w, h) => { c.fillStyle = "#12061c"; c.fillRect(0, 0, w, h); c.shadowColor = "#b04dff"; c.shadowBlur = 18; c.fillStyle = "#e6b8ff"; c.font = "bold 80px system-ui"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("VIP \u2192", w / 2, h / 2, w - 20); });
       const vipGate = solid(2.4, 2.6, .5, -10, 1.3, 9.1);   // the bouncer's rope: only solid while you have no VIP pass
       const vipRoof = box(14.2, .4, 9.6, PX - 10.5, PH + .2, PZ + 13.6, "#2a2a2e", false);
-      const vlight = new B.PointLight("viplight", new B.Vector3(PX - 10.5, 3, PZ + 13.6), scene); vlight.diffuse = B.Color3.FromHexString("#b04dff"); vlight.intensity = .85; vlight.range = 13;
+      const vlight = { setEnabled() {} };   // no real point lights on phones (they crash Safari); the neon glow does the job
       scene.onBeforeRenderObservable.add(() => { const p = player.position; vlight.setEnabled(Math.hypot(p.x - PX, p.z - PZ) < 40); vipRoof.setEnabled(!(Math.abs(p.x - (PX - 10.5)) < 7.2 && Math.abs(p.z - (PZ + 13.6)) < 5)); });
       const bnc = A.createCharacter(scene, { shirt: "#0d0d0f", pants: "#0d0d0f", skin: "#4a2c1c", hair: "#0d0d0d", kente: false, scale: .9 }); bnc.root.position.set(PX - 8.6, 0, PZ + 8.4); bnc.root.rotation.y = Math.PI * 1.25;
       tag("Bouncer \u00B7 VIP", PX - 8.6, 2.6, PZ + 8.4, 2.4);
@@ -502,7 +502,7 @@
       // ---- bartender, warm light, disco colours ----
       const bt = A.createCharacter(scene, { shirt: "#1d1d22", pants: "#1d1d22", skin: "#6b4028", hair: "#0d0d0d", kente: false, scale: .85 }); bt.root.position.set(PX - 5.5, 0, PZ + 4.7); bt.root.rotation.y = Math.PI;
       tag("Kwame \u00B7 Bartender", PX - 5.5, 2.5, PZ + 4.7, 2.4);
-      const pl = new B.PointLight("publight", new B.Vector3(PX, 3.2, PZ + 1), scene); pl.diffuse = B.Color3.FromHexString("#ffb066"); pl.intensity = .55; pl.range = 26;
+      const pl = { setEnabled() {} };       // no real point lights on phones; the warm ceiling lamps do the job
       const ball = B.MeshBuilder.CreateSphere("discoball", { diameter: .8, segments: 8 }, scene); ball.convertToFlatShadedMesh(); ball.position.set(PX + 10.5, 3.9, PZ + 3); ball.material = pm; ball.isPickable = false;
       let phs = 0;
       scene.onBeforeRenderObservable.add(() => {
