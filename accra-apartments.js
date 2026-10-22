@@ -62,7 +62,7 @@
       K.show(head + curLine + rows + CLOSE, d => {
         if (d.x) return K.hide();
         if (d.lock) { if (!home) return K.note("You have no apartment."); setLocked(home.stars, !isLocked(home.stars)); K.note(isLocked(home.stars) ? "Door locked" : "Door unlocked"); return menu(); }
-        if (d.leave) { if (!home) return K.note("You have no apartment."); home = null; save(null); K.note("You gave up your apartment."); return menu(); }
+        if (d.leave) { if (!home) return K.note("You have no apartment."); home = null; save(null); refreshSigns(); K.note("You gave up your apartment."); return menu(); }
         if (d.tier) return details(+d.tier);
       });
     }
@@ -80,7 +80,7 @@
           if (K.cash() < deposit) return K.note("Not enough cash. You need GH\u00A2" + deposit.toLocaleString());
           K.pay(deposit, "Deposit: " + t.name);
           home = { stars: n, paidUntil: Date.now() + MONTH_MS, warned: 0 };
-          save(home);
+          save(home); refreshSigns();
           K.hide();
           K.note("Welcome home to your " + t.name + "!");
           if (window.ACCRA_NOTIFY) window.ACCRA_NOTIFY("You moved into the " + t.name + ". Rent is GH\u00A2" + t.rent + " a month.", "home");
@@ -105,27 +105,70 @@
       c.fillStyle = "#c9a54a"; c.font = "bold 36px system-ui"; c.fillText(sub, 256, 118, 490); dt.update();
       const m = new B.StandardMaterial("apt_signM_" + t, scene); m.diffuseTexture = dt; m.emissiveTexture = dt; m.disableLighting = true; m.backFaceCulling = false; return m;
     };
+    // ----- the compound: five buildings close together, each with its own parking lot and landscaping -----
+    const POS = [[-226, -104], [-196, -104], [-226, -62], [-196, -62], [-166, -84]];   // building centres (x, z)
+    const BPOS = {}, SIGNS = {}, ac = window.AccraAssets;
+    const STATUS = { free: "#2e7d32", yours: "#c9a54a", full: "#8e1b1b" };
+    function statusFor(t) {
+      if (home && home.stars === t) return ["YOUR HOME", STATUS.yours];
+      if (t === 2 || t === 4) return ["FULL", STATUS.full];
+      return ["TO RENT", STATUS.free];
+    }
+    function drawSign(t) {
+      const s = SIGNS[t]; if (!s) return;
+      const [label, col] = statusFor(t), c = s.dt.getContext();
+      c.fillStyle = "#17191c"; c.fillRect(0, 0, 512, 160);
+      c.fillStyle = "#ffffff"; c.font = "bold 52px system-ui"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(s.name, 256, 46, 490);
+      c.fillStyle = "#c9a54a"; c.font = "bold 28px system-ui"; c.fillText(s.sub + " \u00B7 " + s.floors + " floors", 256, 90, 490);
+      c.fillStyle = col; c.fillRect(120, 116, 272, 34);
+      c.fillStyle = "#ffffff"; c.font = "bold 26px system-ui"; c.fillText(label, 256, 133);
+      s.dt.update();
+    }
+    const refreshSigns = () => [1, 2, 3, 4, 5].forEach(drawSign);
     BUILD.forEach((b, i) => {
-      const x = SITE_X, z = Z0 + i * PITCH, W = 14, H = b.h;
-      box(W, H, W, x, H / 2, z, b.col, true);                                                  // main block
-      box(W + .8, .5, W + .8, x, H + .25, z, b.roof, false);                                  // roof
-      for (let f = 1; f < b.floors; f++) box(W + .3, .3, W + .3, x, f * H / b.floors, z, "#f4f1ea", false);   // floor bands
-      for (let f = 0; f < b.floors; f++) {                                                    // windows on the front face
+      const [x, z] = POS[i], W = 14, H = b.h, t = b.tier, pz = z + W / 2 + 10;
+      BPOS[t] = { x, z };
+      // block: floors, windows and balconies
+      box(W, H, W, x, H / 2, z, b.col, true);
+      box(W + .8, .5, W + .8, x, H + .25, z, b.roof, false);
+      for (let f = 1; f < b.floors; f++) box(W + .3, .3, W + .3, x, f * H / b.floors, z, "#f4f1ea", false);
+      for (let f = 0; f < b.floors; f++) {
         const y = f * H / b.floors + 1.6;
         [-4.5, -1.5, 1.5, 4.5].forEach(dx => box(1.6, 1.4, .12, x + dx, y, z + W / 2 + .05, "#1d3042", false));
-        if (b.tier >= 3 && f > 0) box(W - 1, .12, 1.6, x, y - .8, z + W / 2 + .8, "#6d4c2f", false);   // balconies
+        if (t >= 3 && f > 0) box(W - 1, .12, 1.6, x, y - .8, z + W / 2 + .8, "#6d4c2f", false);
       }
-      box(2.6, 2.7, .15, x, 1.35, z + W / 2 + .07, "#3a2a1a", false);                        // entrance door
-      if (b.tier >= 4) {                                                                       // gate and boundary wall
+      box(2.6, 2.7, .15, x, 1.35, z + W / 2 + .07, "#3a2a1a", false);        // entrance door
+      // landscaping: hedges at the corners, palms at the back
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(p => box(2.4, 1, 2.4, x + p[0] * (W / 2 + 1.6), .5, z + p[1] * (W / 2 + 1.6), "#3f8f3a", false));
+      if (ac && ac.createTree) {
+        ac.createTree(scene, { type: "palm", position: [x - W / 2 - 2.6, 0, z - W / 2 - 2.6] });
+        ac.createTree(scene, { type: "palm", position: [x + W / 2 + 2.6, 0, z - W / 2 - 2.6] });
+      }
+      // parking lot in front: painted bays and parked cars
+      box(22, .06, 12, x, .03, pz, "#3a3c42", false);
+      for (let k = -2; k <= 2; k++) box(.15, .07, 9, x + k * 4, .04, pz, "#f2f2f2", false);
+      if (ac && ac.createCar) [-4, 0, 4].forEach((dx, j) => {
+        if ((i + j) % 2 !== 0) return;
+        const c = ac.createCar(scene, "sedan", { position: [x + dx, 0, pz], rotY: Math.PI / 2, color: ["#f2f2f2", "#2c6e8c", "#3a3d44", "#c0392b"][(i + j) % 4] });
+        c.getChildMeshes().forEach(m => m.checkCollisions = false);
+      });
+      // pool and gate for the larger buildings
+      if (b.pool) { box(8, .05, 5, x, .06, z - W / 2 - 4, "#46b6d9", false); box(2, 2.2, .4, x + 9, 1.1, z + 2, "#6d4c2f", false); }
+      if (t >= 4) {
         box(16, 1.6, .3, x, .8, z + W / 2 + 3, "#e6e0d0", false);
         [-7.6, 7.6].forEach(dx => box(.8, 2.4, .8, x + dx, 1.2, z + W / 2 + 3, "#c9b79a", false));
       }
-      if (b.pool) { box(8, .05, 5, x, .06, z - W / 2 - 4, "#46b6d9", false); box(2, 2.2, .4, x + 9, 1.1, z + 2, "#6d4c2f", false); }
-      const sn = B.MeshBuilder.CreatePlane("apt_sign", { width: 12, height: 3.8 }, scene);     // sign on the front
+      // sign with the floors and status
+      const sn = B.MeshBuilder.CreatePlane("apt_sign", { width: 12, height: 3.8 }, scene);
       sn.position.set(x, H - 3, z + W / 2 + .3); sn.rotation.y = Math.PI; sn.isPickable = false;
-      sn.material = signTex(b.sign, b.sub);
-      (window.ACCRA_DEST_EXTRA = window.ACCRA_DEST_EXTRA || []).push({ n: b.sign + " apartments (" + b.tier + " star)", x, z: z + W / 2 + 5 });
-      K.points.push({ x, z: z + W / 2 + 5, r: 5, t: "\uD83C\uDFE2 " + b.sign + " \u00B7 " + stars(b.tier) + " (" + price(TIERS[b.tier - 1]) + ")", f: () => doorAt(b.tier) });
+      const dt = new B.DynamicTexture("apt_sign_" + t, { width: 512, height: 160 }, scene, false);
+      const mt = new B.StandardMaterial("apt_signM_" + t, scene); mt.diffuseTexture = dt; mt.emissiveTexture = dt; mt.disableLighting = true; mt.backFaceCulling = false;
+      sn.material = mt;
+      SIGNS[t] = { dt, name: b.sign, sub: b.sub, floors: b.floors };
+      drawSign(t);
+      // map entry and the walk-up entrance point, in front of the parking lot
+      (window.ACCRA_DEST_EXTRA = window.ACCRA_DEST_EXTRA || []).push({ n: b.sign + " apartments (" + t + " star)", x, z: pz });
+      K.points.push({ x, z: z + W / 2 + 4, r: 5, t: "\uD83C\uDFE2 " + b.sign + " \u00B7 " + stars(t) + " (" + price(TIERS[t - 1]) + ")", f: () => doorAt(t) });
     });
 
     // ----- the lock: your own door can be locked; you need to unlock it to walk in -----
@@ -216,7 +259,7 @@
     function leave(t) {
       const b = BUILD[t - 1], L = window.ACCRA_LIFE && window.ACCRA_LIFE.api;
       if (!L) return;
-      const ox = SITE_X, oz = Z0 + (t - 1) * PITCH + 14 / 2 + 2.5;
+      const ox = BPOS[t].x, oz = BPOS[t].z + 14 / 2 + 4;
       L.fade(700, () => { currentIn = null; L.tp(ox, oz); }, () => K.note("You left " + b.sign + ". " + (isLocked(t) ? "The door is locked." : "The door is unlocked.")));
     }
     // the entrance: walk in if it is your apartment, otherwise open the tier details
