@@ -72,11 +72,15 @@
 
     // ----- armoured truck bay and police car park -----
     const PARK_Z = Z1 - 12;
-    for (let i = 0; i < 4; i++) box(3.2, 2.6, 6.2, CX - 16 + i * 4, 1.3, PARK_Z - 4, dark);   // armoured trucks
+    const acTrucks = window.AccraAssets;
+    for (let i = 0; i < 4; i++) {                                                          // armoured trucks (navy SUV shape)
+      if (acTrucks && acTrucks.createCar) acTrucks.createCar(scene, "suv", { color: "#1b2a4a", stripe: "#c9a54a", position: [CX - 16 + i * 4, 0, PARK_Z - 4], rotY: Math.PI / 2 });
+      else box(3.2, 2.6, 6.2, CX - 16 + i * 4, 1.3, PARK_Z - 4, dark);
+    }
     const ac = window.AccraAssets;
     for (let i = 0; i < 8; i++) {
       const x = CX + 8 + (i % 4) * 4.2, z = PARK_Z + (i < 4 ? -2 : 2.4);
-      if (ac && ac.createCar) { const c = ac.createCar(scene, "sedan", { color: "#f2f2f2", position: [x, 0, z], rotY: Math.PI / 2 }); c.getChildMeshes().forEach(m => m.checkCollisions = false); }
+      if (ac && ac.createCar) { const c = ac.createCar(scene, "sedan", { color: "#f2f2f2", stripe: "#1d3b6b", position: [x, 0, z], rotY: Math.PI / 2 }); c.getChildMeshes().forEach(m => m.checkCollisions = false); }
       else plain(2, 1.2, 4.2, x, .6, z, white);
     }
     // driveway and lane lines

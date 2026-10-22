@@ -60,8 +60,8 @@
     sign("AMBULANCE BAY", 12, 1.8, X1 - 7, 5.6, CZ - 6 + 7.1, 0, "#b71c1c", "#ffffff");
     for (let i = 0; i < 2; i++) {                                                         // ambulances parked in the bay
       const z = CZ - 12 + i * 5;
-      box(2.6, 2.2, 5.4, X1 - 7, 1.1 + .6, z, white);
-      plain(2.7, .5, 5.5, X1 - 7, 2.2, z, red);
+      if (window.AccraAssets && window.AccraAssets.createCar) window.AccraAssets.createCar(scene, "minibus", { color: "#ffffff", stripe: "#c8102e", position: [X1 - 7, 0, z], rotY: Math.PI / 2 });
+      else { box(2.6, 2.2, 5.4, X1 - 7, 1.1 + .6, z, white); plain(2.7, .5, 5.5, X1 - 7, 2.2, z, red); }
     }
 
     // ----- rooftop helipad -----
