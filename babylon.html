@@ -108,13 +108,13 @@ car.isVisible=false;car.position.set(2,.8,22);car.checkCollisions=true;car.ellip
 const mk=(o)=>Object.assign(new BABYLON.StandardMaterial('cm',scene),o);
 const carPaint=mk({diffuseColor:C3('#a3172b'),specularColor:new BABYLON.Color3(.7,.7,.7),specularPower:80}),glassM=mk({diffuseColor:C3('#10202c'),specularColor:new BABYLON.Color3(1,1,1),specularPower:120,alpha:.92}),lightM=mk({emissiveColor:C3('#fff6d6'),disableLighting:true}),tailM=mk({emissiveColor:C3('#ff2a2a'),disableLighting:true});
 function part(w,h,d,x,y,z,m){const q=BABYLON.MeshBuilder.CreateBox('cp',{width:w,height:h,depth:d},scene);q.parent=car;q.position.set(x,y,z);q.material=typeof m==='string'?mat(m):m;q.checkCollisions=false;q.isPickable=false;sg.addShadowCaster(q);return q}
-part(2,.55,4.4,0,-.12,0,carPaint);part(1.9,.28,1.5,0,.27,1.35,carPaint);part(1.9,.32,1,0,.22,-1.65,carPaint);
-part(1.76,.66,2.1,0,.7,-.25,glassM);part(1.6,.08,1.8,0,1.06,-.25,carPaint);
-[-.65,.65].forEach(x=>{part(.5,.16,.06,x,.2,2.22,lightM);part(.5,.14,.06,x,.2,-2.22,tailM)});
-part(1.8,.2,.1,0,-.3,2.25,'#1a1a1a');part(1.8,.2,.1,0,-.3,-2.25,'#1a1a1a');
-const wheels=[];[[-1,1.4],[1,1.4],[-1,-1.4],[1,-1.4]].forEach(p=>{const pv=new BABYLON.TransformNode('wp',scene);pv.parent=car;pv.position.set(p[0]*1.02,-.4,p[1]);
- const t=BABYLON.MeshBuilder.CreateCylinder('w',{height:.3,diameter:.82},scene);t.parent=pv;t.rotation.z=Math.PI/2;t.material=mat('#151515');t.isPickable=false;t.checkCollisions=false;
- const r=BABYLON.MeshBuilder.CreateCylinder('wr',{height:.32,diameter:.45},scene);r.parent=pv;r.rotation.z=Math.PI/2;r.material=mat('#c9ccd1');r.isPickable=false;r.checkCollisions=false;wheels.push(pv)});
+const wheels=[];
+if(window.AccraAssets&&window.AccraAssets.createCar){
+  // your car uses the new shared model; its body stays linked to carPaint so painting and job colours still work
+  const model=window.AccraAssets.createCar(scene,'sedan',{color:'#a3172b'});
+  model.parent=car;model.rotation.y=-Math.PI/2;model.position.set(0,-.8,0);
+  model.getChildMeshes().forEach(m=>{m.checkCollisions=false;m.isPickable=false;if(m.material&&m.material===mat('#a3172b'))m.material=carPaint;});
+}
 // ---------- input ----------
 let jx=0,jy=0,jid=null,vy=0,spd=0,heading=0,driving=false,jump=0;
 const joy=$('joy'),kn=$('knob');
@@ -158,4 +158,4 @@ function update(dt){
 }
 engine.runRenderLoop(()=>{update(Math.min(engine.getDeltaTime()/1000,.05));scene.render()});
 addEventListener('resize',()=>engine.resize());
-</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=39"></script><script src="accra-airport.js?v=39"></script><script src="accra-roads.js?v=48"></script><script src="accra-connect.js?v=40"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=54"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=54"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=61"></script><script src="accra-phone-skin.js?v=63"></script><script src="online.js?v=29"></script><script src="accra-assets.js?v=30"></script><script src="accra-figure.js?v=55"></script><script src="accra-people.js?v=56"></script><script src="accra-start.js?v=30"></script><script src="accra-upgrade.js?v=29"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-hq.js?v=2"></script><script src="accra-hospital.js?v=2"></script><script src="accra-mall.js?v=1"></script><script src="accra-entries.js?v=1"></script></body></html>
+</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=39"></script><script src="accra-airport.js?v=39"></script><script src="accra-roads.js?v=48"></script><script src="accra-connect.js?v=40"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=54"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=54"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=61"></script><script src="accra-phone-skin.js?v=63"></script><script src="online.js?v=29"></script><script src="accra-assets.js?v=30"></script><script src="accra-figure.js?v=55"></script><script src="accra-people.js?v=56"></script><script src="accra-start.js?v=30"></script><script src="accra-upgrade.js?v=30"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-hq.js?v=2"></script><script src="accra-hospital.js?v=2"></script><script src="accra-mall.js?v=1"></script><script src="accra-entries.js?v=1"></script></body></html>

@@ -394,13 +394,8 @@
       { const cx = 35, cz = -35;
         bld(cx, cz, 36, 22, "#e4ebf0", "#d9dde3", [[12, 6, .3, 8], [14.5, 2.2, 5, .3]], "ACCRA MOTORS \u00B7 CAR DEALERSHIP", "#17191c", "#fcd116", 8);
         fl(cx, cz, 36, 22, "#e9eaee");
-        const car = (x, z, hex, ry) => {
-          D(4.6, .2, 6.4, x, .1, z, "#3a3d42");
-          const q = (w, h, d, px, py, pz, c) => { const m = D(w, h, d, x, py, z, c); m.position.x = x + px * Math.cos(ry) + pz * Math.sin(ry); m.position.z = z - px * Math.sin(ry) + pz * Math.cos(ry); m.rotation.y = ry; };
-          q(1.9, .55, 4.2, 0, .75, 0, hex); q(1.6, .55, 2.2, 0, 1.28, -.2, "#10202c"); q(1.7, .08, 1.9, 0, 1.58, -.2, hex);
-          q(.5, .14, .06, -.65, .85, 2.12, "#fff6d6"); q(.5, .14, .06, .65, .85, 2.12, "#fff6d6"); q(.5, .12, .06, -.65, .85, -2.12, "#ff2a2a"); q(.5, .12, .06, .65, .85, -2.12, "#ff2a2a");
-          [[-1, 1.3], [1, 1.3], [-1, -1.3], [1, -1.3]].forEach(w => q(.3, .8, .8, w[0] * 1.0, .55, w[1], "#151515"));
-        };
+        const KIND = { "#f2f2f2": "landcruiser", "#b8bcc2": "sedan", "#1f4fa3": "hatch", "#17191c": "jeep", "#d11a2a": "bugatti", "#f2c200": "sports" };
+        const car = (x, z, hex, ry) => { A.createCar(scene, KIND[hex] || "sedan", { color: hex, position: [x, 0, z], rotY: ry }); };
         [["#f2f2f2", -10, -2], ["#b8bcc2", 0, -2], ["#1f4fa3", 10, -2], ["#17191c", -10, 5], ["#d11a2a", 0, 5], ["#f2c200", 10, 5]].forEach(c => car(cx + c[1], cz + c[2], c[0], PI));
         SOLID(6, 1.1, 1.2, cx - 11, .55, cz + 9, "#5a4a3a");
       }
