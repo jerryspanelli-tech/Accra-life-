@@ -23,7 +23,7 @@
       ["mall", 31, 39, 0, 17],               // mall front (35, 17) to the street at z 0
       ["police", 31, 39, 70, 89],            // police front (35, 89) to the avenue at z 70
       ["hospital", 106, 114, 70, 86],        // hospital front (110, 86) to the avenue at z 70
-      ["stadium", 74, 88, 31, 39],           // stadium west side (110, 35) to the street at x 70
+      ["stadium", 70, 110, 31, 39],          // stadium west side (110, 35) to the street at x 70
       ["dealership", 31, 39, -70, -46],      // Accra Motors (35, -46) to the avenue at z -70
       ["amoamah", 106, 114, -66, -56],       // Amoamah lots (110, -56) to the avenue at z -70
       ["villa", 106, 114, -105, -74],        // villa (110, -95) to the avenue at z -70
