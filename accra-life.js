@@ -1049,8 +1049,28 @@
         tt = t;
         if (taps >= 5) {
           taps = 0;
-          if (prompt("Admin code") === ADMIN_CODE) { adminPanel(); K.keep(); }
-          else note("Wrong code");
+          
+          // Custom Login Box (No more prompt()!)
+          const pBox = document.createElement("div");
+          pBox.style.cssText = "position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#1c1e21;border:2px solid #c9a54a;border-radius:16px;padding:16px;z-index:9999;color:#fff;width:260px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,0.8)";
+          pBox.innerHTML = `<h3 style="margin:0 0 10px;color:#c9a54a;font:800 16px system-ui;">Admin Login</h3>
+                            <input id="admPass" type="password" placeholder="Enter Code" style="width:100%;box-sizing:border-box;padding:10px;border-radius:8px;border:1px solid #444;background:#111;color:#fff;margin-bottom:10px;font-size:16px;text-align:center;">
+                            <button id="admGo" style="width:100%;padding:10px;border:0;border-radius:8px;background:#c9a54a;color:#111;font-weight:bold;margin-bottom:8px;">Login</button>
+                            <button id="admClose" style="width:100%;padding:10px;border:0;border-radius:8px;background:#333;color:#aaa;">Cancel</button>`;
+          document.body.appendChild(pBox);
+
+          setTimeout(() => { const inp = document.getElementById("admPass"); if(inp) inp.focus(); }, 100);
+
+          document.getElementById("admGo").onclick = () => {
+            if (document.getElementById("admPass").value === ADMIN_CODE) {
+              pBox.remove();
+              adminPanel();
+              K.keep();
+            } else {
+              alert("Wrong code");
+            }
+          };
+          document.getElementById("admClose").onclick = () => pBox.remove();
         }
       });
     }
@@ -1068,7 +1088,8 @@
     cmdGo.textContent = "Go";
     cmdGo.style.cssText = "border:0;border-radius:10px;background:#c9a54a;color:#17191c;font:800 14px system-ui;padding:0 14px";
     cmdOpen.textContent = "/";
-    cmdOpen.style.cssText = "position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 134px);width:34px;height:30px;border:0;border-radius:10px;background:rgba(28,30,33,.72);color:#c9a54a;font:800 18px system-ui;z-index:5";
+    // Moved down to 174px so it doesn't overlap the Location button!
+    cmdOpen.style.cssText = "position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 174px);width:34px;height:30px;border:0;border-radius:10px;background:rgba(28,30,33,.72);color:#c9a54a;font:800 18px system-ui;z-index:5";
     cmdBox.appendChild(cmdIn); cmdBox.appendChild(cmdGo);
     document.body.appendChild(cmdBox); document.body.appendChild(cmdOpen);
 
