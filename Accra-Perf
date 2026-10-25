@@ -1,0 +1,59 @@
+// accra-perf.js — quality presets and automatic device tuning
+(function(){
+  const isMobile=/iPhone|iPad|Android/i.test(navigator.userAgent);
+  const ram=navigator.deviceMemory||4;
+  const cores=navigator.hardwareConcurrency||4;
+
+  let preset;
+  try{preset=localStorage.getItem('accra-quality')}catch(e){}
+  if(!preset){
+    if(ram<3||cores<4)preset='low';
+    else if(isMobile)preset='medium';
+    else preset='high';
+  }
+
+  function apply(p){
+    preset=p;
+    try{localStorage.setItem('accra-quality',p)}catch(e){}
+    const b=document.getElementById('perfbtn');
+    if(b)b.textContent='⚙️ '+p[0].toUpperCase()+p.slice(1);
+    try{
+      if(p==='low'){
+        if(typeof engine!=='undefined')engine.setHardwareScalingLevel(2.0);
+        if(typeof sun!=='undefined')sun.shadowEnabled=false;
+        if(typeof scene!=='undefined'){scene.fogStart=50;scene.fogEnd=120}
+        if(typeof clouds!=='undefined')clouds.forEach(c=>c.setEnabled(false));
+      }else if(p==='medium'){
+        if(typeof engine!=='undefined')engine.setHardwareScalingLevel(isMobile?1.5:1);
+        if(typeof sun!=='undefined')sun.shadowEnabled=!isMobile;
+        if(typeof scene!=='undefined'){scene.fogStart=90;scene.fogEnd=250}
+        if(typeof clouds!=='undefined')clouds.forEach(c=>c.setEnabled(true));
+      }else{
+        if(typeof engine!=='undefined')engine.setHardwareScalingLevel(1);
+        if(typeof sun!=='undefined')sun.shadowEnabled=true;
+        if(typeof scene!=='undefined'){scene.fogStart=150;scene.fogEnd=500}
+        if(typeof clouds!=='undefined')clouds.forEach(c=>c.setEnabled(true));
+      }
+    }catch(e){}
+  }
+
+  const tryApply=()=>{
+    if(typeof engine!=='undefined'&&typeof scene!=='undefined'){apply(preset);return true}
+    return false;
+  };
+  if(!tryApply()){const t=setInterval(()=>{if(tryApply())clearInterval(t)},200)}
+
+  const btn=document.createElement('button');
+  btn.id='perfbtn';
+  btn.title='Graphics quality';
+  btn.style.cssText='position:fixed;left:8px;top:calc(env(safe-area-inset-top,0px) + 90px);border:0;border-radius:14px;background:rgba(28,30,33,.78);color:#fff;font:700 12px system-ui;padding:6px 12px;z-index:5';
+  btn.textContent='⚙️ '+preset[0].toUpperCase()+preset.slice(1);
+  btn.onclick=()=>{
+    const o=['low','medium','high'];
+    apply(o[(o.indexOf(preset)+1)%o.length]);
+    if(window.ACCRA_NOTIFY)try{window.ACCRA_NOTIFY('Quality: '+preset,'set')}catch(e){}
+  };
+  document.body.appendChild(btn);
+
+  window.ACCRA_PERF={preset:()=>preset,set:apply};
+})();
