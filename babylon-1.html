@@ -18,7 +18,8 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:n
 <div id="joy"><div id="knob"></div></div>
 <button id="jump" class="pb" aria-label="Jump or brake">⬆</button><button id="act" class="pb" aria-label="Car">🚗</button>
 <script>window.addEventListener('error',e=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#800;color:#fff;padding:10px;z-index:99999;font:14px system-ui';d.textContent='MAIN ERROR: '+e.message+' (line '+e.lineno+')';document.body.appendChild(d)});</script>
-<script src="https://cdn.babylonjs.com/babylon.js"></script>
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
 <script>
 const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z),C3=h=>BABYLON.Color3.FromHexString(h);
 const engine=new BABYLON.Engine($('c'),true,{adaptToDeviceRatio:true});
@@ -30,16 +31,14 @@ scene.fogMode=BABYLON.Scene.FOGMODE_LINEAR;scene.fogColor=C3('#cfe3f2');scene.fo
 const hemi=new BABYLON.HemisphericLight('h',V(0,1,0),scene);hemi.intensity=.75;hemi.groundColor=C3('#8d8a80');hemi.diffuse=C3('#dfeeff');
 const sun=new BABYLON.DirectionalLight('s',V(-.5,-1,-.4),scene);sun.intensity=1.3;sun.diffuse=C3('#fff1d6');sun.position=V(40,80,32);sun.autoUpdateExtends=false;sun.shadowMinZ=1;sun.shadowMaxZ=220;sun.orthoLeft=-55;sun.orthoRight=55;sun.orthoTop=55;sun.orthoBottom=-55;
 const sg=new BABYLON.ShadowGenerator(512,sun);sg.usePercentageCloserFiltering=true;sg.bias=.0008;sg.normalBias=.02;sg.darkness=.35;
-const PHONE=/iPhone|iPad|Android/i.test(navigator.userAgent);if(PHONE)sun.shadowEnabled=false;   // phones: no shadows, to save memory
+const PHONE=/iPhone|iPad|Android/i.test(navigator.userAgent);if(PHONE)sun.shadowEnabled=false;
 const mats={};
 const mat=h=>mats[h]||(mats[h]=Object.assign(new BABYLON.StandardMaterial('m'+h,scene),{diffuseColor:C3(h),specularColor:new BABYLON.Color3(.05,.05,.05)}));
-// every solid mesh gets checkCollisions: players, cars and the camera cannot pass through it
 function box(w,h,d,x,y,z,col,solid){const m=BABYLON.MeshBuilder.CreateBox('b',{width:w,height:h,depth:d},scene);m.position.set(x,y,z);m.material=mat(col);m.checkCollisions=solid!==false;m.receiveShadows=true;if(h>.1)sg.addShadowCaster(m);return m}
 const ground=BABYLON.MeshBuilder.CreateGround('g',{width:600,height:600},scene);function noiseTex(base,sp,n){const t=new BABYLON.DynamicTexture('nt',256,scene,true),c=t.getContext();c.fillStyle=base;c.fillRect(0,0,256,256);for(let i=0;i<n;i++){c.fillStyle=sp[i%sp.length];const q=1+Math.random()*3;c.fillRect(Math.random()*256,Math.random()*256,q,q)}t.update();t.wrapU=t.wrapV=BABYLON.Texture.WRAP_ADDRESSMODE;return t}
 const gMat=Object.assign(new BABYLON.StandardMaterial('gm',scene),{specularColor:new BABYLON.Color3(0,0,0)});gMat.diffuseTexture=noiseTex('#6f9448',['#5e8038','#80a655','#6a8a40','#a3a068'],5000);gMat.diffuseTexture.uScale=gMat.diffuseTexture.vScale=120;
 ground.material=gMat;ground.receiveShadows=true;ground.checkCollisions=true;
 const roadM=Object.assign(new BABYLON.StandardMaterial('rm',scene),{specularColor:new BABYLON.Color3(.04,.04,.04)});roadM.diffuseTexture=noiseTex('#37393d',['#2c2e31','#46484c','#55575b'],4000);roadM.diffuseTexture.uScale=40;
-// ===== CITY: 5 x 5 street grid, 7 districts =====
 const R=[-150,-70,0,70,150],VX=110,VZ=-95;
 function road(c,ax){const L=330,r=BABYLON.MeshBuilder.CreateBox('r',{width:ax?8:L,height:.05,depth:ax?L:8},scene);r.position.set(ax?c:0,ax?.04:.03,ax?0:c);r.material=roadM;r.receiveShadows=true;r.isPickable=false;
  const pts=[-165];R.forEach(q=>pts.push(q-11,q+11));pts.push(165);
@@ -62,62 +61,53 @@ const STY={'Airport City':{w:14,h:[24,42],c:['#5b8aa8','#4a6f8a','#9dbbd0','#c4c
 const signed={};
 for(let i=0;i<4;i++)for(let j=0;j<4;j++){const nm=DG[i][j],S=STY[nm],x0=R[i]+12,x1=R[i+1]-12,z0=R[j]+12,z1=R[j+1]-12,nx=Math.max(1,Math.floor((x1-x0)/S.p)),nz=Math.max(1,Math.floor((z1-z0)/S.p));
  for(let a=0;a<nx;a++)for(let b=0;b<nz;b++){const cx=x0+(a+.5)*(x1-x0)/nx,cz=z0+(b+.5)*(z1-z0)/nz;
-  if(Math.hypot(cx-VX,cz-VZ)<24)continue;                 // keep the villa plot free
+  if(Math.hypot(cx-VX,cz-VZ)<24)continue;
   const h=S.h[0]+Math.random()*(S.h[1]-S.h[0]),w=S.w-Math.random()*2;bldg(cx,cz,w,w*(.8+Math.random()*.2),h,S.c[(a+b*3+i)%S.c.length])}
  if(!signed[nm]){signed[nm]=1;signText(nm,(x0+x1)/2,(z0+z1)/2)}}
-// beach and sea at the south edge (Labadi)
 box(330,.06,36,0,.03,184,'#e3cf9b',false);
 {const sea=BABYLON.MeshBuilder.CreateBox('sea',{width:560,height:.06,depth:140},scene);sea.position.set(0,.05,272);sea.isPickable=false;sea.material=Object.assign(new BABYLON.StandardMaterial('seam',scene),{diffuseColor:C3('#3d7388'),specularColor:new BABYLON.Color3(.8,.8,.8),specularPower:90})}
 function tree(x,z){const t=BABYLON.MeshBuilder.CreateCylinder('t',{height:5,diameterTop:.4,diameterBottom:.7},scene);t.position.set(x,2.5,z);t.material=mat('#8b6b4a');t.checkCollisions=true;
  const c=BABYLON.MeshBuilder.CreateSphere('c',{diameter:4},scene);c.position.set(x,6,z);c.material=mat('#4a6b3a')}
-
 function palm(x,z){const h=6+Math.random()*3,t=BABYLON.MeshBuilder.CreateCylinder('t',{height:h,diameterTop:.35,diameterBottom:.6},scene);t.position.set(x,h/2,z);t.material=mat('#8b6b4a');t.checkCollisions=true;sg.addShadowCaster(t);
  const top=new BABYLON.TransformNode('pt',scene);top.position.set(x,h,z);
  for(let i=0;i<7;i++){const a=new BABYLON.TransformNode('pa',scene);a.parent=top;a.rotation.y=i/7*Math.PI*2;const f=BABYLON.MeshBuilder.CreateBox('f',{width:.7,height:.06,depth:3.4},scene);f.parent=a;f.position.set(0,-.35,1.5);f.rotation.x=.5;f.material=mat('#4a7a35');f.isPickable=false;sg.addShadowCaster(f)}}
 R.forEach(c=>{for(let t=-156;t<=156;t+=36)[-7.6,7.6].forEach(o=>{if(R.some(r=>Math.abs(t-r)<14))return;palm(c+o,t);palm(t,c+o)})});
-// clouds
 const clouds=[],cloudM=Object.assign(new BABYLON.StandardMaterial('cl',scene),{emissiveColor:new BABYLON.Color3(1,1,1),disableLighting:true,alpha:.92,fogEnabled:false});
 for(let i=0;i<14;i++){const c=BABYLON.MeshBuilder.CreateSphere('cl',{diameter:1},scene);c.material=cloudM;c.scaling.set(30+Math.random()*30,6+Math.random()*3,16+Math.random()*10);c.position.set(Math.random()*400-200,85+Math.random()*25,Math.random()*400-200);c.isPickable=false;clouds.push(c)}
-// ---------- VILLA 26 x 18 m: attached garage (centre front), lounge, kitchen, office, master suite, cinema ----------
-/* villa position set above */
 const vb=(lx,lz,sw,sd,col)=>box(sw,3.2,sd,VX+lx,1.6,VZ+lz,col||'#f3ecdc');
-vb(0,-9,26,.3);vb(-13,0,.3,18);vb(13,0,.3,18);vb(-8.25,9,9.5,.3);vb(8.25,9,9.5,.3);   // outer walls, 7 m garage opening in the front
-[-1,1].forEach(s=>{vb(s*3.5,-6.9,.3,4.2);vb(s*3.5,.5,.3,7.4);vb(s*3.5,7.4,.3,3.2)});    // side partitions with doorways
-vb(-11.15,0,3.7,.3);vb(-5.6,0,4.2,.3);vb(11.15,0,3.7,.3);vb(5.6,0,4.2,.3);               // z=0 walls with doorways
-vb(-2.15,1,2.7,.3);vb(2.15,1,2.7,.3);vb(-9.5,-6.5,.3,5);vb(-11.95,-4,2.1,.3);            // garage back wall, ensuite
+vb(0,-9,26,.3);vb(-13,0,.3,18);vb(13,0,.3,18);vb(-8.25,9,9.5,.3);vb(8.25,9,9.5,.3);
+[-1,1].forEach(s=>{vb(s*3.5,-6.9,.3,4.2);vb(s*3.5,.5,.3,7.4);vb(s*3.5,7.4,.3,3.2)});
+vb(-11.15,0,3.7,.3);vb(-5.6,0,4.2,.3);vb(11.15,0,3.7,.3);vb(5.6,0,4.2,.3);
+vb(-2.15,1,2.7,.3);vb(2.15,1,2.7,.3);vb(-9.5,-6.5,.3,5);vb(-11.95,-4,2.1,.3);
 const fl=(lx,lz,w,d,c)=>box(w,.05,d,VX+lx,.03,VZ+lz,c,false);
 fl(-8.2,4.5,9.4,9,'#9b6b43');fl(8.2,4.5,9.4,9,'#e8e2d6');fl(0,5,6.8,8,'#8f9296');fl(-8.2,-4.5,9.4,9,'#c9b79a');fl(8.2,-4.5,9.4,9,'#b9c4cc');fl(0,-4.5,6.8,9,'#7a5a3e');
-// furniture: [x, z, width, height, depth, colour]
 [[-6.9,6.2,3,.85,1.7,'#2f6b3c'],[-11.6,7.2,1.7,1,2.4,'#15151a'],[-8.5,3,3,.9,1.2,'#2b2b30'],[-8.5,.7,2.2,1.1,.5,'#14181d'],[-4.9,8,1.8,.8,.8,'#b0bec5'],
  [12.5,4,.7,.9,5,'#cfd6dc'],[9.2,4,1,.95,3,'#f4f1ea'],[12.4,7.9,1,2,.9,'#e9edf0'],[6.3,7.2,2.4,.75,1.2,'#8b5a2b'],
  [0,-6.2,2.4,.75,1,'#6d4c2f'],[-2.6,-8.55,1.6,2.2,.5,'#5a3a22'],[2.6,-8.55,1.6,2.2,.5,'#5a3a22'],
  [-6.5,-6.8,2.2,.5,3.4,'#2e6b4f'],[-5,-.55,1.6,2,.7,'#6b4a2e'],[-11.4,-8.2,1.6,.6,.8,'#f4f7fa'],[-10,-7.2,.6,.9,1.6,'#e3eef4'],
  [8.5,-3.2,3,.6,1.3,'#4a2c1c'],[8.5,-8.4,2.2,1.1,.5,'#14181d']].forEach(f=>box(f[2],f[3],f[4],VX+f[0],f[3]/2,VZ+f[1],f[5]));
 const roof=box(26.6,.3,18.6,VX,3.35,VZ,'#7b4b33',false);
-// ---------- player ----------
 const player=BABYLON.MeshBuilder.CreateCapsule('p',{height:1.8,radius:.4},scene);
 player.position.set(0,.91,10);player.material=mat('#c9a54a');player.ellipsoid=V(.4,.9,.4);
 const camT=new BABYLON.TransformNode('ct',scene);
 const cam=new BABYLON.ArcRotateCamera('cam',Math.PI/2,1.1,9,V(0,1,0),scene);
 cam.lockedTarget=camT;cam.lowerRadiusLimit=3;cam.upperRadiusLimit=16;cam.lowerBetaLimit=.25;cam.upperBetaLimit=1.45;
-cam.checkCollisions=true;cam.collisionRadius=V(.5,.5,.5);cam.minZ=.2;cam.maxZ=60000;   // the highway is 27 km long: let the camera see the far ground
+cam.checkCollisions=true;cam.collisionRadius=V(.5,.5,.5);cam.minZ=.2;cam.maxZ=60000;
 cam.attachControl($('c'),true);
-// ---------- car (collider box + visual parts) ----------
 const car=BABYLON.MeshBuilder.CreateBox('car',{width:2.2,height:1.4,depth:4.6},scene);
 car.isVisible=false;car.position.set(2,.8,22);car.checkCollisions=true;car.ellipsoid=V(1.15,.7,1.15);
 const mk=(o)=>Object.assign(new BABYLON.StandardMaterial('cm',scene),o);
 const carPaint=mk({diffuseColor:C3('#a3172b'),specularColor:new BABYLON.Color3(.7,.7,.7),specularPower:80}),glassM=mk({diffuseColor:C3('#10202c'),specularColor:new BABYLON.Color3(1,1,1),specularPower:120,alpha:.92}),lightM=mk({emissiveColor:C3('#fff6d6'),disableLighting:true}),tailM=mk({emissiveColor:C3('#ff2a2a'),disableLighting:true});
 function part(w,h,d,x,y,z,m){const q=BABYLON.MeshBuilder.CreateBox('cp',{width:w,height:h,depth:d},scene);q.parent=car;q.position.set(x,y,z);q.material=typeof m==='string'?mat(m):m;q.checkCollisions=false;q.isPickable=false;sg.addShadowCaster(q);return q}
 const wheels=[];
-// the car builder (accra-assets.js) loads after this script, so wait until it is ready, then build your car
 const attachCarModel=()=>{
   if(!window.AccraAssets||!window.AccraAssets.createCar){setTimeout(attachCarModel,300);return}
   const model=window.AccraAssets.createCar(scene,'sedan',{color:'#a3172b'});
-  model.parent=car;model.rotation.y=-Math.PI/2;model.position.set(0,-.8,0);
+  model.parent=null;window.__carModel=model;
   model.getChildMeshes().forEach(m=>{m.checkCollisions=false;m.isPickable=false;if(m.material&&m.material===mat('#a3172b'))m.material=carPaint;});
 };
 attachCarModel();
-// ---------- input ----------
+function carModelFollow(){const m=window.__carModel;if(!m)return;m.setEnabled(true);m.position.set(car.position.x,car.position.y-.8,car.position.z);m.rotation.y=car.rotation.y-Math.PI/2;}
 let jx=0,jy=0,jid=null,vy=0,spd=0,heading=0,driving=false,jump=0;
 const joy=$('joy'),kn=$('knob');
 function jm(e){const r=joy.getBoundingClientRect(),R=r.width/2,m=R*.62;let dx=e.clientX-(r.left+R),dy=e.clientY-(r.top+R);const l=Math.hypot(dx,dy);if(l>m){dx*=m/l;dy*=m/l}kn.style.transform='translate('+dx+'px,'+dy+'px)';jx=dx/m;jy=dy/m}
@@ -131,7 +121,6 @@ function toggleCar(){
  if(!driving){if(BABYLON.Vector3.Distance(player.position,car.position)>6)return;driving=true;player.setEnabled(false);spd=0}
  else{driving=false;player.setEnabled(true);const r=V(Math.cos(heading),0,-Math.sin(heading));player.position.copyFrom(car.position.add(r.scale(3)));player.position.y=.91;vy=0;spd=0}}
 $('act').addEventListener('pointerdown',e=>{e.preventDefault();toggleCar()});
-// ---------- game loop ----------
 function update(dt){
  const ix=jx+(K.d?1:0)-(K.a?1:0),iy=jy+(K.s?1:0)-(K.w?1:0);
  let focus;
@@ -140,7 +129,7 @@ function update(dt){
   heading+=st*dt*1.7*Math.max(-1,Math.min(1,spd/6));car.rotation.y=heading;
   const want=V(Math.sin(heading)*spd*dt,0,Math.cos(heading)*spd*dt),before=car.position.clone();
   car.moveWithCollisions(want);car.position.y=.8;
-  if(want.length()>.02&&BABYLON.Vector3.Distance(before,car.position)<want.length()*.5)spd*=-.3;   // hit a wall: bounce back
+  if(want.length()>.02&&BABYLON.Vector3.Distance(before,car.position)<want.length()*.5)spd*=-.3;
   wheels.forEach(w=>{w.rotation.x+=spd*dt/.4});focus=car.position;$('spd').style.display='block';$('spd').textContent=Math.round(Math.abs(spd)*3.6)+' km/h';
  }else{
   $('spd').style.display='none';
@@ -152,12 +141,13 @@ function update(dt){
   if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);
   focus=player.position;
  }
+ carModelFollow();
  camT.position.set(focus.x,focus.y+(driving?.9:.7),focus.z);
  sun.position.set(focus.x+40,80,focus.z+32);clouds.forEach(c=>{c.position.x+=dt*1.2;if(c.position.x>220)c.position.x=-220});
  const near=!driving&&BABYLON.Vector3.Distance(player.position,car.position)<6;
  $('act').style.display=(near||driving)?'block':'none';
- roof.setEnabled(!(Math.abs(focus.x-VX)<13&&Math.abs(focus.z-VZ)<9));   // roof hides while you are inside the villa
+ roof.setEnabled(!(Math.abs(focus.x-VX)<13&&Math.abs(focus.z-VZ)<9));
 }
 engine.runRenderLoop(()=>{update(Math.min(engine.getDeltaTime()/1000,.05));scene.render()});
 addEventListener('resize',()=>engine.resize());
-</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=39"></script><script src="accra-airport.js?v=39"></script><script src="accra-roads.js?v=48"></script><script src="accra-connect.js?v=40"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=54"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=54"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=61"></script><script src="accra-phone-skin.js?v=63"></script><script src="online.js?v=29"></script><script src="accra-assets.js?v=31"></script><script src="accra-figure.js?v=55"></script><script src="accra-people.js?v=56"></script><script src="accra-start.js?v=30"></script><script src="accra-upgrade.js?v=31"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-hq.js?v=2"></script><script src="accra-hospital.js?v=2"></script><script src="accra-mall.js?v=1"></script><script src="accra-interiors.js?v=2"></script><script src="accra-entries.js?v=2"></script></body></html>
+</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=39"></script><script src="accra-airport.js?v=39"></script><script src="accra-roads.js?v=49"></script><script src="accra-connect.js?v=41"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=54"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=54"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=61"></script><script src="accra-phone-skin.js?v=63"></script><script src="online.js?v=29"></script><script src="accra-assets.js?v=34"></script><script src="accra-figure.js?v=55"></script><script src="accra-people.js?v=56"></script><script src="accra-start.js?v=30"></script><script src="accra-upgrade.js?v=32"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-hq.js?v=2"></script><script src="accra-hospital.js?v=2"></script><script src="accra-mall.js?v=1"></script><script src="accra-interiors.js?v=2"></script><script src="accra-entries.js?v=2"></script></body></html>
