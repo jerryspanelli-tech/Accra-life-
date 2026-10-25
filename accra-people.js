@@ -10,12 +10,11 @@
     const B = BABYLON;
     const folder = new URL("./", window.location.href).href + "people/";
     const HEIGHT = 1.8;
-    let base = null;                    // the loaded character (mesh, skeleton, bone transforms)
-    let clips = { walk: null, idle: null }; // animation tracks: [{ bone, animation }]
-    const people = [];                  // every spawned person, with its last position and its animation groups
+    let base = null;
+    let clips = { walk: null, idle: null };
+    const people = [];
     let idCount = 0;
 
-    // read the tracks of an animation file (the bone name and the animation for each bone)
     async function readClips(file) {
       try {
         const c = await B.SceneLoader.LoadAssetContainerAsync(folder, file, scene);
@@ -27,15 +26,25 @@
       } catch (e) { return null; }
     }
 
-    // turn a list of tracks into an animation group for one person
+    // Match a bone name even after instantiation suffixes it (e.g. "Arm_L" -> "Arm_L_person3").
+    function findBone(nodes, boneName) {
+      return nodes.find(n => n.name === boneName)
+          || nodes.find(n => n.name.startsWith(boneName + "_"))
+          || nodes.find(n => n.name.includes(boneName));
+    }
+
     function groupFor(tracks, root, name) {
       const grp = new B.AnimationGroup(name, scene);
       const nodes = root.getDescendants(false, n => n instanceof B.TransformNode);
       tracks.forEach(t => {
-        const target = nodes.find(n => n.name === t.bone);
+        const target = findBone(nodes, t.bone);
         if (target) grp.addTargetedAnimation(t.animation, target);
       });
       grp.loopAnimation = true;
+      if (grp.targetedAnimations.length === 0) {
+        console.warn("accra-people: no bones matched for " + name + " (bone names from file: " +
+          tracks.slice(0, 3).map(t => t.bone).join(", ") + "...)");
+      }
       return grp;
     }
 
@@ -45,13 +54,11 @@
       clips.walk = await readClips("walk.glb");
       clips.idle = await readClips("idle.glb");
       say("People loaded: humanoid character, walking" + (clips.idle ? " and standing" : "") + ".");
-      // the player and anyone built from now on use the new character
       if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply();
     }
 
     const say = m => { console.log(m); if (window.ACCRA_LIFE && window.ACCRA_LIFE.api) window.ACCRA_LIFE.api.note(m); };
 
-    // make one person from the loaded character
     function spawn(parent) {
       const id = ++idCount;
       const inst = base.instantiateModelsToScene(n => n + "_person" + id, true);
@@ -62,19 +69,25 @@
       const s = bb ? HEIGHT / Math.max(bb.max.y - bb.min.y, .001) : .01;
       inst.rootNodes[0].scaling.setAll(s);
       inst.rootNodes[0].position.set(0, bb ? -bb.min.y * s : 0, 0);
-      const person = { root, walk: null, idle: null, last: root.getAbsolutePosition().clone(), speed: 0, playing: null, sp: 0, outfit: "model" };
-      if (clips.walk) person.walk = groupFor(clips.walk, inst.rootNodes[0], "walk" + id);
-      if (clips.idle) person.idle = groupFor(clips.idle, inst.rootNodes[0], "idle" + id);
-      person.idle && person.idle.start(true, 1);
+
+      const person = { root, walk: null, idle: null, last: root.getAbsolutePosition().clone(), speed: 0, playing: null, sp: 0, outfit: "glb" };
+      if (clips.walk) {
+        person.walk = groupFor(clips.walk, inst.rootNodes[0], "walk" + id);
+        if (!person.walk.targetedAnimations || person.walk.targetedAnimations.length === 0) person.walk = null;
+      }
+      if (clips.idle) {
+        person.idle = groupFor(clips.idle, inst.rootNodes[0], "idle" + id);
+        if (!person.idle.targetedAnimations || person.idle.targetedAnimations.length === 0) person.idle = null;
+      }
+      if (person.idle) person.idle.start(true, 1);
       people.push(person);
       return person;
     }
 
-    // the people's walk and idle: play the walk while they move, the idle when they stop
     scene.onBeforeRenderObservable.add(() => {
       const dt = Math.max(engine.getDeltaTime() / 1000, .001);
       people.forEach(p => {
-        if (p.root.isDisposed()) return;
+        if (!p.root || p.root.isDisposed()) return;
         const now = p.root.getAbsolutePosition();
         p.speed = Math.hypot(now.x - p.last.x, now.z - p.last.z) / dt;
         p.last = now.clone();
@@ -88,16 +101,27 @@
       });
     });
 
-    // replace the people built by accra-figure.js: the character is shown for the player and the other people
+    // Replace the cartoon body with the GLB model (if the GLB loaded).
+    // Keep the cartoon pivots around as harmless stubs so online.js pose code doesn't crash.
     if (window.AccraFigure) {
       const cartoon = window.AccraFigure.human;
       window.AccraFigure.human = function (opt) {
         const c = cartoon(opt);
-        if (!base) return c;                        // not loaded yet: keep the cartoon figure
+        if (!base) return c;   // no GLB loaded: cartoon only
+
+        // IMPORTANT: capture cartoon meshes BEFORE spawning so we don't dispose the new model.
+        const cartoonMeshes = c.root.getChildMeshes(false).slice();
+
         const s = spawn(c.root);
-        // the figure's own walk code moves c.al, c.ar, c.ll, c.lr; the real people use their clips instead
-        c.root.getChildMeshes().forEach(m => m.dispose());
-        return Object.assign(c, { root: s.root, sp: 0, person: s });
+
+        // Now dispose only the cartoon meshes we captured.
+        cartoonMeshes.forEach(m => { if (m && !m.isDisposed()) m.dispose(); });
+
+        // Override c.root with the GLB root so callers attach it to the player.
+        // c.al, c.ar, c.ll, c.lr, c.g remain as stubs — online.js pose code touches them
+        // (no crash) but has no visual effect on the GLB. Poses like sit/dance/wave
+        // will need dedicated GLB animations in a future pass.
+        return Object.assign(c, { root: s.root, sp: 0, person: s, outfit: "glb" });
       };
     }
 
