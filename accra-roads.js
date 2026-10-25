@@ -9,7 +9,6 @@
     const CYCLE = 24, NS_GREEN = 10, YELLOW = 2;
     let clock = 0;
 
-    // ----- signal timing -----
     function state(t) {
       const u = ((t % CYCLE) + CYCLE) % CYCLE;
       if (u < NS_GREEN) return { ns: "green", ew: "red" };
@@ -18,7 +17,6 @@
       return { ns: "red", ew: "yellow" };
     }
 
-    // ----- shared materials: bright (on) and dim (off) for each colour -----
     const colours = { red: "#ff3b3b", yellow: "#ffcf3b", green: "#3bff6a" };
     const on = {}, off = {};
     Object.keys(colours).forEach(k => {
@@ -27,7 +25,6 @@
     });
     const poleM = mat("#3a3d44");
 
-    // ----- traffic lights: one pole and head at each corner of every junction (no collisions) -----
     const heads = [];
     const sourceLamp = B.MeshBuilder.CreateSphere("sig_src", { diameter: .34, segments: 8 }, scene);
     sourceLamp.isVisible = false;
@@ -39,8 +36,6 @@
       head.position.set(px, 5.4, pz); head.material = poleM; head.isPickable = false; head.checkCollisions = false;
       const lamps = {};
       ["red", "yellow", "green"].forEach((k, n) => {
-        // a clone, not an instance: instances cannot have their own material, so the red/yellow/green
-        // on/off painting below was silently ignored and every lamp stayed grey
         const l = sourceLamp.clone("sig_" + k);
         l.isVisible = true;
         l.position.set(px, 5.85 - n * .45, pz - .3); l.isPickable = false;
@@ -51,16 +46,21 @@
 
     function paintLights(t) {
       const s = state(t);
-      heads.forEach((h, n) => {
-        const phase = (n % 2 === 0) ? s.ns : s.ew;
+      // Every junction uses the SAME phase (per the file's own header comment).
+      // The old code alternated phases by head index, so a player driving north
+      // hit green at one block and red at the very next block, stop-and-go forever.
+      heads.forEach(h => {
         ["red", "yellow", "green"].forEach(k => {
-          const lit = (phase === "green" && k === "green") || (phase === "yellow" && k === "yellow") || (phase === "red" && k === "red");
+          const lit = (s.ns === "green" && k === "green") || (s.ns === "yellow" && k === "yellow") || (s.ns === "red" && k === "red");
           h.lamps[k].material = lit ? on[k] : off[k];
         });
       });
     }
 
-    // ----- pedestrian crossings: three flat stripes across each road, on all four approaches -----
+    // Pedestrian crossings on each approach. Y raised from .012 to .09 because
+    // the road mesh tops sit at y = .055 (east-west) and y = .065 (north-south);
+    // the old .012 was buried under the asphalt and completely invisible.
+    const CROSS_Y = .09;
     const stripeSrc = B.MeshBuilder.CreateBox("zebra_src", { width: 1, height: .002, depth: 1 }, scene);
     stripeSrc.material = mat("#f2f2f2"); stripeSrc.isVisible = false;
     RR.forEach(x => RR.forEach(z => {
@@ -68,14 +68,13 @@
         const cx = x + d[0], cz = z + d[1];
         for (let k = -1; k <= 1; k++) {
           const s = stripeSrc.createInstance("zebra");
-          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, .012, cz + k * 1.6); }
-          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, .012, cz); }
+          if (d[0] === 0) { s.scaling.set(6.4, 1, .8); s.position.set(cx, CROSS_Y, cz + k * 1.6); }
+          else { s.scaling.set(.8, 1, 6.4); s.position.set(cx + k * 1.6, CROSS_Y, cz); }
           s.isPickable = false; s.checkCollisions = false;
         }
       });
     }));
 
-    // ----- run the signals -----
     let tick = 0;
     scene.onBeforeRenderObservable.add(() => {
       clock += Math.min(engine.getDeltaTime() / 1000, .05);
