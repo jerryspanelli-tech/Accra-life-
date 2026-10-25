@@ -72,6 +72,7 @@
       for (let i = -k; i <= k; i++) for (let j = -k; j <= k; j++) {
         if (i === 0 || j === 0 || Math.hypot(i, j) * 34 > T.R) continue;
         const x = T.x + i * 34 + (i > 0 ? 8 : -8), z = T.z + j * 34 + (j > 0 ? 8 : -8); if (!inC(x, z)) continue;
+        if (Math.abs(x - hx(z)) < 24) continue;                             // never build on the highway corridor through town
         const r = rng(hash(i, j, T.z | 0)); if (r() < .15) continue;
         const h = T.big === 2 ? 8 + r() * (Math.hypot(i, j) < 3 ? 40 : 14) : 4 + r() * 8, w = 14 + r() * 8, d = 14 + r() * 8, col = P[Math.floor(r() * P.length)];
         const b = B.MeshBuilder.CreateBox("tb", { width: w, height: h, depth: d }, scene); b.position.set(x, h / 2, z); b.material = facMat(col, Math.max(1, Math.round(h / 6)), Math.max(1, Math.round(w / 7))); b.checkCollisions = true; b.isPickable = false; list.push(b);

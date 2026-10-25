@@ -39,7 +39,10 @@
       head.position.set(px, 5.4, pz); head.material = poleM; head.isPickable = false; head.checkCollisions = false;
       const lamps = {};
       ["red", "yellow", "green"].forEach((k, n) => {
-        const l = sourceLamp.createInstance("sig_" + k);
+        // a clone, not an instance: instances cannot have their own material, so the red/yellow/green
+        // on/off painting below was silently ignored and every lamp stayed grey
+        const l = sourceLamp.clone("sig_" + k);
+        l.isVisible = true;
         l.position.set(px, 5.85 - n * .45, pz - .3); l.isPickable = false;
         lamps[k] = l;
       });

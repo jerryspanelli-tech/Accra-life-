@@ -571,7 +571,10 @@
     }
 
     let n = 0;
-    scene.meshes.filter(m => m.name === "bd").forEach(b => {
+    // The generic "bd" city blocks no longer exist: accra-districts.js replaces them with styled
+    // buildings that already carry their own hip roofs, so this pass would find nothing (it used to
+    // log "0 roofs"). Skip it when the districts module is active; it still runs for older cities.
+    if (!window.ACCRA_DISTRICTS) scene.meshes.filter(m => m.name === "bd").forEach(b => {
       const e = b.getBoundingInfo().boundingBox.extendSize, w = e.x * 2, h = e.y * 2, d = e.z * 2;
       if (h > 20 || w < 6) return;                       // leave the tall glass towers alone
       const rf = flatRoofs[b.position.x.toFixed(1) + "," + b.position.z.toFixed(1)];
@@ -636,7 +639,7 @@
     } catch (e) {}
     window.ACCRA_KIT = { item, ITEMS, note, show, hide, ttl, BS, GOLD, cash, pay, ls, sv, styler, points: POINTS, MX, MZ, collider, tag, keep: () => { lock = true; } };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).upgrade = 1;
-    const lifeJs = document.createElement("script"); window.ACCRA_BUILD = window.ACCRA_BUILD || 64; lifeJs.src = "accra-life.js?v=" + window.ACCRA_BUILD; lifeJs.onerror = () => banner("accra-life.js was not found. Upload it to your repo."); document.body.appendChild(lifeJs);
+    const lifeJs = document.createElement("script"); window.ACCRA_BUILD = window.ACCRA_BUILD || 65; lifeJs.src = "accra-life.js?v=" + window.ACCRA_BUILD; lifeJs.onerror = () => banner("accra-life.js was not found. Upload it to your repo."); document.body.appendChild(lifeJs);
     const locJs = document.createElement("script"); locJs.src = "AccraLocations.js?v=" + (window.ACCRA_BUILD || 64);
     locJs.onload = () => {
       try {
@@ -646,7 +649,7 @@
     };
     locJs.onerror = () => banner("AccraLocations.js was not found. Upload it to the same folder as babylon.html.");
     document.body.appendChild(locJs);
-    console.log("Accra upgrade loaded:", n, "roofs");
+    console.log("Accra upgrade loaded:", window.ACCRA_DISTRICTS ? "district buildings carry their own roofs" : n + " roofs");
   } catch (err) {
     console.error("accra-upgrade failed (game still runs):", err); banner("Upgrade stopped: " + (err && err.message));
   }

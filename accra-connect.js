@@ -1,7 +1,7 @@
 /* accra-connect.js - joins every road in the city into one network.
  * Adds driveways from the grid roads to the mall, police, hospital, stadium, dealership, Amoamah, the villa,
- * the beach and the airport gate. The driveways are flat strips that sit flush with the grid, and they block
- * movement. Toll payment is handled only by accra-world.js and accra-toll.js. */
+ * the beach and the airport gate. The driveways are flat strips that sit flush with the grid; they are not solid,
+ * so walking and driving over them is smooth. Toll payment is handled only by accra-world.js and accra-toll.js. */
 (function () {
   try {
     const B = BABYLON;
@@ -15,7 +15,7 @@
       m.material = asphalt;
       m.receiveShadows = true;
       m.isPickable = false;
-      m.checkCollisions = true;
+      m.checkCollisions = false;   // a 3 cm strip must not trip the player or stop a car: it is flush with the road
       return m;
     }
 
