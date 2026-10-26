@@ -1,39 +1,23 @@
-/* accra-people.js - Loads 3D models (Ignores missing textures) */
+/* accra-people.js - Loads 3D models and procedurally animates the bones */
 (function () {
   try {
     const B = BABYLON;
     const folder = new URL("./", window.location.href).href + "People/";
     const HEIGHT = 1.8;
     let base = null;
-    let clips = { walk: null, idle: null };
     const people = [];
     let idCount = 0;
-
-    // --- MAGIC FIX: Ignore missing textures so the model still loads ---
-    B.SceneLoader.OnPluginActivatedObservable.add(function (plugin) {
-      if (plugin.name === "gltf") {
-        plugin.onError = function (error) {
-          console.warn("Ignored missing texture error:", error);
-        };
-      }
-    });
 
     async function load() {
       try {
         const cont = await B.SceneLoader.LoadAssetContainerAsync(folder, "Superhero_Male_FullBody.gltf", scene);
         base = cont;
-        say("People loaded: Superhero model.");
+        console.log("People loaded: Superhero model.");
         if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply();
       } catch (err) {
-        const d = document.createElement('div');
-        d.style.cssText = "position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#8b1a1a;color:#fff;padding:15px;border-radius:10px;z-index:99999;font:14px system-ui;text-align:center;max-width:90%;border:2px solid #fff;";
-        d.innerHTML = "<b>3D Model Failed!</b><br><br>" + err.message + "<br><br>(Tap to dismiss)";
-        d.onclick = () => d.remove();
-        document.body.appendChild(d);
+        console.error("3D Model Failed:", err);
       }
     }
-
-    const say = m => { console.log(m); if (window.ACCRA_LIFE && window.ACCRA_LIFE.api) window.ACCRA_LIFE.api.note(m); };
 
     function spawn(parent) {
       const id = ++idCount;
@@ -41,14 +25,53 @@
       const root = new B.TransformNode("person_root" + id, scene);
       root.parent = parent;
       inst.rootNodes[0].parent = root;
+      
       const bb = inst.rootNodes[0].getHierarchyBoundingVectors ? inst.rootNodes[0].getHierarchyBoundingVectors(true) : null;
       const s = bb ? HEIGHT / Math.max(bb.max.y - bb.min.y, .001) : .01;
       inst.rootNodes[0].scaling.setAll(s);
       inst.rootNodes[0].position.set(0, bb ? -bb.min.y * s : 0, 0);
-      const person = { root, walk: null, idle: null, last: root.getAbsolutePosition().clone(), speed: 0, playing: null, sp: 0, outfit: "glb" };
+
+      const person = { root, last: root.getAbsolutePosition().clone(), speed: 0, sp: 0 };
+      
+      // Find the bones for animation
+      const skel = inst.skeletons[0];
+      if (skel) {
+        person.thighL = skel.bones.find(b => b.name.toLowerCase() === "thigh_l");
+        person.thighR = skel.bones.find(b => b.name.toLowerCase() === "thigh_r");
+        person.armL = skel.bones.find(b => b.name.toLowerCase() === "upperarm_l");
+        person.armR = skel.bones.find(b => b.name.toLowerCase() === "upperarm_r");
+      }
+
       people.push(person);
       return person;
     }
+
+    // --- PROCEDURAL WALK ANIMATION ---
+    let animTime = 0;
+    scene.onBeforeRenderObservable.add(() => {
+      const dt = Math.max(engine.getDeltaTime() / 1000, .001);
+      animTime += dt * 8; // Speed of the walk cycle
+
+      people.forEach(p => {
+        if (!p.root || p.root.isDisposed()) return;
+        const now = p.root.getAbsolutePosition();
+        p.speed = Math.hypot(now.x - p.last.x, now.z - p.last.z) / dt;
+        p.last = now.clone();
+
+        const moving = p.speed > 0.5;
+        const swing = moving ? Math.sin(animTime) * 0.5 : 0;
+
+        // Rotate the bones if they exist
+        if (p.thighL && p.thighR) {
+          p.thighL.rotationQuaternion = B.Quaternion.RotationYawPitchRoll(swing, 0, 0);
+          p.thighR.rotationQuaternion = B.Quaternion.RotationYawPitchRoll(-swing, 0, 0);
+        }
+        if (p.armL && p.armR) {
+          p.armL.rotationQuaternion = B.Quaternion.RotationYawPitchRoll(-swing, 0, 0);
+          p.armR.rotationQuaternion = B.Quaternion.RotationYawPitchRoll(swing, 0, 0);
+        }
+      });
+    });
 
     if (window.AccraFigure) {
       const cartoon = window.AccraFigure.human;
