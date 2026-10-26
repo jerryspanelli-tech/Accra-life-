@@ -1,10 +1,10 @@
 /* accra-people.js - Loads 3D models for the player and NPCs.
- * Updated to load the Quaternius Superhero model. */
+ * Updated to load the Quaternius Superhero model from the "People" folder. */
 (function () {
   try {
     const B = BABYLON;
-    // Points to the folder where your 18 files are
-    const folder = new URL("./", window.location.href).href + "people/";
+    // Looks in the "People" folder (capital P)
+    const folder = new URL("./", window.location.href).href + "People/";
     const HEIGHT = 1.8;
     let base = null;
     let clips = { walk: null, idle: null };
@@ -40,11 +40,9 @@
     }
 
     async function load() {
-      // Load the specific .gltf file you uploaded
       const cont = await B.SceneLoader.LoadAssetContainerAsync(folder, "Superhero_Male_FullBody.gltf", scene);
       base = cont;
       
-      // Try to load walk/idle animations if you have them
       clips.walk = await readClips("walk.glb"); 
       clips.idle = await readClips("idle.glb");
       
