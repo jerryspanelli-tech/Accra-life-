@@ -1,4 +1,4 @@
-/* accra-airport.js - Kotoka International Airport (Fully Realistic Rebuild) */
+/* accra-airport.js - Kotoka International Airport (Fixed Z-Fighting) */
 (function () {
   try {
     const B = BABYLON;
@@ -48,7 +48,6 @@
       return group;
     }
 
-    // --- Flight Cutscene System ---
     window.playFlightScene = function(destName, destX, destZ, cost) {
       const K = window.ACCRA_KIT;
       if (!K) return;
@@ -92,20 +91,18 @@
       }, 14500);
     };
 
-    // --- REALISTIC GROUND & TARMAC ---
-    // 1. Grass Base
+    // --- GROUND & TARMAC (Z-FIGHTING FIX) ---
+    // Grass base sits low
     const grass = B.MeshBuilder.CreateGround("apt_grass", { width: 800, height: 800 }, scene);
     grass.position.set(C.x, -0.1, C.z); grass.material = mat("#4a7a3a"); grass.receiveShadows = true;
 
-    // 2. Asphalt Tarmac Texture
+    // Tarmac sits slightly ABOVE the main ground to prevent blinking
     const dt = new B.DynamicTexture("tarmac", 1024, scene, true);
     const ctx = dt.getContext();
     ctx.fillStyle = "#3a3d44"; ctx.fillRect(0, 0, 1024, 1024);
-    // Yellow taxiway lines
     ctx.strokeStyle = "#fcd116"; ctx.lineWidth = 8;
-    ctx.beginPath(); ctx.moveTo(512, 0); ctx.lineTo(512, 1024); ctx.stroke(); // vertical
-    ctx.beginPath(); ctx.moveTo(0, 512); ctx.lineTo(1024, 512); ctx.stroke(); // horizontal
-    // White parking bay lines
+    ctx.beginPath(); ctx.moveTo(512, 0); ctx.lineTo(512, 1024); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, 512); ctx.lineTo(1024, 512); ctx.stroke();
     ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4;
     for(let i=100; i<1024; i+=150) {
       ctx.beginPath(); ctx.moveTo(i, 100); ctx.lineTo(i, 300); ctx.stroke();
@@ -116,34 +113,30 @@
     tarmacMat.diffuseTexture = dt; tarmacMat.specularColor = B.Color3.Black();
 
     const tarmac = B.MeshBuilder.CreateGround("apt_tarmac", { width: 400, height: 400 }, scene);
-    tarmac.position.set(C.x, 0.0, C.z); tarmac.material = tarmacMat; tarmac.receiveShadows = true;
+    // FIXED: y position raised to 0.05
+    tarmac.position.set(C.x, 0.05, C.z); tarmac.material = tarmacMat; tarmac.receiveShadows = true;
 
     // 3. Access Road (Connecting City to Airport)
-    const roadMat = mat("#2b2d31");
-    box(20, 0.12, 200, X(0), 0.06, Z(150), "#2b2d31", false); // Road coming from City
-    box(20, 0.12, 80, X(0), 0.06, Z(60), "#2b2d31", false);  // Drop off road
-    // Road markings
-    for(let i=-90; i<190; i+=15) box(1, 0.14, 6, X(0), 0.09, Z(i), "#f2f2f2", false);
+    box(20, 0.12, 200, X(0), 0.1, Z(150), "#2b2d31", false); // Road coming from City (Raised slightly)
+    box(20, 0.12, 80, X(0), 0.1, Z(60), "#2b2d31", false);  // Drop off road
+    for(let i=-90; i<190; i+=15) box(1, 0.14, 6, X(0), 0.15, Z(i), "#f2f2f2", false);
 
     // 4. Car Park
-    box(100, 0.12, 60, X(-80), 0.06, Z(80), "#3a3d44", false);
-    for(let i=-45; i<=45; i+=10) box(0.5, 0.14, 15, X(-80+i), 0.09, Z(80), "#ffffff", false);
+    box(100, 0.12, 60, X(-80), 0.1, Z(80), "#3a3d44", false);
+    for(let i=-45; i<=45; i+=10) box(0.5, 0.14, 15, X(-80+i), 0.15, Z(80), "#ffffff", false);
 
     // --- TERMINAL BUILDING (Hub) ---
-    // Interior Floor
     const floor = B.MeshBuilder.CreateDisc("apt_floor", { radius: 60, tessellation: 64 }, scene);
     floor.rotation.x = Math.PI / 2; floor.position.set(X(0), 0.15, Z(0));
     floor.material = mat("#d9dde3"); floor.checkCollisions = false;
 
-    // Glass Walls (Using Cylinder with alpha)
     const glassMat = new B.StandardMaterial("glass", scene);
     glassMat.diffuseColor = B.Color3.FromHexString("#8fc8e8");
     glassMat.alpha = 0.4; glassMat.specularColor = new B.Color3(1, 1, 1);
 
-    const walls = B.MeshBuilder.CreateCylinder("apt_walls", { diameter: 120, height: 15, tessellation: 64, faceColors: [] }, scene);
+    const walls = B.MeshBuilder.CreateCylinder("apt_walls", { diameter: 120, height: 15, tessellation: 64 }, scene);
     walls.position.set(X(0), 7.5, Z(0)); walls.material = glassMat; walls.checkCollisions = true;
     
-    // Roof (Gold/White Star)
     const roof = B.MeshBuilder.CreateCylinder("apt_roof", { diameter: 130, height: 2, tessellation: 64 }, scene);
     roof.position.set(X(0), 16, Z(0)); roof.material = mat("#e8ecef");
     const roofGold = B.MeshBuilder.CreateCylinder("apt_roofgold", { diameter: 126, height: 2, tessellation: 64 }, scene);
@@ -151,19 +144,15 @@
     const roofBlack = B.MeshBuilder.CreateCylinder("apt_roofblack", { diameter: 120, height: 1, tessellation: 64 }, scene);
     roofBlack.position.set(X(0), 17, Z(0)); roofBlack.material = mat("#17191c");
 
-    // Terminal Entrance (Canopy and Doors at the front, Z = 60)
-    box(30, 10, 2, X(0), 5, Z(58), "#2e5a7a", false); // Glass door area
-    box(34, 1, 8, X(0), 10, Z(54), "#9aa5ad", true);  // Entrance Canopy
-    box(2, 10, 8, X(-16), 5, Z(54), "#e8ecef", true); // Canopy Support Left
-    box(2, 10, 8, X(16), 5, Z(54), "#e8ecef", true);  // Canopy Support Right
-    
+    box(30, 10, 2, X(0), 5, Z(58), "#2e5a7a", false); 
+    box(34, 1, 8, X(0), 10, Z(54), "#9aa5ad", true);  
+    box(2, 10, 8, X(-16), 5, Z(54), "#e8ecef", true); 
+    box(2, 10, 8, X(16), 5, Z(54), "#e8ecef", true);  
     text("KOTOKA INTERNATIONAL AIRPORT", X(0), 13, Z(58), 40, 4, "#17191c", "#fcd116", false);
 
-    // Terminal Arms (Star Shape)
     const arms = 6;
     for (let i = 0; i < arms; i++) {
       const angle = (i * Math.PI * 2) / arms;
-      // Skip the front arm (angle = PI/2) because that's where the entrance is
       if (Math.abs(angle - Math.PI/2) < 0.1) continue;
 
       const armLen = 80;
@@ -171,12 +160,10 @@
       arm.position.set(X(Math.cos(angle) * (60 + armLen/2)), 6, Z(Math.sin(angle) * (60 + armLen/2)));
       arm.rotation.y = -angle + Math.PI/2;
 
-      // Roof over arm
       const armRoof = box(27, 1, armLen, 0, 0, 0, "#2e5a7a", false);
       armRoof.position.set(X(Math.cos(angle) * (60 + armLen/2)), 12.5, Z(Math.sin(angle) * (60 + armLen/2)));
       armRoof.rotation.y = -angle + Math.PI/2;
 
-      // Park planes at the end of each arm
       for (let p = -1; p <= 1; p++) {
         const px = Math.cos(angle) * (60 + armLen + 30) + Math.cos(angle + Math.PI/2) * (p * 20);
         const pz = Math.sin(angle) * (60 + armLen + 30) + Math.sin(angle + Math.PI/2) * (p * 20);
@@ -184,12 +171,10 @@
       }
     }
 
-    // Runway
     box(40, 0.15, 400, X(-200), 0.06, Z(0), "#2a2c30", false);
     for(let i=-180; i<180; i+=20) box(8, 0.16, 2, X(-200), 0.09, Z(i), "#f2f2f2", false);
     text("09", X(-200), 0.1, Z(-180), 16, 8, "#2a2c30", "#ffffff", true);
 
-    // --- BOOKING COUNTER (Inside the terminal) ---
     const counterX = X(0), counterZ = Z(20);
     box(16, 1.2, 3, counterX, 0.6, counterZ, "#c9a54a", true);
     box(17, 0.2, 4, counterX, 1.3, counterZ, "#17191c", false);
