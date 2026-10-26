@@ -1,4 +1,4 @@
-/* accra-airport.js - Kotoka International Airport (Fixed Entrance & Z-Fighting) */
+/* accra-airport.js - Kotoka International Airport (Auto-Doors & Seamless Road) */
 (function () {
   try {
     const B = BABYLON;
@@ -110,12 +110,12 @@
     tarmacMat.diffuseTexture = dt; tarmacMat.specularColor = B.Color3.Black();
 
     const tarmac = B.MeshBuilder.CreateGround("apt_tarmac", { width: 400, height: 400 }, scene);
-    // Raised above the grass to prevent blinking
     tarmac.position.set(C.x, 0.05, C.z); tarmac.material = tarmacMat; tarmac.receiveShadows = true;
 
-    // --- ROADS & CAR PARK ---
+    // --- ROADS & CAR PARK (Seamless) ---
     box(20, 0.12, 200, X(0), 0.1, Z(150), "#2b2d31", false); 
-    box(20, 0.12, 80, X(0), 0.1, Z(60), "#2b2d31", false);  
+    // Entrance road connecting directly to the terminal floor
+    box(24, 0.12, 80, X(0), 0.1, Z(60), "#2b2d31", false);  
     for(let i=-90; i<190; i+=15) box(1, 0.14, 6, X(0), 0.15, Z(i), "#f2f2f2", false);
 
     box(100, 0.12, 60, X(-80), 0.1, Z(80), "#3a3d44", false);
@@ -130,7 +130,6 @@
     glassMat.diffuseColor = B.Color3.FromHexString("#8fc8e8");
     glassMat.alpha = 0.4; glassMat.specularColor = new B.Color3(1, 1, 1);
 
-    // Main walls (radius 50 so it leaves room for the entrance)
     const walls = B.MeshBuilder.CreateCylinder("apt_walls", { diameter: 100, height: 15, tessellation: 64 }, scene);
     walls.position.set(X(0), 7.5, Z(0)); walls.material = glassMat; walls.checkCollisions = true;
     
@@ -141,16 +140,22 @@
     const roofBlack = B.MeshBuilder.CreateCylinder("apt_roofblack", { diameter: 100, height: 1, tessellation: 64 }, scene);
     roofBlack.position.set(X(0), 17, Z(0)); roofBlack.material = mat("#17191c");
 
-    // --- REALISTIC ENTRANCE HALL ---
-    // A protruding walkway from the hub (Z = 50 to Z = 70)
-    box(30, 0.15, 20, X(0), 0.15, Z(60), "#d9dde3", false); // Entrance Floor
+    // --- REALISTIC ENTRANCE HALL (With Auto-Doors) ---
+    box(30, 0.15, 20, X(0), 0.12, Z(60), "#2b2d31", false); // Floor matches the road
     box(1, 10, 20, X(-15), 5, Z(60), "#e8ecef", true); // Left Wall
     box(1, 10, 20, X(15), 5, Z(60), "#e8ecef", true); // Right Wall
     box(30, 1, 20, X(0), 10.5, Z(60), "#e8ecef", false); // Entrance Roof
     
-    // The Doors (at the back of the walkway, connecting to the hub)
+    // The Automatic Doors
     const doorGlass = B.MeshBuilder.CreateBox("doors", { width: 28, height: 8, depth: 0.5 }, scene);
     doorGlass.position.set(X(0), 4, Z(50.5)); doorGlass.material = glassMat; doorGlass.checkCollisions = true;
+
+    // Interior Lighting (So it's not a dark tunnel)
+    const entLight = new B.PointLight("entLight", new B.Vector3(X(0), 8, Z(60)), scene);
+    entLight.intensity = 0.8; entLight.diffuse = new B.Color3(1, 0.9, 0.8); entLight.range = 40;
+    
+    const lobbyLight = new B.PointLight("lobbyLight", new B.Vector3(X(0), 10, Z(20)), scene);
+    lobbyLight.intensity = 1.0; lobbyLight.diffuse = new B.Color3(1, 0.95, 0.8); lobbyLight.range = 60;
 
     // Canopy over the drop-off road
     box(40, 1, 15, X(0), 12, Z(80), "#9aa5ad", true); 
@@ -209,6 +214,22 @@
         window.ACCRA_KIT.points.push({ x: counterX, z: counterZ + 3, r: 6, t: "\uD83C\uDFAB Buy Flight Ticket", ok: () => !window.ACCRA_KIT.busy && !window.ACCRA_KIT.seated, f: openFlightMenu });
       }
     }, 5000);
+
+    // --- AUTO DOOR LOGIC ---
+    scene.onBeforeRenderObservable.add(() => {
+      if (typeof player !== "undefined") {
+        const dist = B.Vector3.Distance(player.position, new B.Vector3(X(0), 0, Z(50.5)));
+        if (dist < 12) {
+          // Open door
+          doorGlass.checkCollisions = false;
+          doorGlass.visibility = 0.1;
+        } else {
+          // Close door
+          doorGlass.checkCollisions = true;
+          doorGlass.visibility = 1;
+        }
+      }
+    });
 
     window.ACCRA_AIRPORT = { name: "Kotoka International Airport", x: C.x, z: C.z + 60 };
     (window.ACCRA_LANDMARKS = window.ACCRA_LANDMARKS || []).push({ n: "Kotoka International Airport", x: C.x, z: C.z + 60 });
