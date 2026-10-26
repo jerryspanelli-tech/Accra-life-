@@ -1,5 +1,5 @@
 // landmarks.js - Labadi Beach and sea for the Babylon.js game.
-// Upgraded to feel like real Labadi Beach, Ghana: umbrellas, chairs, football, drums, kiosks, and NPCs.
+// Upgraded to feel like real Labadi Beach, Ghana: umbrellas, chairs, football, horses, couples, kiosks, and NPCs.
 (function(){
  const E=window.ACCRA_LANDMARKS=[];
  const M=o=>Object.assign(new BABYLON.StandardMaterial('lm',scene),o);
@@ -21,7 +21,6 @@
 
  // ================= BEACH PROPS (Umbrellas, Chairs, Kiosks) =================
  
- // 1. Beach Umbrellas
  function umbrella(x, z, color) {
    const pole = BABYLON.MeshBuilder.CreateCylinder("upole", { height: 3, diameter: 0.1 }, scene);
    pole.position.set(x, 1.5, z); pole.material = mat("#dddddd"); pole.checkCollisions = true;
@@ -29,7 +28,6 @@
    canopy.position.set(x, 3, z); canopy.material = mat(color);
  }
  
- // 2. Beach Chairs (simple wooden loungers)
  function beachChair(x, z, ry) {
    const chair = new BABYLON.TransformNode("bchair", scene);
    chair.position.set(x, 0, z); chair.rotation.y = ry;
@@ -41,7 +39,6 @@
    legs.parent = chair; legs.position.set(0, 0.25, 0); legs.material = mat("#5a3a22");
  }
  
- // 3. The Football Pitch (community ground)
  function footballGoal(x, z, dir) {
    const g = new BABYLON.TransformNode("goal", scene); g.position.set(x, 0, z); g.rotation.y = dir;
    const p1 = BABYLON.MeshBuilder.CreateCylinder("gp1", { height: 2, diameter: 0.1 }, scene); p1.parent = g; p1.position.set(-3, 1, 0); p1.material = mat("#ffffff");
@@ -55,7 +52,6 @@
  footballGoal(-40, 225, 0);
  footballGoal(40, 225, Math.PI);
 
- // Kiosk (using AccraAssets if available)
  setTimeout(() => {
    if (window.AccraAssets && window.AccraAssets.createKiosk) {
      window.AccraAssets.createKiosk(scene, { position: [-20, 0, 208], color: "#d9382c", awning: "#ffd23f" });
@@ -63,27 +59,63 @@
    }
  }, 2000);
 
- // ================= NPC SPAWNER (Waits for game to load) =================
+ // ================= NPC & ANIMAL SPAWNER (Waits for game to load) =================
  setTimeout(() => {
-   // Wait until the character factory is ready
    if (!window.AccraAssets || !window.AccraAssets.createCharacter) return;
 
+   // Helper: Spawn a single person
    const spawnPerson = (x, z, ry, shirt, pants) => {
      const npc = window.AccraAssets.createCharacter(scene, { shirt, pants, skin: "#8d5a3b", hair: "#1b1b1b", kente: false });
      npc.root.position.set(x, 0, z);
      npc.root.rotation.y = ry;
-     if (npc.setMoving) npc.setMoving(false); // Stand still
+     if (npc.setMoving) npc.setMoving(false);
      return npc;
    };
 
+   // Helper: Spawn a couple walking
+   const spawnCouple = (x, z, ry) => {
+     const p1 = spawnPerson(x - 0.6, z, ry, "#c9a54a", "#17191c"); // Person 1
+     const p2 = spawnPerson(x + 0.6, z, ry, "#2456a6", "#ffffff"); // Person 2
+     if (p1.setMoving) p1.setMoving(true);
+     if (p2.setMoving) p2.setMoving(true);
+   };
+
+   // Helper: Spawn a Horse with a Rider
+   const spawnHorse = (x, z, ry) => {
+     const horse = new BABYLON.TransformNode("horse", scene);
+     horse.position.set(x, 0, z); horse.rotation.y = ry;
+     
+     // Horse Body
+     const body = BABYLON.MeshBuilder.CreateBox("hbody", { width: 1, height: 1.2, depth: 2.5 }, scene);
+     body.parent = horse; body.position.set(0, 1.2, 0); body.material = mat("#5a3a22");
+     
+     // Horse Neck & Head
+     const neck = BABYLON.MeshBuilder.CreateBox("hneck", { width: 0.6, height: 1, depth: 0.8 }, scene);
+     neck.parent = horse; neck.position.set(0, 2, 1); neck.rotation.x = -0.5; neck.material = mat("#5a3a22");
+     const head = BABYLON.MeshBuilder.CreateBox("hhead", { width: 0.4, height: 0.5, depth: 1 }, scene);
+     head.parent = horse; head.position.set(0, 2.3, 1.6); head.material = mat("#5a3a22");
+     
+     // Horse Legs
+     [[-0.4, -0.8], [0.4, -0.8], [-0.4, 0.8], [0.4, 0.8]].forEach(p => {
+       const leg = BABYLON.MeshBuilder.CreateCylinder("hleg", { height: 1.2, diameter: 0.2 }, scene);
+       leg.parent = horse; leg.position.set(p[0], 0.6, p[1]); leg.material = mat("#5a3a22");
+     });
+     
+     // Rider
+     const rider = window.AccraAssets.createCharacter(scene, { shirt: "#c8102e", pants: "#17191c", skin: "#8d5a3b", hair: "#1b1b1b", kente: false });
+     rider.root.parent = horse;
+     rider.root.position.set(0, 1.6, 0);
+     if (rider.setMoving) rider.setMoving(false);
+   };
+
    // 1. Footballers (2 players)
-   spawnPerson(-40, 226, 0, "#c8102e", "#ffffff"); // Red shirt
-   spawnPerson(-38, 226, Math.PI, "#2456a6", "#17191c"); // Blue shirt
+   spawnPerson(-40, 226, 0, "#c8102e", "#ffffff");
+   spawnPerson(-38, 226, Math.PI, "#2456a6", "#17191c");
 
    // 2. Drummers (3 people near the center)
-   spawnPerson(-5, 220, Math.PI/2, "#fcd116", "#17191c"); // Yellow shirt
-   spawnPerson(0, 220, Math.PI/2, "#3f8f7a", "#17191c"); // Green shirt
-   spawnPerson(5, 220, Math.PI/2, "#9a4a42", "#17191c"); // Red/Orange shirt
+   spawnPerson(-5, 220, Math.PI/2, "#fcd116", "#17191c");
+   spawnPerson(0, 220, Math.PI/2, "#3f8f7a", "#17191c");
+   spawnPerson(5, 220, Math.PI/2, "#9a4a42", "#17191c");
 
    // 3. People chilling at the water (5 people)
    for(let i=0; i<5; i++) {
@@ -94,8 +126,17 @@
    spawnPerson(-22, 209, 0, "#f0f0f0", "#111111");
    spawnPerson(22, 209, 0, "#f0f0f0", "#111111");
 
-   console.log("Labadi Beach populated with NPCs!");
+   // 5. Couples walking along the water
+   spawnCouple(-60, 235, Math.PI);
+   spawnCouple(50, 235, Math.PI);
+   spawnCouple(70, 232, Math.PI);
 
- }, 4000); // Waits 4 seconds for all game scripts to load before spawning people
+   // 6. Horses with riders (the iconic Labadi beach horses)
+   spawnHorse(-80, 220, Math.PI/2);
+   spawnHorse(80, 220, -Math.PI/2);
+   spawnHorse(15, 230, Math.PI);
 
+   console.log("Labadi Beach populated with NPCs, Couples, and Horses!");
+
+ }, 4000);
 })();
