@@ -1,6 +1,4 @@
-/* accra-airport.js - Kotoka International Airport (Full Rewrite)
- * Better looking planes, landing gear, windows, and a working flight booking system with a cutscene.
- */
+/* accra-airport.js - Kotoka International Airport (Redesigned with Fences and Security Gates) */
 (function () {
   try {
     const B = BABYLON;
@@ -24,6 +22,7 @@
       p.material = m;
     }
 
+    // --- Aircraft Model ---
     function aircraft(x, z, rotY = 0, index = 0) {
       const group = new B.TransformNode("plane_" + index, scene);
       group.position.set(X(x), 0, Z(z)); group.rotation.y = rotY;
@@ -87,7 +86,7 @@
       box(3.5, 2.6, 2.5, X(x), 3.9, Z(z - length * 0.45), "#9aa3ad", true);
     }
 
-    // ========== FLIGHT CUTSCENE SYSTEM ==========
+    // --- Flight Cutscene System ---
     window.playFlightScene = function(destName, destX, destZ, cost) {
       const K = window.ACCRA_KIT;
       if (!K) return;
@@ -95,30 +94,18 @@
       K.pay(cost, "Flight to " + destName);
       K.hide();
 
-      // 1. Create the Sky Overlay
       const ov = document.createElement('div');
       ov.style.cssText = "position:fixed;inset:0;background:linear-gradient(to bottom, #2980b9, #6dd5fa, #ffffff);z-index:99999;color:#fff;font-family:system-ui;overflow:hidden;transition:opacity 1.5s;";
-      
-      // 2. Add CSS Animations (Clouds moving, Plane floating)
       const st = document.createElement('style');
-      st.textContent = `
-        @keyframes fly { 0% { transform: translateX(0) translateY(0); } 100% { transform: translateX(-100vw) translateY(-50px); } }
-        @keyframes cloud { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100vw); } }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-      `;
+      st.textContent = `@keyframes fly { 0% { transform: translateX(0) translateY(0); } 100% { transform: translateX(-100vw) translateY(-50px); } } @keyframes cloud { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100vw); } } @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`;
       document.head.appendChild(st);
 
-      // 3. Generate random clouds
       let cloudsHTML = "";
       for(let i=0; i<8; i++) {
-          const top = Math.random()*60 + 10;
-          const size = Math.random()*100 + 50;
-          const dur = Math.random()*10 + 5;
-          const delay = Math.random()*5;
+          const top = Math.random()*60 + 10; const size = Math.random()*100 + 50; const dur = Math.random()*10 + 5; const delay = Math.random()*5;
           cloudsHTML += `<div style="position:absolute;top:${top}%;left:100vw;width:${size}px;height:${size/2}px;background:rgba(255,255,255,0.8);border-radius:50px;filter:blur(5px);animation:cloud ${dur}s linear ${delay}s infinite;"></div>`;
       }
 
-      // 4. Build the UI
       ov.innerHTML = `
           ${cloudsHTML}
           <div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);text-align:center;background:rgba(0,0,0,0.6);padding:15px 30px;border-radius:15px;border:2px solid #c9a54a;width:80%;max-width:400px;box-shadow:0 10px 20px rgba(0,0,0,0.5);">
@@ -130,30 +117,73 @@
       `;
       document.body.appendChild(ov);
 
-      // 5. Sequence Timers
       setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Taxiing to runway..."; }, 2000);
       setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Taking off..."; }, 4000);
       setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Cruising at 30,000 ft..."; }, 6000);
       setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Descending..."; }, 10000);
-      setTimeout(() => { 
-          const el = document.getElementById('flightStatus'); 
-          if(el) el.innerText = "Landed safely."; 
-          ov.style.opacity = 0;
-      }, 13000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Landed safely."; ov.style.opacity = 0; }, 13000);
 
-      // 6. Complete the journey
       setTimeout(() => {
-          ov.remove();
-          st.remove();
-          if (typeof player !== "undefined") {
-              player.position.set(destX, 1, destZ);
-              if (typeof camT !== "undefined") camT.position.copyFrom(player.position);
-          }
+          ov.remove(); st.remove();
+          if (typeof player !== "undefined") { player.position.set(destX, 1, destZ); if (typeof camT !== "undefined") camT.position.copyFrom(player.position); }
           K.note("Welcome to " + destName + "!");
       }, 14500);
     };
 
-    // ========== GROUND & RUNWAY ==========
+    // --- Fence and Security Gate Builder ---
+    function buildFenceAndGate(x1, z1, x2, z2, gateX, gateZ) {
+      const isHoriz = Math.abs(x2 - x1) > Math.abs(z2 - z1);
+      const len = isHoriz ? Math.abs(x2 - x1) : Math.abs(z2 - z1);
+      const steps = Math.floor(len / 5);
+      
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const px = x1 + (x2 - x1) * t;
+        const pz = z1 + (z2 - z1) * t;
+        
+        // Leave a gap for the gate
+        if (Math.abs(px - gateX) < 8 && Math.abs(pz - gateZ) < 8) continue;
+
+        // Fence Post
+        const p = B.MeshBuilder.CreateCylinder("post", { diameter: 0.3, height: 2.5, tessellation: 6 }, scene);
+        p.position.set(px, 1.25, pz); p.material = mat("#7b7b7b"); p.checkCollisions = true;
+        
+        // Chain link wire (semi-transparent)
+        if (i < steps) {
+          const nx = x1 + (x2 - x1) * ((i+1) / steps);
+          const nz = z1 + (z2 - z1) * ((i+1) / steps);
+          const w = isHoriz ? 5 : 0.05;
+          const d = isHoriz ? 0.05 : 5;
+          const wire = box(w, 2.2, d, (px+nx)/2, 1.1, (pz+nz)/2, "#aaaaaa", true);
+          wire.visibility = 0.4; // See-through fence
+        }
+      }
+    }
+
+    function buildSecurityGate(x, z) {
+      // Guard Booth
+      box(4, 3, 4, x - 5, 1.5, z, "#e8ecef", true);
+      box(5, 0.2, 5, x - 5, 3.1, z, "#2e5a7a", false);
+      box(2, 1, 0.1, x - 5, 1.8, z + 2.05, "#111", false); // Window
+
+      // Boom Barrier (Red/White)
+      box(0.5, 1.2, 0.5, x + 3, 0.6, z, "#333", true); // Base
+      const arm = box(0.2, 0.2, 8, x + 3, 1.2, z - 3.8, "#ffffff", false);
+      for (let i = 0; i < 4; i++) {
+        box(0.22, 0.22, 1, x + 3, 1.2, z - 1 - (i * 2), "#c8102e", false);
+      }
+      
+      // Security Cones
+      [-2, 0, 2].forEach(oz => {
+        const c = B.MeshBuilder.CreateCylinder("cone", { diameterTop: 0, diameterBottom: 0.5, height: 1 }, scene);
+        c.position.set(x - 1, 0.5, z + oz); c.material = mat("#ff6b35");
+      });
+
+      // "STOP" Text on the road
+      text("STOP", x, 0.1, z + 6, 6, 3, "rgba(0,0,0,0)", "#ff0000", true);
+    }
+
+    // --- Ground & Runway ---
     const ground = B.MeshBuilder.CreateGround("apt_ground", { width: 520, height: 380 }, scene);
     ground.position.set(C.x, -0.04, C.z); ground.material = mat("#4a7a3a"); ground.receiveShadows = true; ground.isPickable = false;
 
@@ -162,7 +192,7 @@
     text("09", X(-130), 0.1, Z(-95), 14, 7, "#2a2c30", "#ffffff", true);
     text("27", X(130), 0.1, Z(-95), 14, 7, "#2a2c30", "#ffffff", true);
 
-    // ========== TERMINAL & JET BRIDGES ==========
+    // --- Terminal & Jet Bridges ---
     box(280, 12, 28, X(0), 6, Z(28), "#e8ecef", true);
     box(270, 8, 0.5, X(0), 5, Z(14.2), "#2e5a7a", false);
     box(290, 1.2, 32, X(0), 12.4, Z(28), "#9aa5ad", false);
@@ -170,68 +200,53 @@
     text("KOTOKA INTERNATIONAL AIRPORT", X(0), 15.5, Z(14.5), 52, 6, "#17191c", "#fcd116", false);
 
     const gatePositions = [-100, -70, -40, -10, 20, 50, 80];
-    gatePositions.forEach((gx, i) => {
-      jetBridge(gx, 8, 16);
-      aircraft(gx, -6, Math.PI, i);
-    });
-
-    aircraft(-130, -40, Math.PI * 0.5, 20);
-    aircraft(130, -40, -Math.PI * 0.5, 21);
-    aircraft(0, -40, Math.PI, 22);
+    gatePositions.forEach((gx, i) => { jetBridge(gx, 8, 16); aircraft(gx, -6, Math.PI, i); });
+    aircraft(-130, -40, Math.PI * 0.5, 20); aircraft(130, -40, -Math.PI * 0.5, 21); aircraft(0, -40, Math.PI, 22);
 
     const tower = B.MeshBuilder.CreateCylinder("tower", { diameter: 5, height: 32, tessellation: 14 }, scene);
     tower.position.set(X(160), 16, Z(45)); tower.material = mat("#e9ecef"); tower.checkCollisions = true;
 
-    // ========== FLIGHT BOOKING COUNTER ==========
-    const counterX = X(0), counterY = 1.5, counterZ = Z(22);
+    // --- NEW: Access Road & Fencing ---
+    // Main road entering the airport
+    box(20, 0.05, 80, X(0), 0.05, Z(100), "#2b2d31", false);
+    text("WELCOME TO GHANA", X(0), 8, Z(130), 40, 8, "#17191c", "#fcd116", false);
+    box(2, 8, 2, X(-18), 4, Z(130), "#555", true);
+    box(2, 8, 2, X(18), 4, Z(130), "#555", true);
+
+    buildFenceAndGate(X(-210), Z(70), X(210), Z(70), X(0), Z(70));
+    buildSecurityGate(X(0), Z(70));
+
+    // --- Booking Counter ---
+    const counterX = X(0), counterZ = Z(22);
     box(10, 1.2, 2, counterX, 0.6, counterZ, "#c9a54a", true);
     box(11, 0.2, 3, counterX, 1.3, counterZ, "#17191c", false);
     text("TICKETS", counterX, 3, counterZ + 0.6, 6, 1.5, "#17191c", "#fcd116", false);
 
     function openFlightMenu() {
       if (!window.ACCRA_KIT) return;
-      const K = window.ACCRA_KIT;
-      const cash = K.cash();
-
-      const FLIGHTS = [
-        { dest: "Kumasi", x: -2000, z: -24000, cost: 250 },
-        { dest: "Takoradi", x: -1500, z: 1200, cost: 300 },
-        { dest: "Tamale", x: 800, z: -8000, cost: 400 }
-      ];
-
-      const draw = () => K.show(
-        K.ttl("\u2708\uFE0F Kotoka Departures") + 
-        `<small>Cash: GH\u00A2${cash}</small><br><br>` +
-        FLIGHTS.map((f, i) => `<button data-f="${i}" style="${K.BS}">Fly to ${f.dest} \u00B7 GH\u00A2${f.cost}</button>`).join("") + K.CLOSE,
+      const K = window.ACCRA_KIT; const cash = K.cash();
+      const FLIGHTS = [{ dest: "Kumasi", x: -2000, z: -24000, cost: 250 }, { dest: "Takoradi", x: -1500, z: 1200, cost: 300 }, { dest: "Tamale", x: 800, z: -8000, cost: 400 }];
+      const draw = () => K.show(K.ttl("\u2708\uFE0F Kotoka Departures") + `<small>Cash: GH\u00A2${cash}</small><br><br>` + FLIGHTS.map((f, i) => `<button data-f="${i}" style="${K.BS}">Fly to ${f.dest} \u00B7 GH\u00A2${f.cost}</button>`).join("") + K.CLOSE,
         d => {
           if (d.x) return K.hide();
-          if (d.f !== undefined) {
-            const flight = FLIGHTS[+d.f];
-            window.playFlightScene(flight.dest, flight.x, flight.z, flight.cost);
-          }
+          if (d.f !== undefined) { const flight = FLIGHTS[+d.f]; window.playFlightScene(flight.dest, flight.x, flight.z, flight.cost); }
         }
       );
     }
 
     setTimeout(() => {
       if (window.ACCRA_KIT && window.ACCRA_KIT.points) {
-        window.ACCRA_KIT.points.push({
-          x: counterX, z: counterZ + 2, r: 4,
-          t: "\uD83C\uDFAB Buy Flight Ticket",
-          ok: () => !window.ACCRA_KIT.busy && !window.ACCRA_KIT.seated,
-          f: openFlightMenu
-        });
+        window.ACCRA_KIT.points.push({ x: counterX, z: counterZ + 2, r: 4, t: "\uD83C\uDFAB Buy Flight Ticket", ok: () => !window.ACCRA_KIT.busy && !window.ACCRA_KIT.seated, f: openFlightMenu });
       }
     }, 5000);
 
-    // ========== ANIMATION LOOP ==========
+    // --- Animation ---
     scene.onBeforeRenderObservable.add(() => {
       const time = performance.now() * 0.001;
       planes.forEach((p, i) => {
         const m = p.metadata;
         if (!m) return;
-        if (m.engL) m.engL.rotation.x += 0.15;
-        if (m.engR) m.engR.rotation.x += 0.15;
+        if (m.engL) m.engL.rotation.x += 0.15; if (m.engR) m.engR.rotation.x += 0.15;
         const blink = Math.sin(time * 5 + i) > 0.25;
         if (m.lightRed?.material) m.lightRed.material.emissiveColor = blink ? B.Color3.Red() : B.Color3.Black();
         if (m.lightGreen?.material) m.lightGreen.material.emissiveColor = blink ? B.Color3.Green() : B.Color3.Black();
@@ -242,8 +257,6 @@
     (window.ACCRA_LANDMARKS = window.ACCRA_LANDMARKS || []).push({ n: "Kotoka International Airport", x: C.x, z: C.z + 60 });
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).airport = 1;
 
-    console.log("Kotoka Airport ready with booking system");
-  } catch (err) {
-    console.error("accra-airport failed:", err);
-  }
+    console.log("Kotoka Airport redesigned with fencing");
+  } catch (err) { console.error("accra-airport failed:", err); }
 })();
