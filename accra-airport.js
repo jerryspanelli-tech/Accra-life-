@@ -1,5 +1,5 @@
 /* accra-airport.js - Kotoka International Airport (Full Rewrite)
- * Better looking planes, landing gear, windows, and a working flight booking system.
+ * Better looking planes, landing gear, windows, and a working flight booking system with a cutscene.
  */
 (function () {
   try {
@@ -10,28 +10,23 @@
     const cars = [];
     const planes = [];
 
-    // ---------- Helpers ----------
     function text(t, x, y, z, w, h, bg, fg, onGround) {
       const dt = new B.DynamicTexture("apt_t" + t, { width: 512, height: 128 }, scene, false);
       const c = dt.getContext();
       c.fillStyle = bg; c.fillRect(0, 0, 512, 128);
       c.fillStyle = fg; c.font = "bold 58px system-ui"; c.textAlign = "center"; c.textBaseline = "middle";
       c.fillText(t, 256, 66, 490); dt.update();
-
       const p = B.MeshBuilder.CreatePlane("apt_txt", { width: w, height: h }, scene);
       p.position.set(x, y, z); p.isPickable = false;
       if (onGround) p.rotation.x = Math.PI / 2;
-
       const m = new B.StandardMaterial("apt_tm" + t, scene);
       m.diffuseTexture = dt; m.emissiveTexture = dt; m.disableLighting = true; m.backFaceCulling = false;
       p.material = m;
     }
 
-    // ========== BETTER AIRCRAFT MODEL ==========
     function aircraft(x, z, rotY = 0, index = 0) {
       const group = new B.TransformNode("plane_" + index, scene);
-      group.position.set(X(x), 0, Z(z));
-      group.rotation.y = rotY;
+      group.position.set(X(x), 0, Z(z)); group.rotation.y = rotY;
 
       const fus = B.MeshBuilder.CreateCylinder("fus", { diameter: 3.4, height: 36, tessellation: 16 }, scene);
       fus.rotation.z = Math.PI / 2; fus.position.set(0, 3, 0); fus.material = mat("#f4f4f2"); fus.parent = group; fus.checkCollisions = true;
@@ -92,6 +87,72 @@
       box(3.5, 2.6, 2.5, X(x), 3.9, Z(z - length * 0.45), "#9aa3ad", true);
     }
 
+    // ========== FLIGHT CUTSCENE SYSTEM ==========
+    window.playFlightScene = function(destName, destX, destZ, cost) {
+      const K = window.ACCRA_KIT;
+      if (!K) return;
+      if (K.cash() < cost) return K.note("Not enough cash for this flight.");
+      K.pay(cost, "Flight to " + destName);
+      K.hide();
+
+      // 1. Create the Sky Overlay
+      const ov = document.createElement('div');
+      ov.style.cssText = "position:fixed;inset:0;background:linear-gradient(to bottom, #2980b9, #6dd5fa, #ffffff);z-index:99999;color:#fff;font-family:system-ui;overflow:hidden;transition:opacity 1.5s;";
+      
+      // 2. Add CSS Animations (Clouds moving, Plane floating)
+      const st = document.createElement('style');
+      st.textContent = `
+        @keyframes fly { 0% { transform: translateX(0) translateY(0); } 100% { transform: translateX(-100vw) translateY(-50px); } }
+        @keyframes cloud { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100vw); } }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+      `;
+      document.head.appendChild(st);
+
+      // 3. Generate random clouds
+      let cloudsHTML = "";
+      for(let i=0; i<8; i++) {
+          const top = Math.random()*60 + 10;
+          const size = Math.random()*100 + 50;
+          const dur = Math.random()*10 + 5;
+          const delay = Math.random()*5;
+          cloudsHTML += `<div style="position:absolute;top:${top}%;left:100vw;width:${size}px;height:${size/2}px;background:rgba(255,255,255,0.8);border-radius:50px;filter:blur(5px);animation:cloud ${dur}s linear ${delay}s infinite;"></div>`;
+      }
+
+      // 4. Build the UI
+      ov.innerHTML = `
+          ${cloudsHTML}
+          <div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);text-align:center;background:rgba(0,0,0,0.6);padding:15px 30px;border-radius:15px;border:2px solid #c9a54a;width:80%;max-width:400px;box-shadow:0 10px 20px rgba(0,0,0,0.5);">
+              <h1 style="margin:0;font-size:24px;color:#fcd116;">Flight AK-204</h1>
+              <p style="margin:5px 0 0;font-size:16px;font-weight:bold;">Destination: ${destName}</p>
+              <p style="margin:5px 0 0;font-size:14px;color:#aaa;" id="flightStatus">Boarding...</p>
+          </div>
+          <div style="position:absolute;top:40%;left:30%;font-size:80px;animation:float 2s ease-in-out infinite; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));">✈️</div>
+      `;
+      document.body.appendChild(ov);
+
+      // 5. Sequence Timers
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Taxiing to runway..."; }, 2000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Taking off..."; }, 4000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Cruising at 30,000 ft..."; }, 6000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Descending..."; }, 10000);
+      setTimeout(() => { 
+          const el = document.getElementById('flightStatus'); 
+          if(el) el.innerText = "Landed safely."; 
+          ov.style.opacity = 0;
+      }, 13000);
+
+      // 6. Complete the journey
+      setTimeout(() => {
+          ov.remove();
+          st.remove();
+          if (typeof player !== "undefined") {
+              player.position.set(destX, 1, destZ);
+              if (typeof camT !== "undefined") camT.position.copyFrom(player.position);
+          }
+          K.note("Welcome to " + destName + "!");
+      }, 14500);
+    };
+
     // ========== GROUND & RUNWAY ==========
     const ground = B.MeshBuilder.CreateGround("apt_ground", { width: 520, height: 380 }, scene);
     ground.position.set(C.x, -0.04, C.z); ground.material = mat("#4a7a3a"); ground.receiveShadows = true; ground.isPickable = false;
@@ -121,7 +182,7 @@
     const tower = B.MeshBuilder.CreateCylinder("tower", { diameter: 5, height: 32, tessellation: 14 }, scene);
     tower.position.set(X(160), 16, Z(45)); tower.material = mat("#e9ecef"); tower.checkCollisions = true;
 
-    // ========== FLIGHT BOOKING SYSTEM ==========
+    // ========== FLIGHT BOOKING COUNTER ==========
     const counterX = X(0), counterY = 1.5, counterZ = Z(22);
     box(10, 1.2, 2, counterX, 0.6, counterZ, "#c9a54a", true);
     box(11, 0.2, 3, counterX, 1.3, counterZ, "#17191c", false);
@@ -132,7 +193,6 @@
       const K = window.ACCRA_KIT;
       const cash = K.cash();
 
-      // FIXED: Updated Kumasi coordinates to the new airport
       const FLIGHTS = [
         { dest: "Kumasi", x: -2000, z: -24000, cost: 250 },
         { dest: "Takoradi", x: -1500, z: 1200, cost: 300 },
@@ -147,18 +207,7 @@
           if (d.x) return K.hide();
           if (d.f !== undefined) {
             const flight = FLIGHTS[+d.f];
-            if (cash < flight.cost) return K.note("Not enough cash for this flight.");
-            K.pay(flight.cost, "Flight to " + flight.dest);
-            K.hide();
-            
-            K.fade(3000, () => {
-              if (typeof player !== "undefined") {
-                player.position.set(flight.x, 1, flight.z);
-                if (typeof camT !== "undefined") camT.position.copyFrom(player.position);
-              }
-            }, () => {
-              K.note("Welcome to " + flight.dest + "!");
-            });
+            window.playFlightScene(flight.dest, flight.x, flight.z, flight.cost);
           }
         }
       );
