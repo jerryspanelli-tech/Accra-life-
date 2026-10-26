@@ -1,15 +1,23 @@
-/* accra-people.js - Loads 3D models for the player and NPCs.
- * Updated to load the Quaternius Superhero model from the "People" folder. */
+/* accra-people.js - Loads 3D models for the player and NPCs. (Debug Version) */
 (function () {
   try {
     const B = BABYLON;
-    // Looks in the "People" folder (capital P)
     const folder = new URL("./", window.location.href).href + "People/";
     const HEIGHT = 1.8;
     let base = null;
     let clips = { walk: null, idle: null };
     const people = [];
     let idCount = 0;
+
+    // --- DEBUG HELPER ---
+    function showError(msg) {
+      console.error(msg);
+      const d = document.createElement('div');
+      d.style.cssText = "position:fixed;top:20%;left:50%;transform:translateX(-50%);background:#8b1a1a;color:#fff;padding:15px;border-radius:10px;z-index:99999;font:14px system-ui;text-align:center;max-width:90%;border:2px solid #fff;box-shadow:0 10px 30px rgba(0,0,0,0.8)";
+      d.innerHTML = "<b>3D Model Failed to Load!</b><br><br>" + msg + "<br><br>(Tap to dismiss)";
+      d.onclick = () => d.remove();
+      document.body.appendChild(d);
+    }
 
     async function readClips(file) {
       try {
@@ -40,14 +48,18 @@
     }
 
     async function load() {
-      const cont = await B.SceneLoader.LoadAssetContainerAsync(folder, "Superhero_Male_FullBody.gltf", scene);
-      base = cont;
-      
-      clips.walk = await readClips("walk.glb"); 
-      clips.idle = await readClips("idle.glb");
-      
-      say("People loaded: Superhero model.");
-      if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply();
+      try {
+        // Attempt to load the exact file name
+        const cont = await B.SceneLoader.LoadAssetContainerAsync(folder, "Superhero_Male_FullBody.gltf", scene);
+        base = cont;
+        clips.walk = await readClips("walk.glb"); 
+        clips.idle = await readClips("idle.glb");
+        
+        say("People loaded: Superhero model.");
+        if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply();
+      } catch (err) {
+        showError("Could not find or load 'Superhero_Male_FullBody.gltf'.<br>Make sure the file name matches exactly and is inside the People folder.<br><br>Error: " + err.message);
+      }
     }
 
     const say = m => { console.log(m); if (window.ACCRA_LIFE && window.ACCRA_LIFE.api) window.ACCRA_LIFE.api.note(m); };
@@ -100,7 +112,7 @@
       };
     }
 
-    load().catch(e => console.log("accra-people: no character files, using cartoon (" + (e && e.message ? e.message : e) + ")"));
+    load();
     window.ACCRA_PEOPLE = { spawn, ready: () => !!base, count: () => people.length };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).people = 1;
   } catch (err) { console.error("accra-people failed:", err); }
