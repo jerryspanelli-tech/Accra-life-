@@ -1,11 +1,10 @@
-/* accra-airport.js - Kotoka International Airport (Redesigned with Fences and Security Gates) */
+/* accra-airport.js - Kotoka International Airport (Ultimate Realism Upgrade) */
 (function () {
   try {
     const B = BABYLON;
-    const C = { x: -420, z: -300 };          // Airport centre
+    const C = { x: -420, z: -300 }; // Airport centre
     const X = x => C.x + x;
     const Z = z => C.z + z;
-    const cars = [];
     const planes = [];
 
     function text(t, x, y, z, w, h, bg, fg, onGround) {
@@ -22,7 +21,6 @@
       p.material = m;
     }
 
-    // --- Aircraft Model ---
     function aircraft(x, z, rotY = 0, index = 0) {
       const group = new B.TransformNode("plane_" + index, scene);
       group.position.set(X(x), 0, Z(z)); group.rotation.y = rotY;
@@ -80,12 +78,6 @@
       return group;
     }
 
-    function jetBridge(x, z, length = 16) {
-      box(2.2, 2.4, length, X(x), 3.8, Z(z), "#8a929a", true);
-      box(1.2, 3.2, 1.2, X(x), 1.6, Z(z + length * 0.3), "#6b7178", true);
-      box(3.5, 2.6, 2.5, X(x), 3.9, Z(z - length * 0.45), "#9aa3ad", true);
-    }
-
     // --- Flight Cutscene System ---
     window.playFlightScene = function(destName, destX, destZ, cost) {
       const K = window.ACCRA_KIT;
@@ -130,97 +122,125 @@
       }, 14500);
     };
 
-    // --- Fence and Security Gate Builder ---
-    function buildFenceAndGate(x1, z1, x2, z2, gateX, gateZ) {
+    // --- Architecture Helpers ---
+    function buildFence(x1, z1, x2, z2) {
       const isHoriz = Math.abs(x2 - x1) > Math.abs(z2 - z1);
       const len = isHoriz ? Math.abs(x2 - x1) : Math.abs(z2 - z1);
-      const steps = Math.floor(len / 5);
-      
+      const steps = Math.floor(len / 6);
       for (let i = 0; i <= steps; i++) {
         const t = i / steps;
         const px = x1 + (x2 - x1) * t;
         const pz = z1 + (z2 - z1) * t;
-        
-        // Leave a gap for the gate
-        if (Math.abs(px - gateX) < 8 && Math.abs(pz - gateZ) < 8) continue;
-
-        // Fence Post
-        const p = B.MeshBuilder.CreateCylinder("post", { diameter: 0.3, height: 2.5, tessellation: 6 }, scene);
-        p.position.set(px, 1.25, pz); p.material = mat("#7b7b7b"); p.checkCollisions = true;
-        
-        // Chain link wire (semi-transparent)
+        const p = B.MeshBuilder.CreateCylinder("post", { diameter: 0.4, height: 3, tessellation: 6 }, scene);
+        p.position.set(px, 1.5, pz); p.material = mat("#7b7b7b"); p.checkCollisions = true;
         if (i < steps) {
           const nx = x1 + (x2 - x1) * ((i+1) / steps);
           const nz = z1 + (z2 - z1) * ((i+1) / steps);
-          const w = isHoriz ? 5 : 0.05;
-          const d = isHoriz ? 0.05 : 5;
-          const wire = box(w, 2.2, d, (px+nx)/2, 1.1, (pz+nz)/2, "#aaaaaa", true);
-          wire.visibility = 0.4; // See-through fence
+          const w = isHoriz ? 6 : 0.1;
+          const d = isHoriz ? 0.1 : 6;
+          const wire = box(w, 2.8, d, (px+nx)/2, 1.4, (pz+nz)/2, "#888888", true);
+          wire.visibility = 0.3; // See-through fence
         }
       }
     }
 
-    function buildSecurityGate(x, z) {
-      // Guard Booth
-      box(4, 3, 4, x - 5, 1.5, z, "#e8ecef", true);
-      box(5, 0.2, 5, x - 5, 3.1, z, "#2e5a7a", false);
-      box(2, 1, 0.1, x - 5, 1.8, z + 2.05, "#111", false); // Window
+    // --- GROUND & TERRAIN ---
+    const ground = B.MeshBuilder.CreateGround("apt_ground", { width: 600, height: 500 }, scene);
+    ground.position.set(C.x, -0.05, C.z); ground.material = mat("#4a7a3a"); ground.receiveShadows = true; ground.isPickable = false;
 
-      // Boom Barrier (Red/White)
-      box(0.5, 1.2, 0.5, x + 3, 0.6, z, "#333", true); // Base
-      const arm = box(0.2, 0.2, 8, x + 3, 1.2, z - 3.8, "#ffffff", false);
-      for (let i = 0; i < 4; i++) {
-        box(0.22, 0.22, 1, x + 3, 1.2, z - 1 - (i * 2), "#c8102e", false);
-      }
-      
-      // Security Cones
-      [-2, 0, 2].forEach(oz => {
-        const c = B.MeshBuilder.CreateCylinder("cone", { diameterTop: 0, diameterBottom: 0.5, height: 1 }, scene);
-        c.position.set(x - 1, 0.5, z + oz); c.material = mat("#ff6b35");
-      });
+    // --- PAVED ROADS ---
+    // Access road from the city
+    box(30, 0.1, 250, X(0), 0.05, Z(150), "#2b2d31", false);
+    // Drop-off road in front of terminal
+    box(250, 0.1, 20, X(0), 0.05, Z(40), "#2b2d31", false);
+    
+    // Road markings
+    for (let i = -120; i <= 120; i += 10) box(4, 0.12, 0.5, X(i), 0.08, Z(40), "#f2f2f2", false);
 
-      // "STOP" Text on the road
-      text("STOP", x, 0.1, z + 6, 6, 3, "rgba(0,0,0,0)", "#ff0000", true);
+    // --- CAR PARK ---
+    box(140, 0.1, 60, X(-80), 0.05, Z(70), "#3a3d44", false);
+    // Parking lines
+    for (let i = -60; i <= 60; i += 8) {
+      box(0.3, 0.12, 12, X(-80 + i), 0.08, Z(70), "#ffffff", false);
+      box(0.3, 0.12, 12, X(-80 + i), 0.08, Z(55), "#ffffff", false);
     }
 
-    // --- Ground & Runway ---
-    const ground = B.MeshBuilder.CreateGround("apt_ground", { width: 520, height: 380 }, scene);
-    ground.position.set(C.x, -0.04, C.z); ground.material = mat("#4a7a3a"); ground.receiveShadows = true; ground.isPickable = false;
+    // --- SECURITY GATE & AKWAABA SIGN ---
+    // AKWAABA Sign
+    box(2, 8, 2, X(-25), 4, Z(140), "#555", true);
+    box(2, 8, 2, X(25), 4, Z(140), "#555", true);
+    box(55, 10, 1.5, X(0), 9, Z(140), "#17191c", true);
+    text("AKWAABA", X(0), 9, Z(139), 40, 8, "#17191c", "#fcd116", false);
+    text("Welcome to Ghana", X(0), 6.5, Z(139), 20, 4, "#17191c", "#c8102e", false);
 
-    box(320, 0.12, 36, X(0), 0.06, Z(-95), "#2a2c30", false);
-    for (let i = -140; i <= 140; i += 18) box(9, 0.14, 0.7, X(i), 0.09, Z(-95), "#f2f2f2", false);
-    text("09", X(-130), 0.1, Z(-95), 14, 7, "#2a2c30", "#ffffff", true);
-    text("27", X(130), 0.1, Z(-95), 14, 7, "#2a2c30", "#ffffff", true);
+    // Security Gate
+    box(12, 4, 12, X(-12), 2, Z(120), "#e8ecef", true);
+    box(14, 0.5, 14, X(-12), 4.2, Z(120), "#2e5a7a", false);
+    box(4, 1.5, 0.1, X(-12), 2, Z(126.05), "#111", false); // Window
+    
+    // Boom Barrier
+    box(1, 1.5, 1, X(5), 0.75, Z(120), "#333", true);
+    box(0.2, 0.2, 16, X(5), 1.5, Z(128), "#ffffff", false);
+    for(let i=0; i<5; i++) box(0.22, 0.22, 2, X(5), 1.5, Z(121 + i*3), "#c8102e", false);
 
-    // --- Terminal & Jet Bridges ---
-    box(280, 12, 28, X(0), 6, Z(28), "#e8ecef", true);
-    box(270, 8, 0.5, X(0), 5, Z(14.2), "#2e5a7a", false);
-    box(290, 1.2, 32, X(0), 12.4, Z(28), "#9aa5ad", false);
-    box(80, 16, 28, X(0), 8, Z(28), "#dfe5ea", true);
-    text("KOTOKA INTERNATIONAL AIRPORT", X(0), 15.5, Z(14.5), 52, 6, "#17191c", "#fcd116", false);
+    // Security Cones
+    [-4, 0, 4].forEach(ox => {
+      const c = B.MeshBuilder.CreateCylinder("cone", { diameterTop: 0, diameterBottom: 0.6, height: 1 }, scene);
+      c.position.set(X(ox), 0.5, Z(118)); c.material = mat("#ff6b35");
+    });
 
-    const gatePositions = [-100, -70, -40, -10, 20, 50, 80];
-    gatePositions.forEach((gx, i) => { jetBridge(gx, 8, 16); aircraft(gx, -6, Math.PI, i); });
-    aircraft(-130, -40, Math.PI * 0.5, 20); aircraft(130, -40, -Math.PI * 0.5, 21); aircraft(0, -40, Math.PI, 22);
+    // --- PERIMETER FENCE ---
+    // Back fence
+    buildFence(X(-280), Z(-150), X(280), Z(-150));
+    // Left fence
+    buildFence(X(-280), Z(-150), X(-280), Z(150));
+    // Right fence
+    buildFence(X(280), Z(-150), X(280), Z(150));
+    // Front fence (leaving gap for entrance)
+    buildFence(X(-280), Z(150), X(-30), Z(150));
+    buildFence(X(30), Z(150), X(280), Z(150));
 
-    const tower = B.MeshBuilder.CreateCylinder("tower", { diameter: 5, height: 32, tessellation: 14 }, scene);
-    tower.position.set(X(160), 16, Z(45)); tower.material = mat("#e9ecef"); tower.checkCollisions = true;
+    // --- RUNWAY ---
+    box(400, 0.12, 40, X(0), 0.06, Z(-120), "#2a2c30", false);
+    for (let i = -180; i <= 180; i += 20) box(12, 0.14, 1, X(i), 0.09, Z(-120), "#f2f2f2", false);
+    text("09", X(-170), 0.1, Z(-120), 16, 8, "#2a2c30", "#ffffff", true);
+    text("27", X(170), 0.1, Z(-120), 16, 8, "#2a2c30", "#ffffff", true);
 
-    // --- NEW: Access Road & Fencing ---
-    // Main road entering the airport
-    box(20, 0.05, 80, X(0), 0.05, Z(100), "#2b2d31", false);
-    text("WELCOME TO GHANA", X(0), 8, Z(130), 40, 8, "#17191c", "#fcd116", false);
-    box(2, 8, 2, X(-18), 4, Z(130), "#555", true);
-    box(2, 8, 2, X(18), 4, Z(130), "#555", true);
+    // --- TERMINAL BUILDING ---
+    // Main structure
+    box(200, 15, 40, X(0), 7.5, Z(10), "#e8ecef", true);
+    // Glass windows
+    box(190, 10, 0.5, X(0), 6, Z(-10.2), "#2e5a7a", false);
+    // Roof overhang
+    box(220, 1.5, 50, X(0), 15.5, Z(10), "#9aa5ad", false);
+    // Text on terminal
+    text("KOTOKA INTERNATIONAL AIRPORT", X(0), 12, Z(-10.5), 60, 6, "#17191c", "#fcd116", false);
 
-    buildFenceAndGate(X(-210), Z(70), X(210), Z(70), X(0), Z(70));
-    buildSecurityGate(X(0), Z(70));
+    // Control Tower
+    const tower = B.MeshBuilder.CreateCylinder("tower", { diameter: 8, height: 45, tessellation: 14 }, scene);
+    tower.position.set(X(120), 22.5, Z(20)); tower.material = mat("#e9ecef"); tower.checkCollisions = true;
+    const cab = B.MeshBuilder.CreateCylinder("cab", { diameter: 16, height: 6, tessellation: 16 }, scene);
+    cab.position.set(X(120), 47, Z(20)); cab.material = mat("#2e5a7a"); cab.checkCollisions = true;
 
-    // --- Booking Counter ---
-    const counterX = X(0), counterZ = Z(22);
-    box(10, 1.2, 2, counterX, 0.6, counterZ, "#c9a54a", true);
-    box(11, 0.2, 3, counterX, 1.3, counterZ, "#17191c", false);
-    text("TICKETS", counterX, 3, counterZ + 0.6, 6, 1.5, "#17191c", "#fcd116", false);
+    // --- APRON & PLANES ---
+    // Concrete area behind terminal
+    box(350, 0.1, 80, X(0), 0.05, Z(-60), "#c5cad0", false);
+
+    const gatePositions = [-120, -80, -40, 0, 40, 80, 120];
+    gatePositions.forEach((gx, i) => {
+      // Jet Bridge
+      box(3, 3, 24, X(gx), 3.8, Z(-35), "#8a929a", true);
+      box(1.5, 3.8, 1.5, X(gx), 1.9, Z(-25), "#6b7178", true);
+      
+      // Plane
+      aircraft(gx, Z(-55), Math.PI, i);
+    });
+
+    // --- BOOKING COUNTER ---
+    const counterX = X(0), counterZ = Z(-5);
+    box(16, 1.2, 3, counterX, 0.6, counterZ, "#c9a54a", true);
+    box(17, 0.2, 4, counterX, 1.3, counterZ, "#17191c", false);
+    text("TICKETS", counterX, 3, counterZ - 0.6, 8, 2, "#17191c", "#fcd116", false);
 
     function openFlightMenu() {
       if (!window.ACCRA_KIT) return;
@@ -236,11 +256,11 @@
 
     setTimeout(() => {
       if (window.ACCRA_KIT && window.ACCRA_KIT.points) {
-        window.ACCRA_KIT.points.push({ x: counterX, z: counterZ + 2, r: 4, t: "\uD83C\uDFAB Buy Flight Ticket", ok: () => !window.ACCRA_KIT.busy && !window.ACCRA_KIT.seated, f: openFlightMenu });
+        window.ACCRA_KIT.points.push({ x: counterX, z: counterZ + 3, r: 4, t: "\uD83C\uDFAB Buy Flight Ticket", ok: () => !window.ACCRA_KIT.busy && !window.ACCRA_KIT.seated, f: openFlightMenu });
       }
     }, 5000);
 
-    // --- Animation ---
+    // --- ANIMATION ---
     scene.onBeforeRenderObservable.add(() => {
       const time = performance.now() * 0.001;
       planes.forEach((p, i) => {
@@ -257,6 +277,6 @@
     (window.ACCRA_LANDMARKS = window.ACCRA_LANDMARKS || []).push({ n: "Kotoka International Airport", x: C.x, z: C.z + 60 });
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).airport = 1;
 
-    console.log("Kotoka Airport redesigned with fencing");
+    console.log("Kotoka Airport Ultimate Edition loaded");
   } catch (err) { console.error("accra-airport failed:", err); }
 })();
