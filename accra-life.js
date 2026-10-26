@@ -997,7 +997,8 @@
     function adminPanel() {
       show(ttl("\uD83D\uDD27 Admin") + "<small>Play-money and test tools</small>" +
         [500, 5000, 50000, 500000].map(a =>
-          '<button data-m="' + a + '" style="' + BS + '">Give myself GH\u00A2' + a.toLocaleString() + "</button>"
+          // FIX: Changed data-m to data-money
+          '<button data-money="' + a + '" style="' + BS + '">Give myself GH\u00A2' + a.toLocaleString() + "</button>"
         ).join("") +
         '<button data-p="1" style="' + BS + '">Give play money to an online player\u2026</button>' +
         '<button data-v="1" style="' + BS + '">Refill my health, energy, hunger</button>' +
@@ -1014,7 +1015,9 @@
         '<button data-r="1" style="' + BS + '">Clear my wanted level</button>' + CLOSE,
         d => {
           if (d.x) return hide();
-          if (d.m) { earn(+d.m, "Admin grant"); note("You received GH\u00A2" + (+d.m).toLocaleString()); }
+          
+          // FIX: Changed d.m to d.money
+          if (d.money) { earn(+d.money, "Admin grant"); note("You received GH\u00A2" + (+d.money).toLocaleString()); }
           else if (d.v) { st.hp = st.en = st.hu = st.hy = st.md = 100; note("Refilled"); }
           else if (d.t) { hide(); tp(TELE[d.t][0], TELE[d.t][1]); }
           else if (d.w) {
