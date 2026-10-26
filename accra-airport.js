@@ -1,4 +1,4 @@
-/* accra-airport.js - Kotoka International Airport (Futuristic Star Design) */
+/* accra-airport.js - Kotoka International Airport (Fully Realistic Rebuild) */
 (function () {
   try {
     const B = BABYLON;
@@ -7,6 +7,7 @@
     const Z = z => C.z + z;
     const planes = [];
 
+    // --- Helpers ---
     function text(t, x, y, z, w, h, bg, fg, onGround) {
       const dt = new B.DynamicTexture("apt_t" + t, { width: 512, height: 128 }, scene, false);
       const c = dt.getContext();
@@ -21,7 +22,6 @@
       p.material = m;
     }
 
-    // --- Realistic Plane Model ---
     function aircraft(x, z, rotY = 0, index = 0) {
       const group = new B.TransformNode("plane_" + index, scene);
       group.position.set(X(x), 0, Z(z)); group.rotation.y = rotY;
@@ -35,97 +35,162 @@
       const tail = B.MeshBuilder.CreateCylinder("tail", { diameterTop: 0.5, diameterBottom: 3.4, height: 8, tessellation: 16 }, scene);
       tail.rotation.z = Math.PI / 2; tail.position.set(-22, 3, 0); tail.material = mat("#f4f4f2"); tail.parent = group;
 
-      const part = (w, h, d, px, py, pz, col, solid = false, rotZ = 0, rotX = 0) => {
+      const part = (w, h, d, px, py, pz, col) => {
         const m = B.MeshBuilder.CreateBox("p", { width: w, height: h, depth: d }, scene);
-        m.position.set(px, py, pz); m.material = mat(col); m.rotation.z = rotZ; m.rotation.x = rotX; m.parent = group;
-        if (solid) m.checkCollisions = true; return m;
+        m.position.set(px, py, pz); m.material = mat(col); m.parent = group; return m;
       };
 
-      part(14, 0.3, 6, -1, 2.8, -8, "#e0e0e0", true, 0, -0.15);
-      part(14, 0.3, 6, -1, 2.8, 8, "#e0e0e0", true, 0, 0.15);
-
-      part(4, 8, 0.4, -20, 6, 0, "#CE1126", true);
-      part(3.5, 0.3, 7, -22, 3.2, 0, "#FCD116", true);
-
-      part(26, 0.5, 3.42, 0, 3.2, 0, "#CE1126");
-      part(26, 0.4, 3.42, 0, 2.6, 0, "#FCD116");
-      part(26, 0.4, 3.42, 0, 2.2, 0, "#006B3F");
+      part(14, 0.3, 6, -1, 2.8, -8, "#e0e0e0"); part(14, 0.3, 6, -1, 2.8, 8, "#e0e0e0");
+      part(4, 8, 0.4, -20, 6, 0, "#CE1126"); part(3.5, 0.3, 7, -22, 3.2, 0, "#FCD116");
+      part(26, 0.5, 3.42, 0, 3.2, 0, "#CE1126"); part(26, 0.4, 3.42, 0, 2.6, 0, "#FCD116"); part(26, 0.4, 3.42, 0, 2.2, 0, "#006B3F");
 
       planes.push(group);
       return group;
     }
 
-    // --- The Star-Shaped Terminal ---
-    // 1. Central Hub
-    const hub = B.MeshBuilder.CreateCylinder("hub", { diameter: 120, height: 16, tessellation: 64 }, scene);
-    hub.position.set(X(0), 8, Z(0)); hub.material = mat("#e8ecef"); hub.checkCollisions = true;
-    
-    // Gold and Black Roof Accents
-    const hubRoof = B.MeshBuilder.CreateCylinder("hubroof", { diameter: 130, height: 2, tessellation: 64 }, scene);
-    hubRoof.position.set(X(0), 17, Z(0)); hubRoof.material = mat("#FCD116");
-    const hubRoof2 = B.MeshBuilder.CreateCylinder("hubroof2", { diameter: 100, height: 2, tessellation: 64 }, scene);
-    hubRoof2.position.set(X(0), 18.5, Z(0)); hubRoof2.material = mat("#17191c");
+    // --- Flight Cutscene System ---
+    window.playFlightScene = function(destName, destX, destZ, cost) {
+      const K = window.ACCRA_KIT;
+      if (!K) return;
+      if (K.cash() < cost) return K.note("Not enough cash for this flight.");
+      K.pay(cost, "Flight to " + destName);
+      K.hide();
 
-    // 2. Six Radiating Arms
+      const ov = document.createElement('div');
+      ov.style.cssText = "position:fixed;inset:0;background:linear-gradient(to bottom, #2980b9, #6dd5fa, #ffffff);z-index:99999;color:#fff;font-family:system-ui;overflow:hidden;transition:opacity 1.5s;";
+      const st = document.createElement('style');
+      st.textContent = `@keyframes fly { 0% { transform: translateX(0) translateY(0); } 100% { transform: translateX(-100vw) translateY(-50px); } } @keyframes cloud { 0% { transform: translateX(100vw); } 100% { transform: translateX(-100vw); } } @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }`;
+      document.head.appendChild(st);
+
+      let cloudsHTML = "";
+      for(let i=0; i<8; i++) {
+          const top = Math.random()*60 + 10; const size = Math.random()*100 + 50; const dur = Math.random()*10 + 5; const delay = Math.random()*5;
+          cloudsHTML += `<div style="position:absolute;top:${top}%;left:100vw;width:${size}px;height:${size/2}px;background:rgba(255,255,255,0.8);border-radius:50px;filter:blur(5px);animation:cloud ${dur}s linear ${delay}s infinite;"></div>`;
+      }
+
+      ov.innerHTML = `
+          ${cloudsHTML}
+          <div style="position:absolute;top:10%;left:50%;transform:translateX(-50%);text-align:center;background:rgba(0,0,0,0.6);padding:15px 30px;border-radius:15px;border:2px solid #c9a54a;width:80%;max-width:400px;box-shadow:0 10px 20px rgba(0,0,0,0.5);">
+              <h1 style="margin:0;font-size:24px;color:#fcd116;">Flight AK-204</h1>
+              <p style="margin:5px 0 0;font-size:16px;font-weight:bold;">Destination: ${destName}</p>
+              <p style="margin:5px 0 0;font-size:14px;color:#aaa;" id="flightStatus">Boarding...</p>
+          </div>
+          <div style="position:absolute;top:40%;left:30%;font-size:80px;animation:float 2s ease-in-out infinite; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3));">✈️</div>
+      `;
+      document.body.appendChild(ov);
+
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Taxiing to runway..."; }, 2000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Taking off..."; }, 4000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Cruising at 30,000 ft..."; }, 6000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Descending..."; }, 10000);
+      setTimeout(() => { const el = document.getElementById('flightStatus'); if(el) el.innerText = "Landed safely."; ov.style.opacity = 0; }, 13000);
+
+      setTimeout(() => {
+          ov.remove(); st.remove();
+          if (typeof player !== "undefined") { player.position.set(destX, 1, destZ); if (typeof camT !== "undefined") camT.position.copyFrom(player.position); }
+          K.note("Welcome to " + destName + "!");
+      }, 14500);
+    };
+
+    // --- REALISTIC GROUND & TARMAC ---
+    // 1. Grass Base
+    const grass = B.MeshBuilder.CreateGround("apt_grass", { width: 800, height: 800 }, scene);
+    grass.position.set(C.x, -0.1, C.z); grass.material = mat("#4a7a3a"); grass.receiveShadows = true;
+
+    // 2. Asphalt Tarmac Texture
+    const dt = new B.DynamicTexture("tarmac", 1024, scene, true);
+    const ctx = dt.getContext();
+    ctx.fillStyle = "#3a3d44"; ctx.fillRect(0, 0, 1024, 1024);
+    // Yellow taxiway lines
+    ctx.strokeStyle = "#fcd116"; ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(512, 0); ctx.lineTo(512, 1024); ctx.stroke(); // vertical
+    ctx.beginPath(); ctx.moveTo(0, 512); ctx.lineTo(1024, 512); ctx.stroke(); // horizontal
+    // White parking bay lines
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 4;
+    for(let i=100; i<1024; i+=150) {
+      ctx.beginPath(); ctx.moveTo(i, 100); ctx.lineTo(i, 300); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i, 724); ctx.lineTo(i, 924); ctx.stroke();
+    }
+    dt.update();
+    const tarmacMat = new B.StandardMaterial("tarmacMat", scene);
+    tarmacMat.diffuseTexture = dt; tarmacMat.specularColor = B.Color3.Black();
+
+    const tarmac = B.MeshBuilder.CreateGround("apt_tarmac", { width: 400, height: 400 }, scene);
+    tarmac.position.set(C.x, 0.0, C.z); tarmac.material = tarmacMat; tarmac.receiveShadows = true;
+
+    // 3. Access Road (Connecting City to Airport)
+    const roadMat = mat("#2b2d31");
+    box(20, 0.12, 200, X(0), 0.06, Z(150), "#2b2d31", false); // Road coming from City
+    box(20, 0.12, 80, X(0), 0.06, Z(60), "#2b2d31", false);  // Drop off road
+    // Road markings
+    for(let i=-90; i<190; i+=15) box(1, 0.14, 6, X(0), 0.09, Z(i), "#f2f2f2", false);
+
+    // 4. Car Park
+    box(100, 0.12, 60, X(-80), 0.06, Z(80), "#3a3d44", false);
+    for(let i=-45; i<=45; i+=10) box(0.5, 0.14, 15, X(-80+i), 0.09, Z(80), "#ffffff", false);
+
+    // --- TERMINAL BUILDING (Hub) ---
+    // Interior Floor
+    const floor = B.MeshBuilder.CreateDisc("apt_floor", { radius: 60, tessellation: 64 }, scene);
+    floor.rotation.x = Math.PI / 2; floor.position.set(X(0), 0.15, Z(0));
+    floor.material = mat("#d9dde3"); floor.checkCollisions = false;
+
+    // Glass Walls (Using Cylinder with alpha)
+    const glassMat = new B.StandardMaterial("glass", scene);
+    glassMat.diffuseColor = B.Color3.FromHexString("#8fc8e8");
+    glassMat.alpha = 0.4; glassMat.specularColor = new B.Color3(1, 1, 1);
+
+    const walls = B.MeshBuilder.CreateCylinder("apt_walls", { diameter: 120, height: 15, tessellation: 64, faceColors: [] }, scene);
+    walls.position.set(X(0), 7.5, Z(0)); walls.material = glassMat; walls.checkCollisions = true;
+    
+    // Roof (Gold/White Star)
+    const roof = B.MeshBuilder.CreateCylinder("apt_roof", { diameter: 130, height: 2, tessellation: 64 }, scene);
+    roof.position.set(X(0), 16, Z(0)); roof.material = mat("#e8ecef");
+    const roofGold = B.MeshBuilder.CreateCylinder("apt_roofgold", { diameter: 126, height: 2, tessellation: 64 }, scene);
+    roofGold.position.set(X(0), 16.5, Z(0)); roofGold.material = mat("#FCD116");
+    const roofBlack = B.MeshBuilder.CreateCylinder("apt_roofblack", { diameter: 120, height: 1, tessellation: 64 }, scene);
+    roofBlack.position.set(X(0), 17, Z(0)); roofBlack.material = mat("#17191c");
+
+    // Terminal Entrance (Canopy and Doors at the front, Z = 60)
+    box(30, 10, 2, X(0), 5, Z(58), "#2e5a7a", false); // Glass door area
+    box(34, 1, 8, X(0), 10, Z(54), "#9aa5ad", true);  // Entrance Canopy
+    box(2, 10, 8, X(-16), 5, Z(54), "#e8ecef", true); // Canopy Support Left
+    box(2, 10, 8, X(16), 5, Z(54), "#e8ecef", true);  // Canopy Support Right
+    
+    text("KOTOKA INTERNATIONAL AIRPORT", X(0), 13, Z(58), 40, 4, "#17191c", "#fcd116", false);
+
+    // Terminal Arms (Star Shape)
     const arms = 6;
     for (let i = 0; i < arms; i++) {
       const angle = (i * Math.PI * 2) / arms;
-      const armLen = 120;
-      const arm = B.MeshBuilder.CreateBox("arm", { width: 30, height: 12, depth: armLen }, scene);
-      
-      // Position arm so it connects to the hub
-      const ax = Math.cos(angle) * (60 + armLen/2);
-      const az = Math.sin(angle) * (60 + armLen/2);
-      
-      arm.position.set(X(ax), 6, Z(az));
-      arm.rotation.y = -angle + Math.PI/2; // Point outward
-      arm.material = mat("#e8ecef");
-      arm.checkCollisions = true;
+      // Skip the front arm (angle = PI/2) because that's where the entrance is
+      if (Math.abs(angle - Math.PI/2) < 0.1) continue;
 
-      // Arm roof (Glass)
-      const armRoof = B.MeshBuilder.CreateBox("armroof", { width: 28, height: 2, depth: armLen }, scene);
-      armRoof.position.set(X(ax), 13, Z(az));
+      const armLen = 80;
+      const arm = box(25, 12, armLen, 0, 6, 0, "#e8ecef", true);
+      arm.position.set(X(Math.cos(angle) * (60 + armLen/2)), 6, Z(Math.sin(angle) * (60 + armLen/2)));
+      arm.rotation.y = -angle + Math.PI/2;
+
+      // Roof over arm
+      const armRoof = box(27, 1, armLen, 0, 0, 0, "#2e5a7a", false);
+      armRoof.position.set(X(Math.cos(angle) * (60 + armLen/2)), 12.5, Z(Math.sin(angle) * (60 + armLen/2)));
       armRoof.rotation.y = -angle + Math.PI/2;
-      armRoof.material = mat("#2e5a7a");
 
-      // Park 3 Planes at the end of each arm
+      // Park planes at the end of each arm
       for (let p = -1; p <= 1; p++) {
-        // Offset planes slightly left/right of the arm
-        const px = Math.cos(angle) * (60 + armLen + 25) + Math.cos(angle + Math.PI/2) * (p * 20);
-        const pz = Math.sin(angle) * (60 + armLen + 25) + Math.sin(angle + Math.PI/2) * (p * 20);
+        const px = Math.cos(angle) * (60 + armLen + 30) + Math.cos(angle + Math.PI/2) * (p * 20);
+        const pz = Math.sin(angle) * (60 + armLen + 30) + Math.sin(angle + Math.PI/2) * (p * 20);
         aircraft(px, pz, -angle + Math.PI/2, i*3+p);
       }
     }
 
-    // --- Ground & Tarmac ---
-    const tarmac = B.MeshBuilder.CreateGround("tarmac", { width: 600, height: 600 }, scene);
-    tarmac.position.set(C.x, 0.02, C.z); tarmac.material = mat("#9aa5ad"); tarmac.receiveShadows = true;
+    // Runway
+    box(40, 0.15, 400, X(-200), 0.06, Z(0), "#2a2c30", false);
+    for(let i=-180; i<180; i+=20) box(8, 0.16, 2, X(-200), 0.09, Z(i), "#f2f2f2", false);
+    text("09", X(-200), 0.1, Z(-180), 16, 8, "#2a2c30", "#ffffff", true);
 
-    // --- Runways ---
-    // Runway 1
-    box(40, 0.1, 450, X(-220), 0.06, Z(0), "#2a2c30", false);
-    for (let i = -200; i <= 200; i += 20) box(1, 0.12, 10, X(-220), 0.09, Z(i), "#f2f2f2", false);
-    // Runway 2
-    box(40, 0.1, 450, X(220), 0.06, Z(0), "#2a2c30", false);
-    for (let i = -200; i <= 200; i += 20) box(1, 0.12, 10, X(220), 0.09, Z(i), "#f2f2f2", false);
-
-    // --- Ring Road ---
-    const ring = B.MeshBuilder.CreateTorus("ring", { diameter: 500, thickness: 20, tessellation: 64 }, scene);
-    ring.position.set(X(0), 0.05, Z(0)); ring.scaling.y = 0.1; ring.material = mat("#2b2d31");
-
-    // --- Surrounding Futuristic City (Using existing buildings) ---
-    for (let i = 0; i < 30; i++) {
-      const a = Math.random() * Math.PI * 2;
-      const r = 350 + Math.random() * 200;
-      const bx = Math.cos(a) * r;
-      const bz = Math.sin(a) * r;
-      if (typeof bldg === "function") {
-        bldg(X(bx), Z(bz), 20 + Math.random()*20, 20 + Math.random()*20, 40 + Math.random()*60, "#5b8aa8");
-      }
-    }
-
-    // --- Booking Counter ---
-    const counterX = X(0), counterZ = Z(20); // Inside the hub
+    // --- BOOKING COUNTER (Inside the terminal) ---
+    const counterX = X(0), counterZ = Z(20);
     box(16, 1.2, 3, counterX, 0.6, counterZ, "#c9a54a", true);
     box(17, 0.2, 4, counterX, 1.3, counterZ, "#17191c", false);
     text("TICKETS", counterX, 3, counterZ - 0.6, 8, 2, "#17191c", "#fcd116", false);
@@ -152,6 +217,6 @@
     (window.ACCRA_LANDMARKS = window.ACCRA_LANDMARKS || []).push({ n: "Kotoka International Airport", x: C.x, z: C.z + 60 });
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).airport = 1;
 
-    console.log("Kotoka Airport Star Masterplan loaded");
+    console.log("Realistic Kotoka Airport loaded");
   } catch (err) { console.error("accra-airport failed:", err); }
 })();
