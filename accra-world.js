@@ -8,7 +8,7 @@
     if (!L) { console.log("accra-world: life API not ready"); return; }
     const B = BABYLON, { st, cash, pay, note, show, hide, ttl, BS, CLOSE, points, fade, tp } = L;
     const END = -24500, DRIFT = -2400, CH = 256;
-    const HW_START = -150;   // the highway road begins at the city's north avenue junction, and joins it                                                                 // the highway starts north of the city grid, never across city roads
+    const HW_START = -150;   // the highway road begins at the city's north avenue junction
     const S = t => t * t * (3 - 2 * t);
     const hx = z => DRIFT * S(Math.min(1, Math.max(0, (-z - 165) / (-END - 165))));        // highway centre line x at z
     const slope = z => (hx(z - 8) - hx(z + 8)) / 16;
@@ -34,19 +34,28 @@
     const merge = (arr, solid) => { if (!arr.length) return null; const m = B.Mesh.MergeMeshes(arr, true, true, undefined, false, true); if (m) { m.checkCollisions = !!solid; m.isPickable = false; } return m; };
     const treeSrc = (() => { const t = B.MeshBuilder.CreateCylinder("ts", { height: 4, diameterTop: .3, diameterBottom: .5, tessellation: 5 }, scene); t.position.y = 2; t.material = mat("#7a5230");
       const c = B.MeshBuilder.CreateIcoSphere("tc", { radius: 2, subdivisions: 1 }, scene); c.convertToFlatShadedMesh(); c.position.y = 5; c.material = mat("#3f8f4a"); const m = B.Mesh.MergeMeshes([t, c], true, true, undefined, false, true); m.isVisible = false; return m; })();
-    const gantryTex = text => { const dt = new B.DynamicTexture("gt", { width: 512, height: 128 }, scene, false), c = dt.getContext(); c.fillStyle = "#0b6b3a"; c.fillRect(0, 0, 512, 128); c.strokeStyle = "#fff"; c.lineWidth = 6; c.strokeRect(6, 6, 500, 116); c.fillStyle = "#fff"; c.font = "bold 54px system-ui"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, 256, 66, 480); dt.update();
-      const m = new B.StandardMaterial("gtm", scene); m.diffuseTexture = dt; m.emissiveTexture = dt; m.disableLighting = true; m.backFaceCulling = false; return m; };
+    
+    // Fix: Cache the gantry textures so they don't leak memory
+    const gantryCache = {};
+    const gantryTex = text => { 
+      if (gantryCache[text]) return gantryCache[text];
+      const dt = new B.DynamicTexture("gt", { width: 512, height: 128 }, scene, false), c = dt.getContext(); 
+      c.fillStyle = "#0b6b3a"; c.fillRect(0, 0, 512, 128); c.strokeStyle = "#fff"; c.lineWidth = 6; c.strokeRect(6, 6, 500, 116); 
+      c.fillStyle = "#fff"; c.font = "bold 54px system-ui"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(text, 256, 66, 480); dt.update();
+      const m = new B.StandardMaterial("gtm" + text, scene); m.diffuseTexture = dt; m.emissiveTexture = dt; m.disableLighting = true; m.backFaceCulling = false; 
+      return (gantryCache[text] = m); 
+    };
 
+    // Fix: Ensure exactly 64m segments to prevent Z-fighting (overlap)
     function roadTask(z0, list) {
       const surf = [], bars = [];
       for (let z = z0; z > z0 - CH; z -= 64) {
-        if (z - 32 > HW_START) continue;                           // the road only starts north of the city grid
+        if (z - 32 > HW_START) continue;
         const zm = z - 32, x = hx(zm), th = -Math.atan(slope(zm)), cs = Math.cos(th), sn = Math.sin(th);
         const add = (arr, w, h, d, ox, y, oz, m) => { const b = mk(w, h, d, x + cs * ox + sn * oz, y, zm - sn * ox + cs * oz, m, th); arr.push(b); };
-        add(surf, 20, .05, 66, 0, .03, 0, asphalt); add(surf, .25, .09, 66, -9.7, .06, 0, white); add(surf, .25, .09, 66, 9.7, .06, 0, white);
+        add(surf, 20, .05, 64, 0, .03, 0, asphalt); add(surf, .25, .09, 64, -9.7, .06, 0, white); add(surf, .25, .09, 64, 9.7, .06, 0, white);
         for (let oz = -28; oz <= 28; oz += 12) { add(surf, .2, .09, 4, -5.1, .07, oz, white); add(surf, .2, .09, 4, 5.1, .07, oz, white); }
-        // no median or guard rails across the junction, so cars can turn in from the city avenue
-        if (Math.abs(zm - HW_START) > 18) { add(bars, 3, .35, 66, 0, .2, 0, conc); add(bars, .15, .7, 66, -10.6, .4, 0, rail); add(bars, .15, .7, 66, 10.6, .4, 0, rail); }
+        if (Math.abs(zm - HW_START) > 18) { add(bars, 3, .35, 64, 0, .2, 0, conc); add(bars, .15, .7, 64, -10.6, .4, 0, rail); add(bars, .15, .7, 64, 10.6, .4, 0, rail); }
       }
       const a = merge(surf, false), b = merge(bars, true); if (a) list.push(a); if (b) list.push(b);
       // distance gantry every 2 km
@@ -106,7 +115,20 @@
       TOLLS.forEach(P => { if (P.z <= z0 && P.z > z0 - CH && !P.arms) tasks.push(() => tollTask(P, list)); });
       tasks.forEach(f => queue.push(f));
     }
-    function drop(k) { const l = chunks.get(k); if (!l) return; l.forEach(m => m && m.dispose && m.dispose()); chunks.delete(k); TOLLS.forEach(P => { if (P.arms && P.arms.every(a => a.isDisposed())) P.arms = null; }); }
+    function drop(k) { const l = chunks.get(k); if (!l) return; l.forEach(m => m && m.dispose && m.dispose()); chunks.delete(k); TOLLS.forEach(P => { if (P.arms && P.arms.some(a => a.isDisposed())) P.arms = null; }); }
+    
+    // FIX: Create a static road connector between the city (z=-150) and the first streamed chunk (z=-256)
+    const connList = [];
+    for (let z = -165; z > -265; z -= 64) {
+      const zm = z - 32, x = hx(zm), th = -Math.atan(slope(zm)), cs = Math.cos(th), sn = Math.sin(th);
+      const surf = [], bars = [];
+      const add = (arr, w, h, d, ox, y, oz, m) => { const b = mk(w, h, d, x + cs * ox + sn * oz, y, zm - sn * ox + cs * oz, m, th); arr.push(b); };
+      add(surf, 20, .05, 64, 0, .03, 0, asphalt); add(surf, .25, .09, 64, -9.7, .06, 0, white); add(surf, .25, .09, 64, 9.7, .06, 0, white);
+      for (let oz = -28; oz <= 28; oz += 12) { add(surf, .2, .09, 4, -5.1, .07, oz, white); add(surf, .2, .09, 4, 5.1, .07, oz, white); }
+      add(bars, 3, .35, 64, 0, .2, 0, conc); add(bars, .15, .7, 64, -10.6, .4, 0, rail); add(bars, .15, .7, 64, 10.6, .4, 0, rail);
+      const a = merge(surf, false), b = merge(bars, true); if (a) connList.push(a); if (b) connList.push(b);
+    }
+
     let tt = 0;
     scene.onBeforeRenderObservable.add(() => {
       const p = L.driving ? car.position : player.position;
@@ -116,10 +138,17 @@
         for (const k of [...chunks.keys()]) if (!want.has(k)) drop(k);
       }
       const t0 = performance.now(); while (queue.length && performance.now() - t0 < 16) queue.shift()();
-      // toll barriers lift when you pay
-      if (L.driving) TOLLS.forEach(P => { if (!P.arms) return; const d = Math.abs(car.position.z - (P.z - 8)); const near2 = d < 14 && Math.abs(car.position.x - hx(P.z)) < 14;
-        if (near2 && !(P.until > st.play)) { if (cash() >= P.fee) { pay(P.fee, P.n); P.until = st.play + 8; note(P.n + ": GH\u00A2" + P.fee + " paid. Safe travels!"); } else if (!P.warn || P.warn < st.play) { P.warn = st.play + 5; note(P.n + " costs GH\u00A2" + P.fee + ". Not enough cash."); } }
-        /* barrier arms are lifted by accra-toll.js */ });
+      
+      // Toll barrier lift
+      if (L.driving) TOLLS.forEach(P => { 
+        if (P.arms) P.arms.forEach(a => a.position.y = (P.until > st.play) ? 4 : 1.2);
+        if (!P.arms) return; 
+        const d = Math.abs(car.position.z - (P.z - 8)); const near2 = d < 14 && Math.abs(car.position.x - hx(P.z)) < 14;
+        if (near2 && !(P.until > st.play)) { 
+          if (cash() >= P.fee) { pay(P.fee, P.n); P.until = st.play + 8; note(P.n + ": GH\u00A2" + P.fee + " paid. Safe travels!"); } 
+          else if (!P.warn || P.warn < st.play) { P.warn = st.play + 5; note(P.n + " costs GH\u00A2" + P.fee + ". Not enough cash."); } 
+        }
+      });
     });
 
     // ---------- 3. intercity buses (fast travel): the stop list and fares ----------
