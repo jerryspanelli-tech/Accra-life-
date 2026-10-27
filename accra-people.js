@@ -62,18 +62,23 @@
         
         person.thighL = findBone(["thigh_l", "leftupleg", "left_thigh"]);
         person.thighR = findBone(["thigh_r", "rightupleg", "right_thigh"]);
+        person.calfL = findBone(["calf_l", "leftleg", "left_knee"]);
+        person.calfR = findBone(["calf_r", "rightleg", "right_knee"]);
         person.armL = findBone(["upperarm_l", "leftarm", "left_arm"]);
         person.armR = findBone(["upperarm_r", "rightarm", "right_arm"]);
+        person.forearmL = findBone(["lowerarm_l", "leftforearm", "left_elbow"]);
+        person.forearmR = findBone(["lowerarm_r", "rightforearm", "right_elbow"]);
 
-        // Debug: Log if bones are missing
+        // Debug: Log if primary bones are missing
         if (!person.armL) console.warn("Left Arm bone not found!");
         if (!person.armR) console.warn("Right Arm bone not found!");
 
-        // Save initial T-pose rotations
-        if (person.thighL) person.thighL_init = person.thighL.rotationQuaternion ? person.thighL.rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person.thighL.rotation);
-        if (person.thighR) person.thighR_init = person.thighR.rotationQuaternion ? person.thighR.rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person.thighR.rotation);
-        if (person.armL) person.armL_init = person.armL.rotationQuaternion ? person.armL.rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person.armL.rotation);
-        if (person.armR) person.armR_init = person.armR.rotationQuaternion ? person.armR.rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person.armR.rotation);
+        // Save initial rotations
+        ["thighL", "thighR", "calfL", "calfR", "armL", "armR", "forearmL", "forearmR"].forEach(key => {
+          if (person[key]) {
+            person[key + "_init"] = person[key].rotationQuaternion ? person[key].rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person[key].rotation);
+          }
+        });
       }
 
       people.push(person);
@@ -100,18 +105,21 @@
         const swing = p.moving ? Math.sin(animTime) * 0.6 : 0;
 
         if (p.moving) {
-            // Swing legs and arms
+            // Swing legs and arms with knee flex
             if (p.thighL && p.thighL_init) p.thighL.rotationQuaternion = p.thighL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, swing));
             if (p.thighR && p.thighR_init) p.thighR.rotationQuaternion = p.thighR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, -swing));
+            if (p.calfL && p.calfL_init) p.calfL.rotationQuaternion = p.calfL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, Math.max(0, swing * 0.5)));
+            if (p.calfR && p.calfR_init) p.calfR.rotationQuaternion = p.calfR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, Math.max(0, -swing * 0.5)));
             if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, -swing));
             if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, swing));
         } else {
-            // Drop arms to the side when standing still 
-            // (Adjusted to Z-axis, 1.3 radians is about 75 degrees down from T-pose)
+            // Natural standing idle with relaxed arms
             if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, 1.3));
             if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, -1.3));
             if (p.thighL && p.thighL_init) p.thighL.rotationQuaternion = p.thighL_init;
             if (p.thighR && p.thighR_init) p.thighR.rotationQuaternion = p.thighR_init;
+            if (p.calfL && p.calfL_init) p.calfL.rotationQuaternion = p.calfL_init;
+            if (p.calfR && p.calfR_init) p.calfR.rotationQuaternion = p.calfR_init;
         }
       });
     });
