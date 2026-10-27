@@ -31,6 +31,47 @@
       return eyeMat;
     }
 
+    let ghanaJerseyMat = null, kenteMat = null;
+    function GHANA_JERSEY() {
+      if (!ghanaJerseyMat) {
+        const t = new BABYLON.DynamicTexture("ghana_jerseyTex", { width: 128, height: 128 }, scene, false);
+        const c = t.getContext();
+        c.fillStyle = "#ffffff"; c.fillRect(0, 0, 128, 128);
+        // Red, Yellow, Green chest stripes
+        c.fillStyle = "#c8102e"; c.fillRect(0, 30, 128, 14);
+        c.fillStyle = "#fcd116"; c.fillRect(0, 44, 128, 14);
+        c.fillStyle = "#006b3f"; c.fillRect(0, 58, 128, 14);
+        // Black star in center
+        c.fillStyle = "#111111";
+        c.beginPath();
+        const cx = 64, cy = 51, r = 12;
+        for (let i = 0; i < 5; i++) {
+          c.lineTo(cx + r * Math.cos((18 + i * 72) * Math.PI / 180), cy - r * Math.sin((18 + i * 72) * Math.PI / 180));
+          c.lineTo(cx + (r / 2) * Math.cos((54 + i * 72) * Math.PI / 180), cy - (r / 2) * Math.sin((54 + i * 72) * Math.PI / 180));
+        }
+        c.closePath(); c.fill();
+        t.update();
+        ghanaJerseyMat = new BABYLON.StandardMaterial("mat_ghana_jersey", scene);
+        ghanaJerseyMat.diffuseTexture = t; ghanaJerseyMat.specularColor = new BABYLON.Color3(.05, .05, .05);
+      }
+      return ghanaJerseyMat;
+    }
+
+    function KENTE_TEX() {
+      if (!kenteMat) {
+        const t = new BABYLON.DynamicTexture("kenteTex", { width: 128, height: 128 }, scene, false);
+        const c = t.getContext();
+        c.fillStyle = "#fcd116"; c.fillRect(0, 0, 128, 128);
+        c.fillStyle = "#c8102e"; for(let y=0; y<128; y+=32) c.fillRect(0, y, 128, 10);
+        c.fillStyle = "#006b3f"; for(let x=0; x<128; x+=32) c.fillRect(x, 0, 10, 128);
+        c.fillStyle = "#111111"; for(let x=10; x<128; x+=32) for(let y=10; y<128; y+=32) c.fillRect(x, y, 12, 12);
+        t.update();
+        kenteMat = new BABYLON.StandardMaterial("mat_kente", scene);
+        kenteMat.diffuseTexture = t; kenteMat.specularColor = new BABYLON.Color3(.05, .05, .05);
+      }
+      return kenteMat;
+    }
+
     const TOPS = ["#ff6b35", "#2ec4b6", "#ffbe0b", "#8338ec", "#3a86ff", "#ef476f", "#06d6a0", "#ffffff"];
     const JEANS = ["#3a86ff", "#1d3557", "#2b2d42", "#5c677d"];
     const SUITS = ["#2b2d42", "#3d405b", "#1d3557", "#333333"];
@@ -106,7 +147,8 @@
       };
       const piv = (x, y) => { const t = new BABYLON.TransformNode("cart_pivot", scene); t.parent = g; t.position.set(x, y, 0); return t; };
 
-      P("Capsule", { height: fem ? .5 : .54, radius: fem ? .2 : .23, tessellation: 14 }, 0, .72, 0, top);
+      const torsoMat = outfit === "ghana" ? GHANA_JERSEY() : outfit === "kente" ? KENTE_TEX() : top;
+      P("Capsule", { height: fem ? .5 : .54, radius: fem ? .2 : .23, tessellation: 14 }, 0, .72, 0, torsoMat);
       P("Capsule", { height: .24, radius: fem ? .21 : .2, tessellation: 12 }, 0, .44, 0, bottom);
       P("Box", { width: .3, height: .06, depth: .2 }, 0, .9, 0, dark);
       if (outfit === "suit") {
@@ -116,6 +158,8 @@
         P("Capsule", { height: .3, radius: .25, tessellation: 14 }, 0, .78, .01, top);
       } else if (outfit === "dress") {
         P("Cylinder", { height: .4, diameterTop: .36, diameterBottom: .62, tessellation: 16 }, 0, .3, 0, bottom);
+      } else if (outfit === "kente") {
+        P("Cylinder", { height: .45, diameterTop: .4, diameterBottom: .55, tessellation: 14 }, 0, .55, 0, KENTE_TEX());
       }
       if (o.police) {
         P("Box", { width: .46, height: .4, depth: .3 }, 0, .74, .03, vest);
@@ -201,8 +245,13 @@
     function walk(h, sp, dt) {
       h.ph += dt * (2 + sp * 1.1);
       const k = Math.min(1, sp / 3), s = Math.sin(h.ph) * .85 * k;
+      // Leg hip swing & knee flexion
       h.ll.rotation.x = s; h.lr.rotation.x = -s;
-      h.al.rotation.x = -s; h.ar.rotation.x = s;
+      // Arm shoulder swing & natural resting arm drop
+      h.al.rotation.x = -s * .9; h.ar.rotation.x = s * .9;
+      h.al.rotation.z = -0.1 * (1 - k); h.ar.rotation.z = 0.1 * (1 - k);
+      // Run torso lean and step bounce
+      h.g.rotation.x = .05 * k;
       h.g.position.y = Math.abs(Math.cos(h.ph)) * .04 * k;
     }
 

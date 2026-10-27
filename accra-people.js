@@ -187,31 +187,7 @@
       });
     });
 
-    if (window.AccraFigure) {
-      const cartoon = window.AccraFigure.human;
-      window.AccraFigure.human = function (opt) {
-        const c = cartoon(opt);
-        if (!base) return c;
-        const cartoonMeshes = c.root.getChildMeshes(false).slice();
-        const s = spawn(c.root);
-        cartoonMeshes.forEach(m => { if (m && !m.isDisposed()) m.dispose(); });
-        let _sp = 0;
-        const wrapper = Object.assign(c, { root: s.root, person: s, outfit: "glb" });
-        Object.defineProperty(wrapper, "sp", {
-          get() { return _sp; },
-          set(v) { _sp = v; if (s) s.sp = v; },
-          configurable: true,
-          enumerable: true
-        });
-        // Create proxy pivot nodes if missing so online.js pose/walk updates do not crash
-        wrapper.al = c.al || new B.TransformNode("al_proxy", scene);
-        wrapper.ar = c.ar || new B.TransformNode("ar_proxy", scene);
-        wrapper.ll = c.ll || new B.TransformNode("ll_proxy", scene);
-        wrapper.lr = c.lr || new B.TransformNode("lr_proxy", scene);
-        wrapper.g = c.g || new B.TransformNode("g_proxy", scene);
-        return wrapper;
-      };
-    }
+    // Legacy GLTF superhero model override disabled to ensure clean procedural sandbox character system
 
     load();
     window.ACCRA_PEOPLE = { spawn, ready: () => !!base, count: () => people.length };
