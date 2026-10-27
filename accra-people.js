@@ -14,8 +14,8 @@
         base = cont;
         
         // --- FORCE TEXTURES ---
-        // This manually applies the clothes and hair, bypassing the .gltf file
         cont.meshes.forEach(mesh => {
+            // Note: If you still see a black bar/bikini, your texture map might be missing or mapped wrong.
             if (mesh.name.includes("SuperHero_Male") || mesh.name.includes("Sphere.005")) {
                 const mat = new B.StandardMaterial("superMat", scene);
                 mat.diffuseTexture = new B.Texture(folder + "T_Superhero_Male_Dark.png", scene);
@@ -53,15 +53,21 @@
       inst.rootNodes[0].scaling.setAll(s);
       inst.rootNodes[0].position.set(0, bb ? -bb.min.y * s : 0, 0);
 
-      const person = { root, last: root.getAbsolutePosition().clone(), speed: 0, sp: 0 };
+      const person = { root, last: root.getAbsolutePosition().clone(), speed: 0, sp: 0, moving: false };
       
-      // Find the bones
+      // Find the bones (More robust matching for Mixamo/Blender naming)
       const skel = inst.skeletons[0];
       if (skel) {
-        person.thighL = skel.bones.find(b => b.name.toLowerCase().includes("thigh_l"));
-        person.thighR = skel.bones.find(b => b.name.toLowerCase().includes("thigh_r"));
-        person.armL = skel.bones.find(b => b.name.toLowerCase().includes("upperarm_l"));
-        person.armR = skel.bones.find(b => b.name.toLowerCase().includes("upperarm_r"));
+        const findBone = (keywords) => skel.bones.find(b => keywords.some(k => b.name.toLowerCase().includes(k)));
+        
+        person.thighL = findBone(["thigh_l", "leftupleg", "left_thigh"]);
+        person.thighR = findBone(["thigh_r", "rightupleg", "right_thigh"]);
+        person.armL = findBone(["upperarm_l", "leftarm", "left_arm"]);
+        person.armR = findBone(["upperarm_r", "rightarm", "right_arm"]);
+
+        // Debug: Log if bones are missing
+        if (!person.armL) console.warn("Left Arm bone not found!");
+        if (!person.armR) console.warn("Right Arm bone not found!");
 
         // Save initial T-pose rotations
         if (person.thighL) person.thighL_init = person.thighL.rotationQuaternion ? person.thighL.rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person.thighL.rotation);
@@ -83,22 +89,27 @@
       people.forEach(p => {
         if (!p.root || p.root.isDisposed()) return;
         const now = p.root.getAbsolutePosition();
-        p.speed = Math.hypot(now.x - p.last.x, now.z - p.last.z) / dt;
+        
+        // Calculate speed safely
+        const dist = Math.hypot(now.x - p.last.x, now.z - p.last.z);
+        p.speed = dist / dt;
         p.last = now.clone();
 
-        const moving = p.speed > 0.5;
-        const swing = moving ? Math.sin(animTime) * 0.6 : 0;
+        // Use a threshold to determine if moving (prevent stuttering idle)
+        p.moving = p.speed > 0.2; 
+        const swing = p.moving ? Math.sin(animTime) * 0.6 : 0;
 
-        if (moving) {
+        if (p.moving) {
             // Swing legs and arms
             if (p.thighL && p.thighL_init) p.thighL.rotationQuaternion = p.thighL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, swing));
             if (p.thighR && p.thighR_init) p.thighR.rotationQuaternion = p.thighR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, -swing));
             if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, -swing));
             if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, swing));
         } else {
-            // Drop arms to the side when standing still
-            if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, 1.2));
-            if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, -1.2));
+            // Drop arms to the side when standing still 
+            // (Adjusted to Z-axis, 1.3 radians is about 75 degrees down from T-pose)
+            if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, 1.3));
+            if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, -1.3));
             if (p.thighL && p.thighL_init) p.thighL.rotationQuaternion = p.thighL_init;
             if (p.thighR && p.thighR_init) p.thighR.rotationQuaternion = p.thighR_init;
         }
