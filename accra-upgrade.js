@@ -639,9 +639,10 @@
     } catch (e) {}
     window.ACCRA_KIT = { item, ITEMS, note, show, hide, ttl, BS, GOLD, cash, pay, ls, sv, styler, points: POINTS, MX, MZ, collider, tag, keep: () => { lock = true; } };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).upgrade = 1;
-    // >>> VERSION BUMPED TO 67 <<<
-    const lifeJs = document.createElement("script"); window.ACCRA_BUILD = window.ACCRA_BUILD || 67; lifeJs.src = "accra-life.js?v=" + window.ACCRA_BUILD; lifeJs.onerror = () => banner("accra-life.js was not found. Upload it to your repo."); document.body.appendChild(lifeJs);
-    const locJs = document.createElement("script"); locJs.src = "AccraLocations.js?v=" + (window.ACCRA_BUILD || 64);
+    // >>> VERSION BUMPED TO 77 <<<
+    window.ACCRA_BUILD = window.ACCRA_BUILD || 77;
+    const lifeJs = document.createElement("script"); lifeJs.src = "accra-life.js?v=" + window.ACCRA_BUILD; lifeJs.onerror = () => banner("accra-life.js was not found. Upload it to your repo."); document.body.appendChild(lifeJs);
+    const locJs = document.createElement("script"); locJs.src = "AccraLocations.js?v=" + window.ACCRA_BUILD;
     locJs.onload = () => {
       try {
         if (typeof window.AccraLocations !== "function") { banner("AccraLocations.js on your site is the OLD module version (import/export), so it cannot run. Upload the fixed AccraLocations.js and reload."); return; }
