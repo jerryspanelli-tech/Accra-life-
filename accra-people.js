@@ -67,26 +67,34 @@
         walkCycle: 0
       };
       
-      // Find the bones (More robust matching for Mixamo/Blender naming)
+      // Find the TransformNodes linked to GLTF skeleton bones
       const skel = inst.skeletons[0];
       if (skel) {
-        const findBone = (keywords) => skel.bones.find(b => keywords.some(k => b.name.toLowerCase().includes(k)));
+        const getNode = (keywords) => {
+          const b = skel.bones.find(b => keywords.some(k => b.name.toLowerCase().includes(k)));
+          if (!b) return null;
+          return b.getTransformNode ? (b.getTransformNode() || b) : b;
+        };
         
-        person.pelvis = findBone(["pelvis", "hips", "root_bone"]);
-        person.spine = findBone(["spine_01", "spine", "torso"]);
-        person.thighL = findBone(["thigh_l", "leftupleg", "left_thigh"]);
-        person.thighR = findBone(["thigh_r", "rightupleg", "right_thigh"]);
-        person.calfL = findBone(["calf_l", "leftleg", "left_knee"]);
-        person.calfR = findBone(["calf_r", "rightleg", "right_knee"]);
-        person.armL = findBone(["upperarm_l", "leftarm", "left_arm"]);
-        person.armR = findBone(["upperarm_r", "rightarm", "right_arm"]);
-        person.forearmL = findBone(["lowerarm_l", "leftforearm", "left_elbow"]);
-        person.forearmR = findBone(["lowerarm_r", "rightforearm", "right_elbow"]);
+        person.pelvis = getNode(["pelvis", "hips", "root_bone"]);
+        person.spine = getNode(["spine_01", "spine", "torso"]);
+        person.thighL = getNode(["thigh_l", "leftupleg", "left_thigh"]);
+        person.thighR = getNode(["thigh_r", "rightupleg", "right_thigh"]);
+        person.calfL = getNode(["calf_l", "leftleg", "left_knee"]);
+        person.calfR = getNode(["calf_r", "rightleg", "right_knee"]);
+        person.armL = getNode(["upperarm_l", "leftarm", "left_arm"]);
+        person.armR = getNode(["upperarm_r", "rightarm", "right_arm"]);
+        person.forearmL = getNode(["lowerarm_l", "leftforearm", "left_elbow"]);
+        person.forearmR = getNode(["lowerarm_r", "rightforearm", "right_elbow"]);
 
         // Save initial rotations & current quats for smooth slerp interpolation
         ["pelvis", "spine", "thighL", "thighR", "calfL", "calfR", "armL", "armR", "forearmL", "forearmR"].forEach(key => {
-          if (person[key]) {
-            const initQ = person[key].rotationQuaternion ? person[key].rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person[key].rotation);
+          const node = person[key];
+          if (node) {
+            if (!node.rotationQuaternion) {
+              node.rotationQuaternion = B.Quaternion.FromEulerVector(node.rotation);
+            }
+            const initQ = node.rotationQuaternion.clone();
             person[key + "_init"] = initQ;
             person[key + "_curr"] = initQ.clone();
           }
@@ -131,41 +139,38 @@
           p.modelNode.position.y = p.basePosY + bounce;
         }
 
-        // Helper for smooth bone slerp transition
+        // Helper for smooth TransformNode quaternion slerp transition
         const applyBoneTarget = (boneKey, targetOffsetQuat) => {
-          const bone = p[boneKey];
+          const node = p[boneKey];
           const initQ = p[boneKey + "_init"];
           const currQ = p[boneKey + "_curr"];
-          if (!bone || !initQ || !currQ) return;
+          if (!node || !initQ || !currQ) return;
 
           const targetQ = initQ.multiply(targetOffsetQuat);
           B.Quaternion.SlerpToRef(currQ, targetQ, Math.min(dt * 14, 1), currQ);
-          bone.rotationQuaternion = currQ.clone();
+          node.rotationQuaternion = currQ.clone();
         };
 
-        // 1. Thighs (hips forward/back leg swing along Z axis of thigh local space)
-        applyBoneTarget("thighL", B.Quaternion.RotationAxis(B.Axis.Z, -swing));
-        applyBoneTarget("thighR", B.Quaternion.RotationAxis(B.Axis.Z, swing));
+        // 1. Thighs (hips forward/back leg swing along local X axis)
+        applyBoneTarget("thighL", B.Quaternion.RotationAxis(B.Axis.X, swing));
+        applyBoneTarget("thighR", B.Quaternion.RotationAxis(B.Axis.X, -swing));
 
-        // 2. Calves (knee flexion on back swing along Z axis)
-        const kneeFlexL = Math.max(0, -swing * 0.7);
-        const kneeFlexR = Math.max(0, swing * 0.7);
-        applyBoneTarget("calfL", B.Quaternion.RotationAxis(B.Axis.Z, kneeFlexL));
-        applyBoneTarget("calfR", B.Quaternion.RotationAxis(B.Axis.Z, kneeFlexR));
+        // 2. Calves (knee flexion on back swing along local X axis)
+        const kneeFlexL = Math.max(0, swing * 0.7);
+        const kneeFlexR = Math.max(0, -swing * 0.7);
+        applyBoneTarget("calfL", B.Quaternion.RotationAxis(B.Axis.X, kneeFlexL));
+        applyBoneTarget("calfR", B.Quaternion.RotationAxis(B.Axis.X, kneeFlexR));
 
-        // 3. Arms & Forearms (Arm swing along Y axis counter to legs, with resting idle drop pose along Z axis)
-        const idleArmL = B.Quaternion.RotationAxis(B.Axis.Z, -1.2);
-        const idleArmR = B.Quaternion.RotationAxis(B.Axis.Z, 1.2);
-        const walkArmL = idleArmL.multiply(B.Quaternion.RotationAxis(B.Axis.Y, swing * 0.8));
-        const walkArmR = idleArmR.multiply(B.Quaternion.RotationAxis(B.Axis.Y, -swing * 0.8));
+        // 3. Arms & Forearms (Arm drop along local X axis to lower arms from bind T-pose, arm swing along local Z axis)
+        const dropArmL = B.Quaternion.RotationAxis(B.Axis.X, 1.25);
+        const dropArmR = B.Quaternion.RotationAxis(B.Axis.X, -1.25);
+        const swingArmL = B.Quaternion.RotationAxis(B.Axis.Z, -swing * 0.8);
+        const swingArmR = B.Quaternion.RotationAxis(B.Axis.Z, swing * 0.8);
 
-        const targetArmL = B.Quaternion.Slerp(idleArmL, walkArmL, moveWeight);
-        const targetArmR = B.Quaternion.Slerp(idleArmR, walkArmR, moveWeight);
+        applyBoneTarget("armL", dropArmL.multiply(swingArmL));
+        applyBoneTarget("armR", dropArmR.multiply(swingArmR));
 
-        applyBoneTarget("armL", targetArmL);
-        applyBoneTarget("armR", targetArmR);
-
-        // Subtle forearm elbow bend during movement along X axis
+        // Subtle forearm elbow bend during movement along local X axis
         const elbowFlex = (0.2 + Math.abs(swing) * 0.35) * moveWeight;
         applyBoneTarget("forearmL", B.Quaternion.RotationAxis(B.Axis.X, elbowFlex));
         applyBoneTarget("forearmR", B.Quaternion.RotationAxis(B.Axis.X, elbowFlex));
@@ -198,6 +203,12 @@
           configurable: true,
           enumerable: true
         });
+        // Create proxy pivot nodes if missing so online.js pose/walk updates do not crash
+        wrapper.al = c.al || new B.TransformNode("al_proxy", scene);
+        wrapper.ar = c.ar || new B.TransformNode("ar_proxy", scene);
+        wrapper.ll = c.ll || new B.TransformNode("ll_proxy", scene);
+        wrapper.lr = c.lr || new B.TransformNode("lr_proxy", scene);
+        wrapper.g = c.g || new B.TransformNode("g_proxy", scene);
         return wrapper;
       };
     }
