@@ -53,13 +53,27 @@
       inst.rootNodes[0].scaling.setAll(s);
       inst.rootNodes[0].position.set(0, bb ? -bb.min.y * s : 0, 0);
 
-      const person = { root, last: root.getAbsolutePosition().clone(), speed: 0, sp: 0, moving: false };
+      const modelNode = inst.rootNodes[0];
+      const basePosY = bb ? -bb.min.y * s : 0;
+      const person = {
+        root,
+        modelNode,
+        basePosY,
+        last: root.getAbsolutePosition().clone(),
+        speed: 0,
+        sp: 0,
+        moving: false,
+        moveWeight: 0,
+        walkCycle: 0
+      };
       
       // Find the bones (More robust matching for Mixamo/Blender naming)
       const skel = inst.skeletons[0];
       if (skel) {
         const findBone = (keywords) => skel.bones.find(b => keywords.some(k => b.name.toLowerCase().includes(k)));
         
+        person.pelvis = findBone(["pelvis", "hips", "root_bone"]);
+        person.spine = findBone(["spine_01", "spine", "torso"]);
         person.thighL = findBone(["thigh_l", "leftupleg", "left_thigh"]);
         person.thighR = findBone(["thigh_r", "rightupleg", "right_thigh"]);
         person.calfL = findBone(["calf_l", "leftleg", "left_knee"]);
@@ -69,14 +83,12 @@
         person.forearmL = findBone(["lowerarm_l", "leftforearm", "left_elbow"]);
         person.forearmR = findBone(["lowerarm_r", "rightforearm", "right_elbow"]);
 
-        // Debug: Log if primary bones are missing
-        if (!person.armL) console.warn("Left Arm bone not found!");
-        if (!person.armR) console.warn("Right Arm bone not found!");
-
-        // Save initial rotations
-        ["thighL", "thighR", "calfL", "calfR", "armL", "armR", "forearmL", "forearmR"].forEach(key => {
+        // Save initial rotations & current quats for smooth slerp interpolation
+        ["pelvis", "spine", "thighL", "thighR", "calfL", "calfR", "armL", "armR", "forearmL", "forearmR"].forEach(key => {
           if (person[key]) {
-            person[key + "_init"] = person[key].rotationQuaternion ? person[key].rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person[key].rotation);
+            const initQ = person[key].rotationQuaternion ? person[key].rotationQuaternion.clone() : B.Quaternion.FromEulerVector(person[key].rotation);
+            person[key + "_init"] = initQ;
+            person[key + "_curr"] = initQ.clone();
           }
         });
       }
@@ -85,41 +97,87 @@
       return person;
     }
 
-    // --- MANUAL WALK ANIMATION ---
-    let animTime = 0;
+    // --- PROCEDURAL GAIT & ANIMATION LOOP ---
     scene.onBeforeRenderObservable.add(() => {
-      const dt = Math.max(engine.getDeltaTime() / 1000, .001);
-      animTime += dt * 8; 
+      const dt = Math.min(Math.max(engine.getDeltaTime() / 1000, .001), 0.1);
 
       people.forEach(p => {
         if (!p.root || p.root.isDisposed()) return;
         const now = p.root.getAbsolutePosition();
         
-        // Calculate speed safely
+        // Smoothly compute ground movement speed, incorporating external avatar sp if provided
         const dist = Math.hypot(now.x - p.last.x, now.z - p.last.z);
-        p.speed = dist / dt;
-        p.last = now.clone();
+        const instantSpeed = Math.max(dist / dt, p.sp || 0);
+        p.speed = B.Scalar.Lerp(p.speed, instantSpeed, Math.min(dt * 12, 1));
+        p.last.copyFrom(now);
 
-        // Use a threshold to determine if moving (prevent stuttering idle)
-        p.moving = p.speed > 0.2; 
-        const swing = p.moving ? Math.sin(animTime) * 0.6 : 0;
+        // Smooth weight transition between idle (0) and walking (1) to prevent pose popping
+        p.moving = p.speed > 0.15;
+        const targetWeight = p.moving ? 1 : 0;
+        p.moveWeight = B.Scalar.Lerp(p.moveWeight, targetWeight, Math.min(dt * 8, 1));
 
-        if (p.moving) {
-            // Swing legs and arms with knee flex
-            if (p.thighL && p.thighL_init) p.thighL.rotationQuaternion = p.thighL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, swing));
-            if (p.thighR && p.thighR_init) p.thighR.rotationQuaternion = p.thighR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, -swing));
-            if (p.calfL && p.calfL_init) p.calfL.rotationQuaternion = p.calfL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, Math.max(0, swing * 0.5)));
-            if (p.calfR && p.calfR_init) p.calfR.rotationQuaternion = p.calfR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, Math.max(0, -swing * 0.5)));
-            if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, -swing));
-            if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, swing));
-        } else {
-            // Natural standing idle with relaxed arms
-            if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, 1.3));
-            if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, -1.3));
-            if (p.thighL && p.thighL_init) p.thighL.rotationQuaternion = p.thighL_init;
-            if (p.thighR && p.thighR_init) p.thighR.rotationQuaternion = p.thighR_init;
-            if (p.calfL && p.calfL_init) p.calfL.rotationQuaternion = p.calfL_init;
-            if (p.calfR && p.calfR_init) p.calfR.rotationQuaternion = p.calfR_init;
+        // Advance walk cycle based on ground speed to match footstep cadence
+        if (p.moveWeight > 0.01) {
+          p.walkCycle += dt * Math.min(Math.max(p.speed * 2.8, 3.5), 14.0);
+        }
+
+        const moveWeight = p.moveWeight;
+        const speedRatio = Math.min(p.speed / 4.0, 1.2);
+        const swing = Math.sin(p.walkCycle) * 0.55 * Math.max(0.4, speedRatio) * moveWeight;
+
+        // Vertical root bounce linked to gait phase
+        if (p.modelNode) {
+          const bounce = Math.abs(Math.sin(p.walkCycle * 2)) * 0.035 * moveWeight;
+          p.modelNode.position.y = p.basePosY + bounce;
+        }
+
+        // Helper for smooth bone slerp transition
+        const applyBoneTarget = (boneKey, targetOffsetQuat) => {
+          const bone = p[boneKey];
+          const initQ = p[boneKey + "_init"];
+          const currQ = p[boneKey + "_curr"];
+          if (!bone || !initQ || !currQ) return;
+
+          const targetQ = initQ.multiply(targetOffsetQuat);
+          B.Quaternion.SlerpToRef(currQ, targetQ, Math.min(dt * 14, 1), currQ);
+          bone.rotationQuaternion = currQ.clone();
+        };
+
+        // 1. Thighs (hips forward/back leg swing along Z axis of thigh local space)
+        applyBoneTarget("thighL", B.Quaternion.RotationAxis(B.Axis.Z, -swing));
+        applyBoneTarget("thighR", B.Quaternion.RotationAxis(B.Axis.Z, swing));
+
+        // 2. Calves (knee flexion on back swing along Z axis)
+        const kneeFlexL = Math.max(0, -swing * 0.7);
+        const kneeFlexR = Math.max(0, swing * 0.7);
+        applyBoneTarget("calfL", B.Quaternion.RotationAxis(B.Axis.Z, kneeFlexL));
+        applyBoneTarget("calfR", B.Quaternion.RotationAxis(B.Axis.Z, kneeFlexR));
+
+        // 3. Arms & Forearms (Arm swing along Y axis counter to legs, with resting idle drop pose along Z axis)
+        const idleArmL = B.Quaternion.RotationAxis(B.Axis.Z, -1.2);
+        const idleArmR = B.Quaternion.RotationAxis(B.Axis.Z, 1.2);
+        const walkArmL = idleArmL.multiply(B.Quaternion.RotationAxis(B.Axis.Y, swing * 0.8));
+        const walkArmR = idleArmR.multiply(B.Quaternion.RotationAxis(B.Axis.Y, -swing * 0.8));
+
+        const targetArmL = B.Quaternion.Slerp(idleArmL, walkArmL, moveWeight);
+        const targetArmR = B.Quaternion.Slerp(idleArmR, walkArmR, moveWeight);
+
+        applyBoneTarget("armL", targetArmL);
+        applyBoneTarget("armR", targetArmR);
+
+        // Subtle forearm elbow bend during movement along X axis
+        const elbowFlex = (0.2 + Math.abs(swing) * 0.35) * moveWeight;
+        applyBoneTarget("forearmL", B.Quaternion.RotationAxis(B.Axis.X, elbowFlex));
+        applyBoneTarget("forearmR", B.Quaternion.RotationAxis(B.Axis.X, elbowFlex));
+
+        // 4. Pelvis Yaw Twist & Spine Lean
+        if (p.pelvis && p.pelvis_init) {
+          const pelvisYaw = Math.sin(p.walkCycle) * 0.08 * moveWeight;
+          applyBoneTarget("pelvis", B.Quaternion.RotationAxis(B.Axis.Y, pelvisYaw));
+        }
+        if (p.spine && p.spine_init) {
+          const spineLean = speedRatio * 0.1 * moveWeight;
+          applyBoneTarget("spine", B.Quaternion.RotationAxis(B.Axis.X, spineLean));
         }
       });
     });
@@ -132,7 +190,15 @@
         const cartoonMeshes = c.root.getChildMeshes(false).slice();
         const s = spawn(c.root);
         cartoonMeshes.forEach(m => { if (m && !m.isDisposed()) m.dispose(); });
-        return Object.assign(c, { root: s.root, sp: 0, person: s, outfit: "glb" });
+        let _sp = 0;
+        const wrapper = Object.assign(c, { root: s.root, person: s, outfit: "glb" });
+        Object.defineProperty(wrapper, "sp", {
+          get() { return _sp; },
+          set(v) { _sp = v; if (s) s.sp = v; },
+          configurable: true,
+          enumerable: true
+        });
+        return wrapper;
       };
     }
 
