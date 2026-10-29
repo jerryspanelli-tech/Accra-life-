@@ -1,6 +1,5 @@
 /* accra-start.js - the start screen. The player picks gender, name, skin tone, shirt colour, hairstyle and hat,
- * sees a preview, and presses Start Game. The screen closes first, then the figure is rebuilt a moment later,
- * so the phone does not do two heavy jobs at the same time. */
+ * sees a preview, and presses Start Game. Uses the production GLB avatar (CesiumMan.glb) when active. */
 (function () {
   try {
     const SKINS = ["#6b4028", "#8d5a3b", "#a8754f", "#c68a5e", "#e0b48a"];
@@ -8,8 +7,7 @@
     const HAIRS = ["dreads", "braids", "afro", "fade", "bald"];
     const HATS = ["none", "cap", "beanie", "hood"];
 
-    // --- Translation tables between UI display values and the internal
-    // look indices that online.js / accra-figure.js actually read. ---
+    // --- Translation tables between UI display values and internal look indices ---
     const SKIN_TO_IDX  = {"#6b4028":2, "#8d5a3b":1, "#a8754f":4, "#c68a5e":0, "#e0b48a":7};
     const SKIN_FROM_IDX= {0:"#c68a5e", 1:"#8d5a3b", 2:"#6b4028", 3:"#6b4028", 4:"#a8754f", 5:"#6b4028", 6:"#e0b48a", 7:"#e0b48a"};
     const HAIR_TO_IDX  = {dreads:3, braids:4, afro:2, fade:1, bald:0};

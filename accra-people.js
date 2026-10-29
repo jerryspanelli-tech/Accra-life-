@@ -116,17 +116,7 @@
       });
     });
 
-    if (window.AccraFigure) {
-      const cartoon = window.AccraFigure.human;
-      window.AccraFigure.human = function (opt) {
-        const c = cartoon(opt);
-        if (!base) return c;
-        const cartoonMeshes = c.root.getChildMeshes(false).slice();
-        const s = spawn(c.root);
-        cartoonMeshes.forEach(m => { if (m && !m.isDisposed()) m.dispose(); });
-        return Object.assign(c, { root: s.root, sp: 0, person: s, outfit: "glb" });
-      };
-    }
+    // Deprecated AccraFigure override removed to prevent blocky figure instantiation
 
     load();
     window.ACCRA_PEOPLE = { spawn, ready: () => !!base, count: () => people.length };
