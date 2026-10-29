@@ -150,6 +150,78 @@ function update(dt){
 }
 engine.runRenderLoop(()=>{update(Math.min(engine.getDeltaTime()/1000,.05));scene.render()});
 addEventListener('resize',()=>engine.resize());
-</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=41"></script><script src="accra-airport.js?v=49"></script><script src="accra-kumasi-airport.js?v=4"></script><script src="accra-roads.js?v=50"></script><script src="accra-connect.js?v=42"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=55"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=54"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=62"></script><script src="accra-phone-skin.js?v=63"></script><script src="online.js?v=30"></script><script src="accra-assets.js?v=35"></script><script src="accra-figure.js?v=77"></script><script src="accra-people.js?v=77"></script><script src="accra-start.js?v=31"></script><script src="accra-upgrade.js?v=77"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-hq.js?v=2"></script><script src="accra-hospital.js?v=2"></script><script src="accra-mall.js?v=1"></script><script src="accra-interiors.js?v=2"></script><script src="accra-entries.js?v=2"></script>
+</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=41"></script><script src="accra-airport.js?v=49"></script><script src="accra-kumasi-airport.js?v=4"></script><script src="accra-roads.js?v=50"></script><script src="accra-connect.js?v=42"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=55"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=54"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=62"></script><script src="accra-phone-skin.js?v=63"></script><script src="online.js?v=30"></script><script src="accra-assets.js?v=35"></script><script src="accra-figure.js?v=56"></script><script src="accra-people.js?v=63"></script><script src="accra-start.js?v=31"></script><script src="accra-upgrade.js?v=35"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-hq.js?v=2"></script><script src="accra-hospital.js?v=2"></script><script src="accra-mall.js?v=1"></script><script src="accra-interiors.js?v=2"></script><script src="accra-entries.js?v=2"></script>
 
+<!-- ========================================== -->
+<!-- THE AUTOMATIC T-POSE & ANIMATION FIX       -->
+<!-- ========================================== -->
+<script>
+(function applyAnimationFix() {
+    console.log("Waiting for 3D player model to load...");
+
+    // Check every 500 milliseconds if the player model has finished loading
+    const checkInterval = setInterval(() => {
+        const playerRoot = scene.getTransformNodeByName("person_root1");
+        if (!playerRoot) return; // Model not loaded yet, try again next tick
+
+        let skeleton = null;
+        playerRoot.getChildMeshes().forEach(mesh => {
+            if (mesh.skeleton) skeleton = mesh.skeleton;
+        });
+        if (!skeleton) return; // Skeleton not ready yet
+
+        // Try to find the correct bone names
+        const findBone = (keywords) => skeleton.bones.find(b => keywords.some(k => b.name.toLowerCase().includes(k)));
+
+        const armL = findBone(["upperarm_l", "leftarm", "left_arm"]);
+        const armR = findBone(["upperarm_r", "rightarm", "right_arm"]);
+        const thighL = findBone(["thigh_l", "leftupleg", "left_thigh"]);
+        const thighR = findBone(["thigh_r", "rightupleg", "right_thigh"]);
+
+        if (armL && armR) {
+            // Success! We found the bones. Stop checking.
+            clearInterval(checkInterval);
+            console.log("✅ T-POSE FIX APPLIED SUCCESSFULLY");
+
+            // Save the original T-Pose rotations
+            const armL_init = armL.rotationQuaternion ? armL.rotationQuaternion.clone() : BABYLON.Quaternion.FromEulerVector(armL.rotation);
+            const armR_init = armR.rotationQuaternion ? armR.rotationQuaternion.clone() : BABYLON.Quaternion.FromEulerVector(armR.rotation);
+            const thighL_init = thighL ? (thighL.rotationQuaternion ? thighL.rotationQuaternion.clone() : BABYLON.Quaternion.FromEulerVector(thighL.rotation)) : null;
+            const thighR_init = thighR ? (thighR.rotationQuaternion ? thighR.rotationQuaternion.clone() : BABYLON.Quaternion.FromEulerVector(thighR.rotation)) : null;
+
+            // Force the arms down immediately
+            armL.rotationQuaternion = armL_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Z, 1.3));
+            armR.rotationQuaternion = armR_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Z, -1.3));
+
+            let lastPos = playerRoot.getAbsolutePosition().clone();
+
+            // Create the walking animation loop
+            scene.onBeforeRenderObservable.add(() => {
+                if (!playerRoot.isEnabled()) return;
+
+                const pos = playerRoot.getAbsolutePosition();
+                const dist = BABYLON.Vector3.Distance(pos, lastPos);
+                const speed = dist / (engine.getDeltaTime() / 1000);
+                lastPos = pos.clone();
+
+                const swing = Math.sin(Date.now() / 150) * 0.6;
+
+                if (speed > 0.1) {
+                    // Walking Animation (Swing arms and legs)
+                    armL.rotationQuaternion = armL_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.X, -swing));
+                    armR.rotationQuaternion = armR_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.X, swing));
+                    if (thighL) thighL.rotationQuaternion = thighL_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.X, swing));
+                    if (thighR) thighR.rotationQuaternion = thighR_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.X, -swing));
+                } else {
+                    // Idle Animation (Arms down)
+                    armL.rotationQuaternion = armL_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Z, 1.3));
+                    armR.rotationQuaternion = armR_init.multiply(BABYLON.Quaternion.RotationAxis(BABYLON.Axis.Z, -1.3));
+                    if (thighL) thighL.rotationQuaternion = thighL_init;
+                    if (thighR) thighR.rotationQuaternion = thighR_init;
+                }
+            });
+        }
+    }, 500); // Check every half-second
+})();
+</script>
 </body></html>
