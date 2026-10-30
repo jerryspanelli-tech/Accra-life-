@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Accra Life · CesiumMan Player Test</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:none;font-family:system-ui,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+#c{position:fixed;inset:0;width:100%;height:100%;outline:none;touch-action:none}
+.pill{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;background:rgba(28,30,33,.88);border-radius:14px;padding:7px 12px;font:700 14px system-ui;color:#c9a54a;z-index:10}
+#spd{left:auto;right:8px;color:#fff}
+#joy{position:fixed;left:calc(env(safe-area-inset-left,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:140px;height:140px;border-radius:50%;background:rgba(28,30,33,.35);border:2px solid rgba(255,255,255,.55);touch-action:none;z-index:10}
+#knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(201,165,74,.92);pointer-events:none}
+.pb{position:fixed;width:66px;height:66px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(28,30,33,.55);color:#fff;font-size:26px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);touch-action:none;z-index:10}
+#jump{right:calc(env(safe-area-inset-right,0px) + 18px)}
+#act{right:calc(env(safe-area-inset-right,0px) + 96px);background:rgba(201,165,74,.9);color:#17191c;display:none}
+</style></head><body>
+<canvas id="c"></canvas>
+<div class="pill">CesiumMan Test Player Sandbox</div><div class="pill" id="spd" style="display:none"></div>
+<div id="joy"><div id="knob"></div></div>
+<button id="jump" class="pb" aria-label="Jump or brake">⬆</button><button id="act" class="pb" aria-label="Car">🚗</button>
+
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z),C3=h=>BABYLON.Color3.FromHexString(h);
+const engine=new BABYLON.Engine($('c'),true,{adaptToDeviceRatio:true});
+const scene=new BABYLON.Scene(engine);
+scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);scene.collisionsEnabled=true;
+const hemi=new BABYLON.HemisphericLight('h',V(0,1,0),scene);hemi.intensity=.85;
+const sun=new BABYLON.DirectionalLight('s',V(-.5,-1,-.4),scene);sun.intensity=1.2;sun.position=V(40,80,32);
+
+const ground=BABYLON.MeshBuilder.CreateGround('g',{width:600,height:600},scene);
+const gMat=new BABYLON.StandardMaterial('gm',scene);gMat.diffuseColor=C3('#5e8038');ground.material=gMat;ground.checkCollisions=true;
+
+const player=BABYLON.MeshBuilder.CreateCapsule('p',{height:1.8,radius:.4},scene);
+player.position.set(0,.91,10);player.isVisible=false;player.ellipsoid=V(.4,.9,.4);
+
+const camT=new BABYLON.TransformNode('ct',scene);
+const cam=new BABYLON.ArcRotateCamera('cam',Math.PI/2,1.1,9,V(0,1,0),scene);
+cam.lockedTarget=camT;cam.attachControl($('c'),true);
+
+// --- LOAD CESIUMMAN GLB AS PLAYER AVATAR ---
+let cesiumNode=null, animGroup=null, playerMesh=null;
+BABYLON.SceneLoader.ImportMeshAsync('','People/CesiumMan/','CesiumMan.glb',scene).then(res=>{
+  cesiumNode=new BABYLON.TransformNode('cesium_player',scene);
+  cesiumNode.parent=player;
+  cesiumNode.position.set(0,-.91,0);
+
+  const root=res.meshes[0];
+  root.parent=cesiumNode;
+  root.rotationQuaternion=null;
+  root.rotation.y=Math.PI; // Face forward
+
+  const bb=root.getHierarchyBoundingVectors(true);
+  const h=bb.max.y-bb.min.y;
+  if(h>0) root.scaling.setAll(1.8/h);
+
+  if(res.animationGroups.length>0){
+    animGroup=res.animationGroups[0];
+    animGroup.pause();
+    console.log('[CesiumPlayer] AnimationGroup ready:', animGroup.name);
+  }
+}).catch(e=>console.error('[CesiumPlayer] Load failed:',e));
+
+let jx=0,jy=0,jid=null,vy=0,spd=0,jump=0;
+const joy=$('joy'),kn=$('knob');
+function jm(e){const r=joy.getBoundingClientRect(),R=r.width/2,m=R*.62;let dx=e.clientX-(r.left+R),dy=e.clientY-(r.top+R);const l=Math.hypot(dx,dy);if(l>m){dx*=m/l;dy*=m/l}kn.style.transform='translate('+dx+'px,'+dy+'px)';jx=dx/m;jy=dy/m}
+joy.addEventListener('pointerdown',e=>{e.preventDefault();jid=e.pointerId;joy.setPointerCapture(e.pointerId);jm(e)});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e)});
+const jend=e=>{if(e.pointerId!==jid)return;jid=null;jx=jy=0;kn.style.transform='translate(0,0)'};
+joy.addEventListener('pointerup',jend);joy.addEventListener('pointercancel',jend);
+$('jump').addEventListener('pointerdown',e=>{e.preventDefault();jump=1});
+const K={};addEventListener('keydown',e=>{K[e.key.toLowerCase()]=1;if(e.key===' ')jump=1;});addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
+
+let lpx=player.position.x,lpz=player.position.z,smv=0;
+function update(dt){
+ const ix=jx+(K.d?1:0)-(K.a?1:0),iy=jy+(K.s?1:0)-(K.w?1:0);
+ const f=V(-Math.cos(cam.alpha),0,-Math.sin(cam.alpha)),r=V(f.z,0,-f.x),mv=f.scale(-iy).add(r.scale(ix));
+ const sp=Math.min(1,mv.length())*5.2;if(mv.length()>.05)mv.normalize();
+ if(jump&&player.position.y<=.93){vy=7;}jump=0;vy-=22*dt;
+ player.moveWithCollisions(V(mv.x*sp*dt,vy*dt,mv.z*sp*dt));
+ if(player.position.y<=.91){player.position.y=.91;if(vy<0)vy=0}
+ if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);
+
+ const dist=Math.hypot(player.position.x-lpx,player.position.z-lpz)/dt;lpx=player.position.x;lpz=player.position.z;
+ smv+=(Math.min(dist,9)-smv)*Math.min(1,dt*9);
+
+ // Drive CesiumMan Animation Group based on ground speed
+ if(animGroup){
+   if(smv>.15){
+     if(!animGroup.isPlaying) animGroup.play(true);
+     animGroup.speedRatio=Math.min(Math.max(smv/2.5,.6),2.2);
+   }else{
+     if(animGroup.isPlaying) animGroup.pause();
+   }
+ }
+
+ camT.position.set(player.position.x,player.position.y+.7,player.position.z);
+}
+engine.runRenderLoop(()=>{update(Math.min(engine.getDeltaTime()/1000,.05));scene.render()});
+addEventListener('resize',()=>engine.resize());
+</script></body></html>

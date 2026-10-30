@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accra Life - Isolated CesiumMan Sandbox Test</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#17191c;color:#fff;font-family:system-ui,sans-serif}
+#c{width:100%;height:100%;outline:none}
+#ui{position:fixed;top:12px;left:12px;background:rgba(0,0,0,.85);padding:14px;border-radius:10px;border:1px solid rgba(201,165,74,.5);max-width:340px;font-size:13px;line-height:1.5;z-index:10}
+.badge{display:inline-block;background:#1d4ed8;color:#fff;padding:2px 8px;border-radius:4px;font-weight:700;margin-bottom:6px}
+.success{background:#15803d}
+.error{background:#b91c1c}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui">
+  <div class="badge" id="status-badge">Loading...</div>
+  <div id="log">Initializing Babylon.js scene...</div>
+</div>
+
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+(function() {
+  const canvas = document.getElementById('c');
+  const logEl = document.getElementById('log');
+  const badgeEl = document.getElementById('status-badge');
+
+  function log(msg) {
+    console.log('[CesiumMan Sandbox]', msg);
+    logEl.innerHTML += '<br>' + msg;
+  }
+
+  function setStatus(text, isError) {
+    badgeEl.textContent = text;
+    badgeEl.className = 'badge ' + (isError ? 'error' : 'success');
+  }
+
+  const engine = new BABYLON.Engine(canvas, true, { adaptToDeviceRatio: true });
+  const scene = new BABYLON.Scene(engine);
+  scene.clearColor = new BABYLON.Color4(0.1, 0.12, 0.15, 1);
+
+  const camera = new BABYLON.ArcRotateCamera('cam', Math.PI / 2, 1.25, 4.5, new BABYLON.Vector3(0, 0.9, 0), scene);
+  camera.attachControl(canvas, true);
+  camera.lowerRadiusLimit = 2;
+  camera.upperRadiusLimit = 10;
+
+  const hemi = new BABYLON.HemisphericLight('hemi', new BABYLON.Vector3(0, 1, 0), scene);
+  hemi.intensity = 0.9;
+  const dir = new BABYLON.DirectionalLight('dir', new BABYLON.Vector3(-1, -2, -1), scene);
+  dir.position = new BABYLON.Vector3(5, 10, 5);
+  dir.intensity = 0.8;
+
+  // Ground plane grid
+  const ground = BABYLON.MeshBuilder.CreateGround('g', { width: 20, height: 20 }, scene);
+  const gMat = new BABYLON.StandardMaterial('gm', scene);
+  gMat.diffuseColor = new BABYLON.Color3(0.2, 0.22, 0.25);
+  gMat.specularColor = new BABYLON.Color3(0.05, 0.05, 0.05);
+  ground.material = gMat;
+
+  log('Loading People/CesiumMan/CesiumMan.glb...');
+
+  BABYLON.SceneLoader.ImportMeshAsync('', 'People/CesiumMan/', 'CesiumMan.glb', scene)
+    .then(result => {
+      log('GLB File Loaded Successfully!');
+      log('Meshes count: ' + result.meshes.length);
+      log('Skeletons count: ' + result.skeletons.length);
+      log('AnimationGroups count: ' + result.animationGroups.length);
+
+      const mainMesh = result.meshes[0];
+      mainMesh.position.set(0, 0, 0);
+
+      // Rotate model to face camera
+      mainMesh.rotationQuaternion = null;
+      mainMesh.rotation.y = Math.PI;
+
+      // Ensure model stands upright at ~1.8m height
+      const bb = mainMesh.getHierarchyBoundingVectors(true);
+      const height = bb.max.y - bb.min.y;
+      log('Raw Bounding Height: ' + height.toFixed(2) + 'm');
+      if (height > 0) {
+        const scale = 1.8 / height;
+        mainMesh.scaling.setAll(scale);
+        log('Applied Scaling Factor: ' + scale.toFixed(2));
+      }
+
+      // Check and play animation groups
+      if (result.animationGroups.length > 0) {
+        const animGroup = result.animationGroups[0];
+        log('Playing AnimationGroup: ' + animGroup.name);
+        animGroup.play(true); // Loop animation
+        setStatus('Animation Playing OK (' + animGroup.name + ')', false);
+      } else {
+        log('Warning: No AnimationGroups found in GLB!');
+        setStatus('Loaded (No Animations)', true);
+      }
+
+      // Slow rotation for inspection
+      scene.onBeforeRenderObservable.add(() => {
+        mainMesh.rotation.y += 0.005;
+      });
+    })
+    .catch(err => {
+      log('Error loading GLB: ' + err.message);
+      setStatus('Load Failed', true);
+    });
+
+  engine.runRenderLoop(() => scene.render());
+  window.addEventListener('resize', () => engine.resize());
+})();
+</script>
+</body>
+</html>

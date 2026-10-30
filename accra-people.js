@@ -84,7 +84,7 @@
     let animTime = 0;
     scene.onBeforeRenderObservable.add(() => {
       const dt = Math.max(engine.getDeltaTime() / 1000, .001);
-      animTime += dt * 8; 
+      animTime += dt * 8;
 
       people.forEach(p => {
         if (!p.root || p.root.isDisposed()) return;
@@ -96,7 +96,7 @@
         p.last = now.clone();
 
         // Use a threshold to determine if moving (prevent stuttering idle)
-        p.moving = p.speed > 0.2; 
+        p.moving = p.speed > 0.2;
         const swing = p.moving ? Math.sin(animTime) * 0.6 : 0;
 
         if (p.moving) {
@@ -106,7 +106,7 @@
             if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, -swing));
             if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.X, swing));
         } else {
-            // Drop arms to the side when standing still 
+            // Drop arms to the side when standing still
             // (Adjusted to Z-axis, 1.3 radians is about 75 degrees down from T-pose)
             if (p.armL && p.armL_init) p.armL.rotationQuaternion = p.armL_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, 1.3));
             if (p.armR && p.armR_init) p.armR.rotationQuaternion = p.armR_init.multiply(B.Quaternion.RotationAxis(B.Axis.Z, -1.3));
