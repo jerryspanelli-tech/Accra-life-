@@ -4,17 +4,7 @@
  // outfit: 0 tee+trousers, 1 suit+tie, 2 dress, 3 hoodie+shorts, 4 kaftan (batik), 5 Ghana jersey, 6 kente shirt, 7 leather jacket
  // hair: 0 bald, 1 fade, 2 afro, 3 dreads, 4 braids, 5 cornrows, 6 locs, 7 mohawk, 8 low cut, 9 twists
  // accessories: 0 none, 1 gold chain, 2 cap, 3 beanie, 4 sunglasses, 5 kente headwrap
- function human(l){
-  if (window.__useCesiumPlayer) {
-    const root = new BABYLON.TransformNode("hu", scene);
-    const g = new BABYLON.TransformNode("hg", scene); g.parent = root;
-    const al = new BABYLON.TransformNode("al", scene); al.parent = g;
-    const ar = new BABYLON.TransformNode("ar", scene); ar.parent = g;
-    const ll = new BABYLON.TransformNode("ll", scene); ll.parent = g;
-    const lr = new BABYLON.TransformNode("lr", scene); lr.parent = g;
-    return { root, g, al, ar, ll, lr, pk: [], ph: 0 };
-  }
-  if (window.AccraFigure) return window.AccraFigure.human(l);
+ function human(l){ if (window.AccraFigure) return window.AccraFigure.human(l);
   l=Object.assign({skin:1,hair:1,hcol:0,top:3,pants:0,style:0,acc:0,shoe:0},l||{});
   const root=new BABYLON.TransformNode('hu',scene);
   const g=new BABYLON.TransformNode('hg',scene);g.parent=root;g.scaling.setAll(.85);
@@ -77,7 +67,7 @@
  const isNew=!look;
  look=Object.assign({skin:1,hair:1,hcol:0,top:3,pants:0,style:0,acc:0,shoe:0},look||{});
  let mine=null;
- function dress(){if(mine)mine.root.dispose();try{localStorage.setItem('accra-look',JSON.stringify(look))}catch(e){}if(window.__useCesiumPlayer)return;mine=human(look);mine.root.parent=player;mine.root.position.y=-.91;player.isVisible=false}
+ function dress(){if(mine)mine.root.dispose();mine=human(look);mine.root.parent=player;mine.root.position.y=-.91;player.isVisible=false;try{localStorage.setItem('accra-look',JSON.stringify(look))}catch(e){}}
  dress();
  let net=null;
  // customization screens (wardrobe, fitting room, first join) live in accra-upgrade.js
@@ -88,7 +78,6 @@
  scene.onBeforeRenderObservable.add(()=>{const dt=Math.max(engine.getDeltaTime()/1000,.001),src=driving?car:player;
   const raw=Math.hypot(src.position.x-lpx,src.position.z-lpz)/dt;lpx=src.position.x;lpz=src.position.z;
   smv+=(Math.min(raw,9)-smv)*Math.min(1,dt*9);cur.sp=smv;
-  if(!mine)return;
   vyaw+=adiff(player.rotation.y,vyaw)*Math.min(1,dt*12);mine.root.rotation.y=vyaw-player.rotation.y;   // smooth turning
   const r=mine.root,pose=window.ACCRA_AVATAR&&window.ACCRA_AVATAR.pose;if(mine.pk)mine.pk.forEach(m=>m.setEnabled(pose==='mine'));
   if(pose==='sit'){r.rotation.x=0;r.position.set(0,-.91+((window.ACCRA_AVATAR.sitH||.45)+.05-.748),0);mine.g.rotation.x=0;mine.g.position.y=0;mine.ll.rotation.x=mine.lr.rotation.x=-1.5;mine.al.rotation.x=mine.ar.rotation.x=-.7}
