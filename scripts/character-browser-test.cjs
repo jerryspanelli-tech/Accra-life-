@@ -75,6 +75,8 @@ const { chromium } = require('playwright');
     const ownedOutfitText=await page.locator('.apn').innerText();
     if(!ownedOutfitText.includes('Pantsuit'))throw new Error('Purchased pantsuit is not available in home wardrobe: '+ownedOutfitText);
     await page.locator('.apn button[data-done]').click();
+    await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setGender('female','street'));
+    await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL.gender()==='female'&&window.ACCRA_PLAYER_MODEL.outfit()==='street',null,{timeout:45000});
     await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setAppearance({skin:2,top:2,pants:1,hcol:1,shoe:1}));
     const appearanceMaterials=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect().filter(m=>['Skin','Oversized tee','Baggy jeans','Braids','Sneaker leather'].includes(m.material)).map(m=>({material:m.material,color:m.color})));
     const colorOf=name=>appearanceMaterials.find(m=>m.material===name)?.color;
