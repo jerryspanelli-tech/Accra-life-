@@ -115,7 +115,7 @@ async function setPlayerGender(gender){
     return true;
   }catch(err){console.error('[AccraLifePlayer] Model load failed:',gender,err);return false;}
 }
-window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,gender:()=>playerGender,ready:()=>!!playerVisual,inspect:()=>{if(!playerVisual)return[];playerVisual.computeWorldMatrix(true);const inv=playerVisual.getWorldMatrix().clone();inv.invert();return playerVisual.getChildMeshes(false).map(m=>{m.computeWorldMatrix(true);const p=BABYLON.Vector3.TransformCoordinates(m.getBoundingInfo().boundingBox.centerWorld,inv);return{name:m.name,material:m.material&&m.material.name,center:p.asArray(),vertices:m.getTotalVertices()};});}};
+window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,gender:()=>playerGender,ready:()=>!!playerVisual,inspect:()=>{if(!playerVisual)return[];playerVisual.computeWorldMatrix(true);const inv=playerVisual.getWorldMatrix().clone();inv.invert();return playerVisual.getChildMeshes(false).map(m=>{m.computeWorldMatrix(true);const indices=m.getIndices()||[],positions=m.getVerticesData(BABYLON.VertexBuffer.PositionKind)||[],ranges=(m.subMeshes||[]).map(sm=>{let x=0,y=0,z=0,n=0;for(let k=sm.indexStart;k<sm.indexStart+sm.indexCount;k++){const vi=indices[k];if(vi==null)continue;const w=BABYLON.Vector3.TransformCoordinates(new BABYLON.Vector3(positions[vi*3],positions[vi*3+1],positions[vi*3+2]),m.getWorldMatrix());const p=BABYLON.Vector3.TransformCoordinates(w,inv);x+=p.x;y+=p.y;z+=p.z;n++;}return{materialIndex:sm.materialIndex,indexCount:sm.indexCount,center:n?[x/n,y/n,z/n]:null};});return{name:m.name,material:m.material&&m.material.name,vertices:m.getTotalVertices(),ranges};});}};
 setPlayerGender('male');
 let lpx=player.position.x,lpz=player.position.z;
 scene.onBeforeRenderObservable.add(()=>{
@@ -183,7 +183,7 @@ function update(dt){
   if(jump&&player.position.y<=.93){vy=7;}jump=0;vy-=22*dt;
   player.moveWithCollisions(V(mv.x*sp*dt,vy*dt,mv.z*sp*dt));
   if(player.position.y<=.91){player.position.y=.91;if(vy<0)vy=0}
-  if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);
+  if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);window.__accraPlayerFacingYaw=player.rotation.y;
   focus=player.position;
  }
  carModelFollow();
