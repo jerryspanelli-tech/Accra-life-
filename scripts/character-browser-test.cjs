@@ -44,6 +44,12 @@ const { chromium } = require('playwright');
     if(!(maleEyeZ>0))throw new Error('Male model face direction is not +Z; eye geometry centroid='+maleEyeZ);
     await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setGender('female'));
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
+    await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setAppearance({skin:2,top:2,pants:1,hcol:1,shoe:1}));
+    const appearanceMaterials=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect().filter(m=>['Skin','Oversized tee','Baggy jeans','Braids','Sneaker leather'].includes(m.material)).map(m=>({material:m.material,color:m.color})));
+    const colorOf=name=>appearanceMaterials.find(m=>m.material===name)?.color;
+    const appearanceCheck={skin:colorOf('Skin'),shirt:colorOf('Oversized tee'),trousers:colorOf('Baggy jeans'),hair:colorOf('Braids'),shoes:colorOf('Sneaker leather')};
+    const expectedAppearance={skin:'#6b4028',shirt:'#56705a',trousers:'#111111',hair:'#2a1a10',shoes:'#111111'};
+    for(const key of Object.keys(expectedAppearance))if(appearanceCheck[key]!==expectedAppearance[key])throw new Error('Appearance option did not apply to '+key+': '+JSON.stringify({appearanceCheck,expectedAppearance}));
 
     await page.keyboard.down('s');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='walk',null,{timeout:10000});
@@ -80,7 +86,7 @@ const { chromium } = require('playwright');
 
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed')||x.includes('[accra-start] 3D preview failed'));
     if(mainErrors.length)throw new Error('Main game character errors: '+mainErrors.join(' | '));
-    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
+    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
   }catch(e){
     const status=await page.locator('#status').innerText().catch(()=>'(no status element)');
     const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);
