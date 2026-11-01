@@ -30,10 +30,11 @@ const { chromium } = require('playwright');
     await page.waitForFunction(()=>window.__accraSelectionPreviewLoaded==='female',null,{timeout:45000});
     await page.locator('#sStart').click();
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
+    const modelInspection=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect());
 
     await page.keyboard.down('s');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='walk',null,{timeout:10000});
-    const keyboardWalk=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition}));
+    const keyboardWalk=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition,yaw:window.__accraPlayerFacingYaw}));
     await page.keyboard.down('Shift');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='run',null,{timeout:10000});
     await page.keyboard.up('Shift');await page.keyboard.up('s');
@@ -64,7 +65,7 @@ const { chromium } = require('playwright');
 
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed')||x.includes('[accra-start] 3D preview failed'));
     if(mainErrors.length)throw new Error('Main game character errors: '+mainErrors.join(' | '));
-    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
+    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',modelMeshInspection:modelInspection,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
   }catch(e){
     const status=await page.locator('#status').innerText().catch(()=>'(no status element)');
     const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);
