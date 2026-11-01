@@ -90,37 +90,84 @@ fl(-8.2,4.5,9.4,9,'#9b6b43');fl(8.2,4.5,9.4,9,'#e8e2d6');fl(0,5,6.8,8,'#8f9296')
 const roof=box(26.6,.3,18.6,VX,3.35,VZ,'#7b4b33',false);
 const player=BABYLON.MeshBuilder.CreateCapsule('p',{height:1.8,radius:.4},scene);
 player.position.set(0,.91,10);player.isVisible=false;player.ellipsoid=V(.4,.9,.4);
-let cesiumNode=null,animGroup=null;
-BABYLON.SceneLoader.ImportMeshAsync('','People/CesiumMan/','CesiumMan.glb',scene).then(res=>{
-  cesiumNode=new BABYLON.TransformNode('cesium_player_node',scene);
-  cesiumNode.parent=player;
-  cesiumNode.position.set(0,-.91,0);
-  const root=res.meshes[0];
-  root.parent=cesiumNode;
-  root.rotationQuaternion=null;
-  root.rotation.y=0;
-  const bb=root.getHierarchyBoundingVectors(true);
-  const h=bb.max.y-bb.min.y;
-  if(h>0)root.scaling.setAll(1.8/h);
-  if(res.animationGroups.length>0){
-    animGroup=res.animationGroups[0];
-    animGroup.pause();
-  }
-}).catch(err=>console.error('[CesiumPlayer] Load error:',err));
-
-let lpx=player.position.x,lpz=player.position.z,smv=0;
+let playerVisual=null,playerAnimations=[],playerGender='male',playerOutfit='street',playerLoadToken=0,smv=0,pendingPlayerLook=null;
+const PLAYER_FILES={
+  male:{street:'AccraLife_Male.glb',suit:'AccraLife_Male_Suit.glb',kente:'AccraLife_Male_Kente.glb'},
+  female:{street:'AccraLife_Female.glb',suit:'AccraLife_Female_Pantsuit.glb',ankara:'AccraLife_Female_Ankara.glb'}
+};
+async function setPlayerGender(gender,outfit){
+  gender=gender==='female'?'female':'male';
+  outfit=String(outfit||playerOutfit||'street').toLowerCase();
+  const files=PLAYER_FILES[gender];
+  if(!files[outfit])outfit='street';
+  if(playerVisual&&playerGender===gender&&playerOutfit===outfit)return true;
+  const token=++playerLoadToken;
+  try{
+    const file=PLAYER_FILES[gender][outfit];
+    const res=await BABYLON.SceneLoader.ImportMeshAsync('','People/AccraLife/',file,scene);
+    if(token!==playerLoadToken){res.animationGroups.forEach(g=>g.dispose());res.meshes.forEach(m=>m.dispose(false,true));return false;}
+    if(playerVisual){playerAnimations.forEach(g=>g.dispose());playerVisual.dispose(false,true);}
+    playerAnimations=res.animationGroups||[];
+    const root=res.meshes[0];root.rotationQuaternion=null;root.rotation.set(0,0,0);
+    const bb=root.getHierarchyBoundingVectors(true),height=bb.max.y-bb.min.y,scale=height>0?1.8/height:1;
+    const holder=new BABYLON.TransformNode('accra_life_player_'+gender,scene);
+    holder.parent=player;holder.position.set(0,-.91,0);
+    root.parent=holder;root.scaling.setAll(scale);root.position.y=-bb.min.y*scale;
+    playerVisual=holder;playerGender=gender;playerOutfit=outfit;
+    if(pendingPlayerLook)applyPlayerAppearance(pendingPlayerLook);
+    window.__accraCharacterLoaded=true;
+    playerAnimations.forEach(g=>g.stop());
+    const idle=playerAnimations.find(g=>g.name.toLowerCase()==='idle');
+    if(idle)idle.start(true);
+    console.log('[AccraLifePlayer] Loaded',gender,outfit,'model with',playerAnimations.map(g=>g.name).join(', '));
+    return true;
+  }catch(err){console.error('[AccraLifePlayer] Model load failed:',gender,err);return false;}
+}
+function applyPlayerAppearance(look){
+  if(!playerVisual||!look)return 0;
+  const data=window.ACCRA_LOOKDATA||{};
+  const SK=data.SK||['#c68a5e','#8d5a3b','#6b4028','#4a2c1c','#a8754f','#3a2216','#f1c9a5','#e0a878'];
+  const HC=data.HC||['#0d0d0d','#2a1a10','#5a3b22','#9a7b3c'];
+  const TP=data.TP||['#9a4a42','#c9a54a','#56705a','#4d6a8a','#e8e6df','#2a2c30','#7a6a8a','#c08a5a'];
+  const PN=data.PN||['#1f2a44','#111111','#5b4630','#6b6b6b','#2f5d3a','#b8a27a'];
+  const SH=data.SH||['#f0f0ec','#111111','#5a3a22','#b5182c'];
+  const pick=(arr,v)=>arr[((Math.floor(Number(v)||0)%arr.length)+arr.length)%arr.length];
+  const colors={skin:pick(SK,look.skin),hair:pick(HC,look.hcol),top:pick(TP,look.top),pants:pick(PN,look.pants),shoes:pick(SH,look.shoe)};
+  let changed=0;
+  playerVisual.getChildMeshes(false).forEach(mesh=>{
+    const material=mesh.material;if(!material)return;
+    const name=String(material.name||'').toLowerCase();
+    let hex=null;
+    if(name==='skin'||name==='skin details')hex=colors.skin;
+    else if(name.includes('oversized tee')||name.includes('tee rib'))hex=colors.top;
+    else if(name.includes('baggy jeans')||name.includes('jeans legs'))hex=colors.pants;
+    else if(name.includes('sneaker leather'))hex=colors.shoes;
+    else if(/braid|buzz|cornrow|hair|loc/.test(name))hex=colors.hair;
+    if(!hex)return;
+    const color=C3(hex);
+    if(material.albedoColor&&material.albedoColor.copyFrom)material.albedoColor.copyFrom(color);
+    if(material.diffuseColor&&material.diffuseColor.copyFrom)material.diffuseColor.copyFrom(color);
+    changed++;
+  });
+  return changed;
+}
+function setPlayerAppearance(look){pendingPlayerLook=Object.assign({},look||{});return applyPlayerAppearance(pendingPlayerLook);}
+window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,setOutfit:(outfit)=>setPlayerGender(playerGender,outfit),setAppearance:setPlayerAppearance,gender:()=>playerGender,outfit:()=>playerOutfit,ready:()=>!!playerVisual,inspect:()=>{if(!playerVisual)return[];playerVisual.computeWorldMatrix(true);const inv=playerVisual.getWorldMatrix().clone();inv.invert();return playerVisual.getChildMeshes(false).map(m=>{m.computeWorldMatrix(true);const indices=m.getIndices()||[],positions=m.getVerticesData(BABYLON.VertexBuffer.PositionKind)||[],ranges=(m.subMeshes||[]).map(sm=>{let x=0,y=0,z=0,n=0;for(let k=sm.indexStart;k<sm.indexStart+sm.indexCount;k++){const vi=indices[k];if(vi==null)continue;const w=BABYLON.Vector3.TransformCoordinates(new BABYLON.Vector3(positions[vi*3],positions[vi*3+1],positions[vi*3+2]),m.getWorldMatrix());const p=BABYLON.Vector3.TransformCoordinates(w,inv);x+=p.x;y+=p.y;z+=p.z;n++;}return{materialIndex:sm.materialIndex,indexCount:sm.indexCount,center:n?[x/n,y/n,z/n]:null};});const mat=m.material,color=mat&&(mat.albedoColor||mat.diffuseColor);return{name:m.name,material:mat&&mat.name,color:color&&color.toHexString?color.toHexString().toLowerCase():null,vertices:m.getTotalVertices(),ranges};});}};
+setPlayerGender('male');
+let lpx=player.position.x,lpz=player.position.z;
 scene.onBeforeRenderObservable.add(()=>{
   const dt=Math.max(engine.getDeltaTime()/1000,.001);
   const dist=Math.hypot(player.position.x-lpx,player.position.z-lpz)/dt;
   lpx=player.position.x;lpz=player.position.z;
   smv+=(Math.min(dist,9)-smv)*Math.min(1,dt*9);
-  if(animGroup){
-    if(smv>.15){
-      if(!animGroup.isPlaying)animGroup.play(true);
-      animGroup.speedRatio=Math.min(Math.max(smv/2.5,.6),2.2);
-    }else{
-      if(animGroup.isPlaying)animGroup.pause();
-    }
+  const moving=smv>.15;
+  const desired=moving?(window.__accraRunning?'run':'walk'):'idle';
+  window.__accraCurrentAnimation=desired;
+  window.__accraPlayerPosition={x:player.position.x,y:player.position.y,z:player.position.z};
+  const active=playerAnimations.find(g=>g.name.toLowerCase()===desired);
+  if(active){
+    if(!active.isPlaying){playerAnimations.forEach(g=>g!==active&&g.stop());active.start(true);}
+    active.speedRatio=moving?Math.min(Math.max(smv/2.5,.65),1.8):1;
   }
 });
 const camT=new BABYLON.TransformNode('ct',scene);
@@ -159,6 +206,7 @@ function update(dt){
  const ix=jx+(K.d?1:0)-(K.a?1:0),iy=jy+(K.s?1:0)-(K.w?1:0);
  let focus;
  if(driving){
+  window.__accraRunning=false;
   const thr=-iy,st=ix;spd+=thr*13*dt;if(jump){spd*=.6;jump=0}spd*=Math.pow(.55,dt);spd=Math.max(-8,Math.min(24,spd));
   heading+=st*dt*1.7*Math.max(-1,Math.min(1,spd/6));car.rotation.y=heading;
   const want=V(Math.sin(heading)*spd*dt,0,Math.cos(heading)*spd*dt),before=car.position.clone();
@@ -168,11 +216,11 @@ function update(dt){
  }else{
   $('spd').style.display='none';
   const f=V(-Math.cos(cam.alpha),0,-Math.sin(cam.alpha)),r=V(f.z,0,-f.x),mv=f.scale(-iy).add(r.scale(ix));
-  const sp=Math.min(1,mv.length())*5.2;if(mv.length()>.05)mv.normalize();
+  const input=Math.min(1,mv.length()),joystickStrength=Math.min(1,Math.hypot(jx,jy)),running=!!K.shift||joystickStrength>.85;window.__accraRunning=running;const sp=input*(running?7:5.2);if(input>.05){mv.normalize();window.__accraMovementDirection={x:mv.x,z:mv.z};}else window.__accraMovementDirection={x:0,z:0};
   if(jump&&player.position.y<=.93){vy=7;}jump=0;vy-=22*dt;
   player.moveWithCollisions(V(mv.x*sp*dt,vy*dt,mv.z*sp*dt));
   if(player.position.y<=.91){player.position.y=.91;if(vy<0)vy=0}
-  if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);
+  if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);window.__accraPlayerFacingYaw=player.rotation.y;
   focus=player.position;
  }
  carModelFollow();

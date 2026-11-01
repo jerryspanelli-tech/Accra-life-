@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>Accra Life Character Lab</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#b8d0dc;font:14px system-ui;color:#fff}#view{width:100%;height:100%;display:block;touch-action:none}
+#panel{position:fixed;left:12px;right:12px;top:12px;z-index:5;background:#17191ddd;border:1px solid #c9a54a;border-radius:16px;padding:12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{border:0;border-radius:10px;padding:10px 13px;background:#c9a54a;color:#17191c;font-weight:800}#status{flex-basis:100%;font-size:12px;color:#eee}
+</style></head><body><canvas id="view"></canvas>
+<div id="panel"><b>ACCRA LIFE · CHARACTER LAB</b><button id="male">Male</button><button id="female">Female</button><button id="idle">Idle</button><button id="walk">Walk</button><button id="run">Run</button><span id="status">Loading male character…</span></div>
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script><script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+(()=>{const canvas=document.getElementById('view'),status=document.getElementById('status');const engine=new BABYLON.Engine(canvas,true,{adaptToDeviceRatio:true});if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.5);
+const scene=new BABYLON.Scene(engine);scene.clearColor=new BABYLON.Color4(.68,.78,.82,1);const hemi=new BABYLON.HemisphericLight('hemi',new BABYLON.Vector3(0,1,0),scene);hemi.intensity=.9;const sun=new BABYLON.DirectionalLight('sun',new BABYLON.Vector3(-.4,-1,-.5),scene);sun.position.set(5,10,8);sun.intensity=1.1;
+const ground=BABYLON.MeshBuilder.CreateGround('ground',{width:20,height:20},scene);const gm=new BABYLON.StandardMaterial('groundMat',scene);gm.diffuseColor=new BABYLON.Color3(.32,.39,.34);ground.material=gm;
+const camera=new BABYLON.ArcRotateCamera('camera',-Math.PI/2,1.18,4.6,new BABYLON.Vector3(0,1,0),scene);camera.lowerRadiusLimit=2.4;camera.upperRadiusLimit=8;camera.lowerBetaLimit=.5;camera.upperBetaLimit=1.5;camera.attachControl(canvas,true);
+let root=null,groups=[],current='male',busy=false;
+function stop(){groups.forEach(g=>g.stop());groups=[]}
+async function load(gender){if(busy)return;busy=true;stop();if(root){root.dispose(false,true);root=null}status.textContent='Loading '+gender+' model…';
+try{const result=await BABYLON.SceneLoader.ImportMeshAsync('','People/AccraLife/','AccraLife_'+(gender==='male'?'Male':'Female')+'.glb',scene);
+root=new BABYLON.TransformNode('characterRoot',scene);result.meshes.filter(m=>!m.parent).forEach(m=>m.parent=root);
+const bounds=root.getHierarchyBoundingVectors(true),height=bounds.max.y-bounds.min.y;if(!height||!isFinite(height))throw Error('Model has invalid dimensions');
+root.scaling.setAll(1.8/height);root.position.y=-bounds.min.y*(1.8/height);
+groups=result.animationGroups||[];groups.forEach(g=>g.stop());current=gender;
+play('Idle');
+status.textContent=gender+' loaded · '+groups.map(g=>g.name).join(', ')+' · '+Math.round(height*100)+' cm source height';
+}catch(e){status.textContent='LOAD ERROR: '+e.message;console.error(e)}finally{busy=false}}
+function play(name){const g=groups.find(x=>x.name.toLowerCase()===name.toLowerCase());if(!g){status.textContent+=' · Missing '+name;return}groups.forEach(x=>x.stop());g.start(true);status.textContent=current+' · Playing '+g.name}
+document.getElementById('male').onclick=()=>load('male');document.getElementById('female').onclick=()=>load('female');['idle','walk','run'].forEach(n=>document.getElementById(n).onclick=()=>play(n));
+load('male');engine.runRenderLoop(()=>scene.render());addEventListener('resize',()=>engine.resize());
+})();
+</script></body></html>

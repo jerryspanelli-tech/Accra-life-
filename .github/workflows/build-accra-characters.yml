@@ -1,0 +1,120 @@
+name: Build Accra Life player characters
+
+"on":
+  push:
+    branches:
+      - feature/character-selection-sync
+    paths:
+      - ".github/workflows/build-accra-characters.yml"
+      - "character-pipeline/**"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ARA_REF: 2e5724de1b12444bf0c2454555fedfc976a4274c
+      ARA_DIR: ara3dgen
+    steps:
+      - name: Check out the character feature branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+
+      - name: Fetch pinned Ara 3D Gen source
+        run: |
+          git init "$ARA_DIR"
+          git -C "$ARA_DIR" remote add origin https://github.com/olatunde85/3d-gen.git
+          git -C "$ARA_DIR" fetch --depth 1 origin "$ARA_REF"
+          git -C "$ARA_DIR" checkout --detach FETCH_HEAD
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ara3dgen/package-lock.json
+
+      - name: Restore Ara's CC0 character data cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ara3dgen/vendor
+            ara3dgen/public/assets
+          key: ara-assets-${{ runner.os }}-${{ env.ARA_REF }}
+
+      - name: Install generator and prepare CC0 assets
+        working-directory: ara3dgen
+        run: |
+          npm ci
+          npm run setup-assets
+
+      - name: Limit the export to game locomotion clips
+        run: |
+          python3 - "$ARA_DIR/src/export/index.ts" <<'PY'
+          from pathlib import Path
+          import sys
+          p = Path(sys.argv[1])
+          s = p.read_text()
+          old = "clips: CLIPS.map((c) => c.id),"
+          if s.count(old) != 1:
+              raise SystemExit("Ara export API changed; refusing to create an unexpectedly large all-animation GLB.")
+          s = s.replace(old, "clips: ['idle', 'walk', 'run'],")
+          s = s.replace("import { CLIPS, clipById }", "import { clipById }")
+          p.write_text(s)
+          PY
+
+      - name: Export male and female low-detail game-rig GLBs
+        working-directory: ara3dgen
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-male.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-female.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-male-suit.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-female-pantsuit.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-male-kente.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-female-ankara.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+
+      - name: Validate both GLB files, rigs and animations
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, struct
+          root = pathlib.Path("People/AccraLife")
+          for name in ("AccraLife_Male.glb", "AccraLife_Female.glb", "AccraLife_Male_Suit.glb", "AccraLife_Female_Pantsuit.glb", "AccraLife_Male_Kente.glb", "AccraLife_Female_Ankara.glb"):
+              p = root / name
+              data = p.read_bytes()
+              if len(data) < 20:
+                  raise SystemExit(f"{name}: file is too small to be a GLB")
+              magic, version, declared = struct.unpack("<4sII", data[:12])
+              if magic != b"glTF" or version != 2 or declared != len(data):
+                  raise SystemExit(f"{name}: invalid GLB header or length")
+              chunk_len, chunk_type = struct.unpack("<II", data[12:20])
+              if chunk_type != 0x4E4F534A:
+                  raise SystemExit(f"{name}: JSON chunk missing")
+              doc = json.loads(data[20:20 + chunk_len].decode("utf-8").rstrip(" \\0"))
+              skins = doc.get("skins", [])
+              animations = {a.get("name") for a in doc.get("animations", [])}
+              if not skins or len(skins[0].get("joints", [])) < 60:
+                  raise SystemExit(f"{name}: expected the 65-bone game rig")
+              missing = {"Idle", "Walk", "Run"} - animations
+              if missing:
+                  raise SystemExit(f"{name}: missing locomotion clips: {sorted(missing)}; found {sorted(animations)}")
+              print(f"PASS {name}: {len(data)/1024/1024:.2f} MB, {len(skins[0]['joints'])} joints, Idle/Walk/Run")
+          PY
+
+      - name: Commit generated player assets to this feature branch only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add People/AccraLife/*.glb
+          if git diff --cached --quiet; then
+            echo "No generated asset changes to commit."
+          else
+            git commit -m "Generate male and female Accra Life player models"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
