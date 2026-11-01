@@ -4,8 +4,7 @@
 (function (g) {
   "use strict";
   const B = g.BABYLON;
-  if (!B || !g.scene || !g.mat) { console.error("Civic models: Babylon scene not ready"); return; }
-  const scene = g.scene;
+  if (!B || typeof scene === "undefined") { console.error("Civic models: Babylon scene not ready"); return; }
   const M = {};
   const material = (hex, emissive) => {
     const key = hex + (emissive ? "e" : "");
