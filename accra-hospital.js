@@ -6,6 +6,7 @@
 (function () {
   try {
     const B = BABYLON;
+    if (window.ACCRA_CIVIC_MODELS && window.ACCRA_CIVIC_MODELS.buildHospital) { window.ACCRA_CIVIC_MODELS.buildHospital(); return; }
     const CX = 110, CZ = 100;                        // centre of the eastern hospital site
     const X0 = CX - 30, X1 = CX + 30, Z0 = CZ - 25, Z1 = CZ + 25;
     const cream = mat("#f3f0e8"), blue = mat("#7fa3c4"), glass = mat("#2a4a6a"), red = mat("#d62828");

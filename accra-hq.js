@@ -5,6 +5,7 @@
 (function () {
   try {
     const B = BABYLON;
+    if (window.ACCRA_CIVIC_MODELS && window.ACCRA_CIVIC_MODELS.buildHQ) { window.ACCRA_CIVIC_MODELS.buildHQ(); return; }
     const CX = -100, CZ = 95;                // centre of the western compound
     const X0 = CX - 40, X1 = CX + 40, Z0 = CZ - 35, Z1 = CZ + 35;   // compound bounds
     const WALL_H = 3.2;
