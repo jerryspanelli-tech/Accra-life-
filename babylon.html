@@ -115,7 +115,7 @@ async function setPlayerGender(gender){
     return true;
   }catch(err){console.error('[AccraLifePlayer] Model load failed:',gender,err);return false;}
 }
-window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,gender:()=>playerGender,ready:()=>!!playerVisual};
+window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,gender:()=>playerGender,ready:()=>!!playerVisual,inspect:()=>{if(!playerVisual)return[];playerVisual.computeWorldMatrix(true);const inv=playerVisual.getWorldMatrix().clone();inv.invert();return playerVisual.getChildMeshes(false).map(m=>{m.computeWorldMatrix(true);const p=BABYLON.Vector3.TransformCoordinates(m.getBoundingInfo().boundingBox.centerWorld,inv);return{name:m.name,material:m.material&&m.material.name,center:p.asArray(),vertices:m.getTotalVertices()};});}};
 setPlayerGender('male');
 let lpx=player.position.x,lpz=player.position.z;
 scene.onBeforeRenderObservable.add(()=>{
