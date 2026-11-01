@@ -1,11 +1,11 @@
-/* accra-hq.js - Accra Central Police Headquarters, on its own site east of the city (x 220..300, z -20..50).
+/* accra-hq.js - Accra Central Police Headquarters, on a separate western city site (x -140..-60, z 60..130).
  * Perimeter wall with dark blue trim, a guarded gate with an arch and a boom, a three-level admin block with
  * glass bands, rooftop solar panels and a sign, a police car park and an armoured truck bay, and palm trees.
  * Built with simple solid boxes, once, at startup. */
 (function () {
   try {
     const B = BABYLON;
-    const CX = 260, CZ = 15;                 // centre of the compound
+    const CX = -100, CZ = 95;                // centre of the western compound
     const X0 = CX - 40, X1 = CX + 40, Z0 = CZ - 35, Z1 = CZ + 35;   // compound bounds
     const WALL_H = 3.2;
     const navy = mat("#1f2f5a"), white = mat("#e8ecf0"), glass = mat("#24384f"), grey = mat("#8d949c");

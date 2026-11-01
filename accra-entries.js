@@ -3,8 +3,8 @@
 (function () {
   try {
     const BUILDINGS = [
-      { n: "Accra Central Police HQ", door: { x: 260, z: 34 }, id: "police", cx: 600, cz: 0 },
-      { n: "Accra General Hospital", door: { x: 252, z: -100 }, id: "hospital", cx: 600, cz: -90 },
+      { n: "Accra Central Police HQ", door: { x: -100, z: 114.4 }, id: "police", cx: 600, cz: 0 },
+      { n: "Accra General Hospital", door: { x: 92, z: 110.4 }, id: "hospital", cx: 600, cz: -90 },
       { n: "Accra Galleria Mall", door: { x: 260, z: 106 }, id: "mall", cx: 600, cz: 90 }
     ];
     window.ACCRA_DEST_EXTRA = (window.ACCRA_DEST_EXTRA || []).concat(BUILDINGS.map(b => ({ n: b.n, x: b.door.x, z: b.door.z })));
@@ -25,6 +25,13 @@
           ok: () => inside === b.id && !L.busy && !L.seated && !L.driving,
           f: () => L.fade(700, () => { inside = null; L.tp(b.door.x, b.door.z + 2.5); }, () => L.note("You left " + b.n))
         });
+        if (b.id === "mall") {
+          L.points.push({
+            x: b.cx - 17, z: b.cz - 17, r: 3.8, t: "\uD83D\uDC55 Galleria Clothing Store",
+            ok: () => inside === "mall" && !L.busy && !L.seated && !L.driving,
+            f: () => window.ACCRA_STYLER ? window.ACCRA_STYLER("shop") : L.note("Clothing shop is loading. Try again shortly.")
+          });
+        }
       });
       (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).entries = 1;
       return true;

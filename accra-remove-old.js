@@ -1,11 +1,10 @@
-/* accra-remove-old.js - removes the OLD police station, hospital and mall that accra-upgrade.js builds,
+/* accra-remove-old.js - removes the OLD police station and hospital that accra-upgrade.js builds,
  * and their shop and kiosk points, then points the game's police, hospital and job positions at the NEW buildings.
  * Runs after accra-upgrade.js and before accra-hq.js. The pub, dealership, stadium and Amoamah estate are kept. */
 (function () {
   try {
     // old footprints (x0..x1, z0..z1) from accra-upgrade.js
     const OLD = [
-      { n: "mall",     x0: 12, x1: 58,  z0: 14, z1: 56 },
       { n: "police",   x0: 17, x1: 54,  z0: 76, z1: 111 },
       { n: "hospital", x0: 85, x1: 136, z0: 76, z1: 113 }
     ];
@@ -24,11 +23,11 @@
     // 2. the game's police, hospital and job positions now point at the new buildings
     const old = window.ACCRA_PLACES || {};
     window.ACCRA_PLACES = Object.assign({}, old, {
-      pd: { x: 260, z: 34, ox: 260, oz: 58, depot: { x: 260, z: 60, h: Math.PI } },     // Police HQ
-      hp: { x: 252, z: -100, ox: 252, oz: -95, depot: { x: 252, z: -78, h: Math.PI } }  // Accra General Hospital
+      pd: { x: -100, z: 114.4, ox: -100, oz: 60, depot: { x: -100, z: 60, h: Math.PI } }, // Police HQ
+      hp: { x: 92, z: 110.4, ox: 110, oz: 131, depot: { x: 110, z: 131, h: Math.PI } } // Accra General Hospital
     });
 
-    // 3. remove the old shop and kiosk points (fitting room, appliances, furniture, kiosks) once the life system is ready
+    // 3. remove any legacy shop points still located inside the retired police/hospital footprints
     const removePoints = arr => {
       if (!arr) return 0;
       let n = 0;

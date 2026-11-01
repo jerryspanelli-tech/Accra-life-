@@ -52,7 +52,7 @@
         <div style="display:flex;gap:8px">${btn(sel.gender === "male", "male")}${btn(sel.gender === "female", "female")}</div>
         <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Name</div>
         <input id="sName" maxlength="16" value="${escHtml(sel.name)}" placeholder="Your name" style="width:100%;box-sizing:border-box;border:0;border-radius:12px;padding:11px 12px;font:600 15px system-ui;background:#fff;color:#111">
-        <div style="color:#aaa;font-size:11px;margin-top:8px">This is the same 3D character model used in the game. Choose your character here; buy clothes at the Old Mall and change hairstyles at the barber shop.</div>
+        <div style="color:#aaa;font-size:11px;margin-top:8px">This is the same 3D character model used in the game. Choose your character here; buy clothes at Accra Galleria Mall and change hairstyles at the barber shop.</div>
         <button id="sStart" style="margin-top:16px;width:100%;border:0;border-radius:16px;padding:14px;font:800 17px system-ui;background:#c9a54a;color:#17191c">Start Game</button>`;
       drawPreview(document.getElementById("sPrev"));
     }

@@ -1,4 +1,4 @@
-/* accra-hospital.js - Accra General Hospital, on its own site north-east of the city (x 230..290, z -135..-85).
+/* accra-hospital.js - Accra General Hospital, on its own eastern city site (x 80..140, z 75..125).
  * Exterior: a three-storey main block with a central red-cross tower and sign, an emergency entrance, an ambulance
  * bay, outpatient and maternity entrances, a rooftop helipad, a car park with ambulances, and palm trees.
  * The interior departments (triage, ER, ICU, theatres, labs, maternity, wards, pharmacy) are planned for a later step.
@@ -6,7 +6,7 @@
 (function () {
   try {
     const B = BABYLON;
-    const CX = 260, CZ = -110;                       // centre of the hospital site
+    const CX = 110, CZ = 100;                        // centre of the eastern hospital site
     const X0 = CX - 30, X1 = CX + 30, Z0 = CZ - 25, Z1 = CZ + 25;
     const cream = mat("#f3f0e8"), blue = mat("#7fa3c4"), glass = mat("#2a4a6a"), red = mat("#d62828");
     const grey = mat("#9aa0a6"), dark = mat("#2b2f36"), white = mat("#ffffff"), green = mat("#3f8f4a");

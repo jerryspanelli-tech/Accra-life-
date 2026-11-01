@@ -20,9 +20,10 @@
     }
 
     const driveways = [
-      ["mall", 31, 39, 0, 17],               // mall front (35, 17) to the street at z 0
-      ["police", 31, 39, 70, 89],            // police front (35, 89) to the avenue at z 70
-      ["hospital", 106, 114, 70, 86],        // hospital front (110, 86) to the avenue at z 70
+      ["police-hq", -107, -93, 60, 70],      // western HQ gate to the z=70 city avenue
+      ["hospital", 80, 140, 131, 150],       // hospital forecourt to the z=150 city avenue
+      ["galleria-link", 150, 260, 66, 74],   // eastbound road from the x=150 city road
+      ["galleria-gate", 256, 264, 70, 90],   // northbound approach to the Galleria gate
       ["stadium", 70, 110, 31, 39],          // stadium west side (110, 35) to the street at x 70
       ["dealership", 31, 39, -70, -46],      // Accra Motors (35, -46) to the avenue at z -70
       ["amoamah", 106, 114, -66, -56],       // Amoamah lots (110, -56) to the avenue at z -70
