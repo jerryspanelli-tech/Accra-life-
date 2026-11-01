@@ -29,14 +29,14 @@ const { chromium } = require('playwright');
     await page.locator('#startScreen button[data-v="female"]').click();
     await page.locator('#sStart').click();
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
-    await page.keyboard.down('w');
+    await page.keyboard.down('s');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='walk',null,{timeout:10000});
     await page.keyboard.down('Shift');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='run',null,{timeout:10000});
-    await page.keyboard.up('Shift');await page.keyboard.up('w');
+    await page.keyboard.up('Shift');await page.keyboard.up('s');
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed'));
     if(mainErrors.length)throw new Error('Main game browser errors: '+mainErrors.join(' | '));
     console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,mainPageLoaded:true,mainConsoleErrors:mainErrors},null,2));
-  }catch(e){const status=await page.locator('#status').innerText().catch(()=>'(no status element)');console.error(JSON.stringify({error:e.message,status,errors},null,2));process.exitCode=1;}
+  }catch(e){const status=await page.locator('#status').innerText().catch(()=>'(no status element)');const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);console.error(JSON.stringify({error:e.message,status,diagnostics,errors},null,2));process.exitCode=1;}
   finally{await browser.close();}
 })();
