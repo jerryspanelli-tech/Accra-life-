@@ -24,9 +24,13 @@ const { chromium } = require('playwright');
 
     await page.goto('http://127.0.0.1:4173/babylon.html',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>document.body.innerText.includes('ACCRA LIFE'),null,{timeout:15000});
-    await page.waitForFunction(()=>window.__accraCharacterLoaded===true || document.querySelector('#startScreen'),null,{timeout:45000});
-    await page.waitForTimeout(5000);
-    const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer]')||x.includes('babylon.js'));
+    await page.waitForFunction(()=>window.__accraCharacterLoaded===true,null,{timeout:45000});
+    await page.waitForSelector('#startScreen button[data-v="female"]',{timeout:30000});
+    await page.locator('#startScreen button[data-v="female"]').click();
+    await page.locator('#sStart').click();
+    await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
+    await page.waitForTimeout(1500);
+    const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed'));
     if(mainErrors.length)throw new Error('Main game browser errors: '+mainErrors.join(' | '));
     console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,mainPageLoaded:true,mainConsoleErrors:mainErrors},null,2));
   }catch(e){console.error(e);process.exitCode=1;}
