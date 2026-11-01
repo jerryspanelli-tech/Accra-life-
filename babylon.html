@@ -98,7 +98,7 @@ BABYLON.SceneLoader.ImportMeshAsync('','People/CesiumMan/','CesiumMan.glb',scene
   const root=res.meshes[0];
   root.parent=cesiumNode;
   root.rotationQuaternion=null;
-  root.rotation.y=Math.PI;
+  root.rotation.y=0;
   const bb=root.getHierarchyBoundingVectors(true);
   const h=bb.max.y-bb.min.y;
   if(h>0)root.scaling.setAll(1.8/h);
