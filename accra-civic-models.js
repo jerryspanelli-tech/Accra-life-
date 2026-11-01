@@ -50,50 +50,71 @@
       leaf.rotation.y=a; leaf.rotation.x=-.25; leaf.material=material("#28764a"); leaf.isPickable=false;
     }
   };
-  function emergencyVehicle(type,x,z,rotY) {
-    const root=new B.TransformNode(type+"_vehicle",scene); root.position.set(x,0,z); root.rotation.y=rotY||0;
-    const van=type==="ambulance", body=van?"#f4f4f1":"#f5f5f2", trim=van?"#c7192d":"#173b68";
-    const add=(w,h,d,px,py,pz,col)=>{const m=part(type+"_vehicle_part",w,h,d,px,py,pz,col,false);m.parent=root;return m;};
-    // Sculpted lower chassis, cabin and bonnet are separate meshes rather than a placeholder block.
-    add(van?2.35:2.15,.72,van?4.7:4.25,0,.83,0,body);
-    add(van?2.15:1.95,1.22,van?2.55:2.15,0,1.72,van?-.25:-.05,body);
-    add(van?2.1:.9,.52,van?1.7:1.2,0,1.38,van?1.55:1.45,body);
-    add(1.88,.12,van?4.5:4.05,0,1.2,0,trim);
-    // Dark glazing, divided windscreen and rear glass.
-    add(van?1.88:1.72,.76,.09,0,1.82,van?1.04:.98,"#183344");
-    add(van?1.88:1.72,.7,.09,0,1.82,van?-1.53:-1.08,"#183344");
-    [-1,1].forEach(s=>{
-      add(.08,.7,van?1.15:.95,s*(van?1.09:.99),1.82,van?-.15:-.1,"#183344");
-      add(.09,.16,van?4.2:3.9,s*(van?1.19:1.1),1.24,0,trim);
-      for(const wz of [-1.35,1.35]){
-        const wheel=cyl("vehicle_wheel",.82,.32,s*(van?1.18:1.1),.52,wz,"#17191b","x"); wheel.parent=root;
-        const hub=cyl("vehicle_hub",.36,.34,s*(van?1.18:1.1),.52,wz,"#aeb5bb","x"); hub.parent=root;
-      }
+  const VEHICLE_ASSETS = {
+    police: { url: "https://cdn.3dassets.dev/assets/32519/v1/model.glb", width: 1.933, roof: 1.64 },
+    ambulance: { url: "https://cdn.3dassets.dev/assets/29900/v1/model.glb", width: 3.371, roof: 2.76 }
+  };
+  const loadedVehicleRoots = {};
+  function makeDecal(root, label, background, foreground, width, height, x, y, z, side) {
+    const tex = new B.DynamicTexture("emergency_livery_" + label + "_" + Math.abs(x), {width:1024,height:256}, scene, false);
+    const ctx = tex.getContext();
+    ctx.clearRect(0,0,1024,256);
+    ctx.fillStyle=background; ctx.fillRect(0,0,1024,256);
+    ctx.fillStyle=foreground; ctx.font="bold 112px Arial"; ctx.textAlign="center"; ctx.textBaseline="middle";
+    ctx.fillText(label,512,128,980); tex.update();
+    const mat = new B.StandardMaterial("emergency_livery_mat",scene);
+    mat.diffuseTexture=tex; mat.emissiveTexture=tex; mat.disableLighting=true; mat.backFaceCulling=false;
+    const plane=B.MeshBuilder.CreatePlane("emergency_livery",{width,height},scene);
+    plane.position.set(x,y,z); plane.rotation.y=side>0?Math.PI/2:-Math.PI/2;
+    plane.material=mat; plane.parent=root; plane.isPickable=false;
+  }
+  function addLightbar(root, y) {
+    const base=B.MeshBuilder.CreateBox("emergency_lightbar_base",{width:1.12,height:.09,depth:.27},scene);
+    base.position.set(0,y,0); base.material=material("#171c22"); base.parent=root;
+    [-.34,.34].forEach((x,i)=>{
+      const lens=B.MeshBuilder.CreateBox("emergency_lightbar_lens",{width:.38,height:.16,depth:.25},scene);
+      lens.position.set(x,y+.12,0); lens.material=material(i===0?"#145bff":"#e32636",true); lens.parent=root;
     });
-    // Front lamps, grille, bumpers, mirrors.
-    add(1.5,.22,.12,0,.85,van?2.36:2.14,"#20272c");
-    [-.72,.72].forEach(s=>{add(.34,.22,.08,s,1.02,van?2.39:2.18,"#fff1c7");add(.28,.14,.08,s,1.38,van?2.39:2.18,"#b51f2c");});
-    add(2.25,.18,.18,0,.53,van?2.38:2.2,"#aeb4b8");
-    if(van){
-      add(.14,.82,.08,-.78,1.72,-.05,trim); add(.14,.82,.08,.78,1.72,-.05,trim);
-      add(.22,.9,.08,0,1.72,-.05,trim);
-      // Red medical stripe and large red-cross emblem on both flanks.
-      [-1,1].forEach(s=>{
-        add(.06,.28,3.65,s*1.19,1.42,-.05,"#c7192d");
-        add(.07,.7,.7,s*1.2,1.78,.35,"#c7192d");
-        add(.07,.18,.7,s*1.2,1.78,.35,"#ffffff");
-      });
-      add(1.25,.12,.38,0,2.39,0,"#c7192d");
-      add(.5,.16,.5,0,2.48,0,"#ffffff");
-      sign("AMBULANCE",1.8,.35,0,2.55,0,"#c7192d","#ffffff").parent=root;
+  }
+  function dressVehicle(root,type) {
+    if(type==="police"){
+      makeDecal(root,"GHANA POLICE","#123b78","#ffffff",1.85,.36,1.00,.99,0,1);
+      makeDecal(root,"GHANA POLICE","#123b78","#ffffff",1.85,.36,-1.00,.99,0,-1);
+      addLightbar(root,1.66);
     } else {
-      add(2.0,.18,.12,0,1.43,0,"#173b68");
-      add(1.4,.12,.3,0,2.38,0,"#c51f32");
-      [-.65,.65].forEach(s=>add(.25,.18,.28,s,2.38,0,"#e7f4ff"));
-      sign("POLICE",1.5,.3,0,2.48,0,"#173b68","#ffffff").parent=root;
-      [-1,1].forEach(s=>add(.06,.16,1.4,s*1.12,1.42,0,"#c9a54a"));
+      makeDecal(root,"GHANA HEALTH SERVICE","#c51f32","#ffffff",2.95,.34,1.72,1.55,-.15,1);
+      makeDecal(root,"GHANA HEALTH SERVICE","#c51f32","#ffffff",2.95,.34,-1.72,1.55,-.15,-1);
+      addLightbar(root,2.78);
+      const crossMat=material("#c51f32",true);
+      [-1,1].forEach(side=>{
+        const crossV=B.MeshBuilder.CreateBox("ambulance_cross_v",{width:.12,height:.52,depth:.035},scene);
+        crossV.position.set(side*1.72,1.92,-1.35);crossV.parent=root;crossV.material=crossMat;
+        const crossH=B.MeshBuilder.CreateBox("ambulance_cross_h",{width:.4,height:.13,depth:.035},scene);
+        crossH.position.set(side*1.72,1.92,-1.35);crossH.parent=root;crossH.material=crossMat;
+      });
     }
-    return root;
+  }
+  async function spawnFleet(type, placements) {
+    try {
+      let source=loadedVehicleRoots[type];
+      if(!source){
+        const asset=VEHICLE_ASSETS[type];
+        const slash=asset.url.lastIndexOf("/");
+        const imported=await B.SceneLoader.ImportMeshAsync("",asset.url.slice(0,slash+1),asset.url.slice(slash+1),scene);
+        source=new B.TransformNode(type+"_glb_source",scene);
+        imported.meshes.forEach(mesh=>{if(!mesh.parent)mesh.parent=source;mesh.isPickable=false;mesh.checkCollisions=false;});
+        source.setEnabled(false);
+        loadedVehicleRoots[type]=source;
+      }
+      placements.forEach((p,index)=>{
+        const vehicle=source.clone(type+"_glb_"+index,null,true);
+        vehicle.setEnabled(true);vehicle.position.set(p[0],0,p[1]);vehicle.rotation.y=p[2]||0;
+        dressVehicle(vehicle,type);
+      });
+      console.log("Accra Life "+type+" GLB fleet loaded:",placements.length);
+    } catch(err) {
+      console.error("Accra Life "+type+" GLB failed to load; no block-model fallback is used.",err);
+    }
   }
   function buildHQ(){
     const CX=-100,CZ=95,X0=-140,X1=-60,Z0=60,Z1=130;
@@ -138,8 +159,7 @@
     for(let i=0;i<3;i++){const p=part("HQ_solar_panel",5,.12,3,CX-6+i*6,14.55,98,"#183653",false);p.rotation.x=-.18;}
     for(const p of [[-135,125],[-65,125],[-135,68],[-65,68]]) tree(p[0],p[1]);
     // Dedicated police patrol fleet (not generic sedan/SUV placeholders).
-    [[-120,116],[-114,116],[-108,116],[-102,116]].forEach((p,i)=>emergencyVehicle("police",p[0],p[1],Math.PI));
-    [[-86,119],[-80,119]].forEach(p=>emergencyVehicle("police",p[0],p[1],Math.PI));
+    spawnFleet("police",[[-120,116,Math.PI],[-114,116,Math.PI],[-108,116,Math.PI],[-102,116,Math.PI],[-86,119,Math.PI],[-80,119,Math.PI]]);
     g.ACCRA_HQ={x:CX,z:CZ,gate:{x:CX,z:Z0},bounds:{x0:X0,x1:X1,z0:Z0,z1:Z1}};
     g.ACCRA_MODULES=g.ACCRA_MODULES||{};g.ACCRA_MODULES.hq=1;
     console.log("Accra Central Police HQ civic replacement ready");
@@ -176,8 +196,7 @@
     part("Hospital_ambulance_bay",17,4,12,133,2,91,cream,true);
     part("Hospital_ambulance_roof",18,.4,13,133,4.2,91,"#c6ccce",false);
     sign("AMBULANCE BAY",13,1.0,133,5.1,97.7,red,"#ffffff");
-    emergencyVehicle("ambulance",129,88,Math.PI/2);
-    emergencyVehicle("ambulance",135,88,Math.PI/2);
+    spawnFleet("ambulance",[[129,88,Math.PI/2],[135,88,Math.PI/2]]);
     // Helipad, parking markings and planted approach.
     const pad=B.MeshBuilder.CreateDisc("Hospital_helipad",{radius:5,tessellation:32},scene);
     pad.position.set(CX,14.55,98);pad.rotation.x=Math.PI/2;pad.material=material("#4e626b");pad.isPickable=false;
