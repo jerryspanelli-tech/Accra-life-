@@ -65,7 +65,7 @@ const { chromium } = require('playwright');
     const oldMallFittingRoomText=await page.locator('.apn').innerText();
     if(oldMallFittingRoomText.includes('Hair colour')||oldMallFittingRoomText.includes('Hairstyle'))throw new Error('Old Mall fitting room exposes barber options: '+oldMallFittingRoomText);
     if(!oldMallFittingRoomText.includes('Top colour')||!oldMallFittingRoomText.includes('Trousers')||!oldMallFittingRoomText.includes('Shoes'))throw new Error('Old Mall fitting room is missing clothing options: '+oldMallFittingRoomText);
-    await page.locator('.apn button[data-x]').click();
+    await page.getByRole('button',{name:'Cancel'}).click();
     await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setAppearance({skin:2,top:2,pants:1,hcol:1,shoe:1}));
     const appearanceMaterials=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect().filter(m=>['Skin','Oversized tee','Baggy jeans','Braids','Sneaker leather'].includes(m.material)).map(m=>({material:m.material,color:m.color})));
     const colorOf=name=>appearanceMaterials.find(m=>m.material===name)?.color;
