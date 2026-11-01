@@ -1,0 +1,41 @@
+name: Character browser verification
+on:
+  push:
+    branches: [feature/character-selection-sync]
+    paths:
+      - 'babylon.html'
+      - 'online.js'
+      - 'accra-start.js'
+      - 'accra-people.js'
+      - 'People/AccraLife/**'
+      - 'test-accra-characters.html'
+      - 'scripts/character-browser-test.cjs'
+      - '.github/workflows/test-character-integration.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  browser-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Chromium and Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start local game server
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/accra-http.log 2>&1 &
+          echo $! >/tmp/accra-http.pid
+          for i in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:4173/test-accra-characters.html >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/accra-http.log
+          exit 1
+      - name: Test male, female, Walk and Run in Babylon.js
+        run: node scripts/character-browser-test.cjs
