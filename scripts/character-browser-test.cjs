@@ -42,9 +42,19 @@ const { chromium } = require('playwright');
     const maleEyeZ=maleInspection.find(m=>m.material==='Eyes')?.ranges?.[0]?.center?.[2];
     const maleMaterials=[...new Set(maleInspection.map(m=>m.material).filter(Boolean))];
     const maleHairMaterial=maleInspection.find(m=>m.material&&/buzz|hair|short|scalp|cut/i.test(m.material))?.material||null;
+    await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setAppearance({skin:2,top:2,pants:1,hcol:1,shoe:1}));
+    const maleAppearanceMaterials=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect().filter(m=>['Skin','Oversized tee','Baggy jeans','Sneaker leather'].includes(m.material)).map(m=>({material:m.material,color:m.color})));
     if(!(maleEyeZ>0))throw new Error('Male model face direction is not +Z; eye geometry centroid='+maleEyeZ);
+    await page.evaluate(()=>window.ACCRA_STYLER('edit'));
+    const maleWardrobeText=await page.locator('.apn').innerText();
+    if(maleWardrobeText.includes('Hair colour')||maleWardrobeText.includes('Hairstyle')||maleWardrobeText.includes('Outfit'))throw new Error('Male wardrobe exposes unsupported appearance options: '+maleWardrobeText);
+    await page.locator('.apn button[data-done]').click();
     await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setGender('female'));
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
+    await page.evaluate(()=>window.ACCRA_STYLER('edit'));
+    const femaleWardrobeText=await page.locator('.apn').innerText();
+    if(!femaleWardrobeText.includes('Hair colour')||femaleWardrobeText.includes('Hairstyle')||femaleWardrobeText.includes('Outfit'))throw new Error('Female wardrobe options do not match supported model features: '+femaleWardrobeText);
+    await page.locator('.apn button[data-done]').click();
     await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setAppearance({skin:2,top:2,pants:1,hcol:1,shoe:1}));
     const appearanceMaterials=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect().filter(m=>['Skin','Oversized tee','Baggy jeans','Braids','Sneaker leather'].includes(m.material)).map(m=>({material:m.material,color:m.color})));
     const colorOf=name=>appearanceMaterials.find(m=>m.material===name)?.color;
@@ -87,7 +97,7 @@ const { chromium } = require('playwright');
 
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed')||x.includes('[accra-start] 3D preview failed'));
     if(mainErrors.length)throw new Error('Main game character errors: '+mainErrors.join(' | '));
-    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
+    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,maleAppearanceMaterials,maleWardrobe:'supported colours only; no unsupported hair/outfit choices',femaleWardrobe:'hair colour plus supported clothing colours',appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
   }catch(e){
     const status=await page.locator('#status').innerText().catch(()=>'(no status element)');
     const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);
