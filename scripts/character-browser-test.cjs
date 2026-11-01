@@ -71,7 +71,6 @@ const { chromium } = require('playwright');
     await page.locator('.apn button[data-buy]').click();
     await page.waitForFunction(()=>JSON.parse(localStorage.getItem('accra-owned')).outfit.includes(1),null,{timeout:5000});
     await page.evaluate(()=>window.ACCRA_STYLER('edit'));
-    await page.locator('.apn button[data-i="4"]').click();
     const ownedOutfitText=await page.locator('.apn').innerText();
     if(!ownedOutfitText.includes('Pantsuit'))throw new Error('Purchased pantsuit is not available in home wardrobe: '+ownedOutfitText);
     await page.locator('.apn button[data-done]').click();
