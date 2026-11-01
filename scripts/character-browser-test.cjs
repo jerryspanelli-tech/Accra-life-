@@ -56,7 +56,7 @@ const { chromium } = require('playwright');
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
     await page.evaluate(()=>{window.ACCRA_AVATAR.look.gender='female';window.ACCRA_STYLER('edit');});
     const femaleWardrobeText=await page.locator('.apn').innerText();
-    if(!femaleWardrobeText.includes('Hair colour')||femaleWardrobeText.includes('Hairstyle')||femaleWardrobeText.includes('Outfit'))throw new Error('Female wardrobe options do not match supported model features: '+femaleWardrobeText);
+    if(femaleWardrobeText.includes('Hair colour')||femaleWardrobeText.includes('Hairstyle')||femaleWardrobeText.includes('Outfit'))throw new Error('Female wardrobe must not expose barber or unsupported outfit options: '+femaleWardrobeText);
     await page.locator('.apn button[data-i="1"]').click();
     const wardrobeTopColor=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect().find(m=>m.material==='Oversized tee')?.color);
     if(wardrobeTopColor!=='#e8e6df')throw new Error('Wardrobe top-colour selection did not update the 3D model: '+wardrobeTopColor);
@@ -103,7 +103,7 @@ const { chromium } = require('playwright');
 
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed')||x.includes('[accra-start] 3D preview failed'));
     if(mainErrors.length)throw new Error('Main game character errors: '+mainErrors.join(' | '));
-    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,maleAppearanceMaterials,maleWardrobe:'supported colours only; no unsupported hair/outfit choices',femaleWardrobe:'hair colour plus supported clothing colours',appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
+    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,maleAppearanceMaterials,maleWardrobe:'clothing only; no barber options',femaleWardrobe:'clothing only; no barber options',oldMallFittingRoom:'clothing only; no barber options',appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
   }catch(e){
     const status=await page.locator('#status').innerText().catch(()=>'(no status element)');
     const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);
