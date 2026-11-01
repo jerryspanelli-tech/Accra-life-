@@ -115,7 +115,7 @@ async function setPlayerGender(gender){
     return true;
   }catch(err){console.error('[AccraLifePlayer] Model load failed:',gender,err);return false;}
 }
-window.ACCRA_PLAYER_MODEL={setGender,gender:()=>playerGender,ready:()=>!!playerVisual};
+window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,gender:()=>playerGender,ready:()=>!!playerVisual};
 setPlayerGender('male');
 let lpx=player.position.x,lpz=player.position.z;
 scene.onBeforeRenderObservable.add(()=>{
