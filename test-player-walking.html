@@ -121,6 +121,7 @@ document.querySelectorAll('#camPresets .btn-sm').forEach(btn=>{
 let walkMode='improved';
 function setWalkMode(mode){
   walkMode=mode;
+  if(mode==='improved') poseNeedsCorrection=true;
   if(mode==='improved'){
     $('modeToggle').textContent='Mode: IMPROVED';
     $('modeBadge').textContent='IMPROVED';
@@ -144,6 +145,9 @@ window.addEventListener('keydown',e=>{
 // Character and skeleton transform references
 let cesiumNode=null, animGroup=null, skeleton=null;
 let armL=null, armR=null, elbowL=null, elbowR=null, spine=null, neck=null, footL=null, footR=null;
+// A paused animation is not guaranteed to reset joint rotations each frame.
+// Apply the idle correction only after the final rest frame is selected.
+let poseNeedsCorrection=true;
 
 // Postural correction quaternions for natural walking
 // In CesiumMan.glb, arms flare outward by ~35-40 deg.
@@ -300,11 +304,13 @@ function update(dt){
           }
           if(Math.abs(minDiff)<1.5){
             animGroup.goToFrame(bestTarget);
+            poseNeedsCorrection=true;
             isStopping=false;
           }else{
             const step=Math.sign(minDiff)*Math.min(Math.abs(minDiff),55*dt);
             let nextFrame=(curFrame+step+120)%120;
             animGroup.goToFrame(nextFrame);
+            poseNeedsCorrection=true;
           }
         }
       }
@@ -362,19 +368,23 @@ function update(dt){
   }
 }
 
-// Procedural posture layering hooked to scene.onAfterAnimationsObservable
-// This ensures transformations are layered AFTER animation keyframes are evaluated,
-// without accumulating rotational compound errors when paused or playing!
+// Procedural posture layering runs after animation keyframes are evaluated.
+// While walking, the animation refreshes joint rotations each frame, so corrections
+// can be layered on top. While stopped, apply the correction only once after the
+// final balanced rest frame is selected; repeatedly multiplying a paused quaternion
+// caused the hands/arms to keep rolling.
 scene.onAfterAnimationsObservable.add(()=>{
   if(walkMode!=='improved'||!window.__cesiumReady) return;
+  const animationIsDrivingPose=!!(animGroup&&animGroup.isPlaying);
+  if(!animationIsDrivingPose&&!poseNeedsCorrection) return;
 
-  // 1. Arm posture: tuck flaring toddler arms down beside torso
+  // 1. Arm posture: tuck flaring arms down beside torso
   if(armL&&armL.rotationQuaternion) armL.rotationQuaternion.multiplyToRef(qArmL_Tuck,armL.rotationQuaternion);
   if(armR&&armR.rotationQuaternion) armR.rotationQuaternion.multiplyToRef(qArmR_Tuck,armR.rotationQuaternion);
   if(elbowL&&elbowL.rotationQuaternion) elbowL.rotationQuaternion.multiplyToRef(qElbowL,elbowL.rotationQuaternion);
   if(elbowR&&elbowR.rotationQuaternion) elbowR.rotationQuaternion.multiplyToRef(qElbowR,elbowR.rotationQuaternion);
 
-  // 2. Torso & spine balance: natural forward lean proportional to forward ground speed
+  // 2. Torso & spine balance: natural forward lean proportional to ground speed
   const leanAngle=Math.min(smv*0.024,0.11); // up to ~6.3 degrees
   if(leanAngle>0.005){
     const qLean=BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(1,0,0),leanAngle);
@@ -382,6 +392,9 @@ scene.onAfterAnimationsObservable.add(()=>{
     if(spine&&spine.rotationQuaternion) spine.rotationQuaternion.multiplyToRef(qLean,spine.rotationQuaternion);
     if(neck&&neck.rotationQuaternion) neck.rotationQuaternion.multiplyToRef(qHeadUp,neck.rotationQuaternion);
   }
+
+  // A paused pose now holds its corrected rotations without multiplying them again.
+  if(!animationIsDrivingPose) poseNeedsCorrection=false;
 });
 
 engine.runRenderLoop(()=>{
