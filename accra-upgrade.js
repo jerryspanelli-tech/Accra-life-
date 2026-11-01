@@ -41,16 +41,15 @@
     const show = (html, fn) => { pan.innerHTML = XB + html; onPan = fn; pan.classList.remove("min"); pan.style.display = "grid"; };
     const hide = () => { pan.classList.remove("min"); pan.style.display = "none"; onPan = null; lock = false; ptOpen = false; };
 
-    // ---- clothes: wardrobe (owned only), fitting room (buy), first join (free) ----
+    // ---- clothing only: home wardrobe (owned only), Old Mall fitting room (buy), first join (free). Barber choices are separate. ----
     const SKIN_N = ["Deep brown", "Brown", "Dark brown", "Espresso", "Caramel", "Ebony", "Light brown", "Honey"];
     const SHOE_N = ["White sneakers", "Black shoes", "Brown leather", "Red sneakers"];
-    const HCOL_N = ["Black", "Dark brown", "Brown", "Honey"];
-    const OPT = [["Hair colour", "hcol", 4, HCOL_N], ["Top colour", "top", 8], ["Trousers", "pants", 6], ["Skin tone", "skin", 8, SKIN_N], ["Shoes", "shoe", 4, SHOE_N]];
-    const PR = { hcol: 10, top: 20, pants: 20, skin: 0, shoe: 30 };
+    const OPT = [["Top colour", "top", 8], ["Trousers", "pants", 6], ["Skin tone", "skin", 8, SKIN_N], ["Shoes", "shoe", 4, SHOE_N]];
+    const PR = { top: 20, pants: 20, skin: 0, shoe: 30 };
     const price = (k, v) => Array.isArray(PR[k]) ? PR[k][v] : PR[k];
-    const owned = Object.assign({ hcol: [0], top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], shoe: [0] }, ls("accra-owned", {}));
+    const owned = Object.assign({ top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], shoe: [0] }, ls("accra-owned", {}));
     const has = (k, v) => owned[k].includes(v);
-    const optionsFor = L => OPT.filter(o => o[1] !== "hcol" || L.gender === "female");
+    const optionsFor = L => OPT;
     const markOwned = L => { optionsFor(L).forEach(o => { if (!has(o[1], L[o[1]])) owned[o[1]].push(L[o[1]]); }); sv("accra-owned", owned); };
     function styler(mode) {
       const av = window.ACCRA_AVATAR; if (!av) return note("Character not ready yet");
