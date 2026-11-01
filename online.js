@@ -65,9 +65,9 @@
   h.g.position.y=Math.abs(Math.sin(h.ph))*.07*k+Math.sin(performance.now()/450)*.012*(1-k)} // step bounce + idle breathing
  let look;try{look=JSON.parse(localStorage.getItem('accra-look'))}catch(e){}
  const isNew=!look;
- look=Object.assign({skin:1,hair:1,hcol:0,top:3,pants:0,style:0,acc:0,shoe:0},look||{});
+ look=Object.assign({skin:1,hair:1,hcol:0,top:3,pants:0,style:0,acc:0,shoe:0,outfit:'street'},look||{});
  let mine=null;
- function dress(){if(mine){mine.root.dispose();mine=null;}try{localStorage.setItem('accra-look',JSON.stringify(look))}catch(e){}if(window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.setGender){window.ACCRA_PLAYER_MODEL.setGender(look.gender||'male');if(window.ACCRA_PLAYER_MODEL.setAppearance)window.ACCRA_PLAYER_MODEL.setAppearance(look);player.isVisible=false;return;}if(window.__useCesiumPlayer)return;mine=human(look);mine.root.parent=player;mine.root.position.y=-.91;player.isVisible=false;}
+ function dress(){if(mine){mine.root.dispose();mine=null;}try{localStorage.setItem('accra-look',JSON.stringify(look))}catch(e){}if(window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.setGender){window.ACCRA_PLAYER_MODEL.setGender(look.gender||'male',look.outfit||'street');if(window.ACCRA_PLAYER_MODEL.setAppearance)window.ACCRA_PLAYER_MODEL.setAppearance(look);player.isVisible=false;return;}if(window.__useCesiumPlayer)return;mine=human(look);mine.root.parent=player;mine.root.position.y=-.91;player.isVisible=false;}
  dress();
  let net=null;
  // customization screens (wardrobe, fitting room, first join) live in accra-upgrade.js
