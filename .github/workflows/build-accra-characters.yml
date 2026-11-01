@@ -115,5 +115,6 @@ jobs:
             echo "No generated asset changes to commit."
           else
             git commit -m "Generate male and female Accra Life player models"
-            git push origin "HEAD:${GITHUB_REF_NAME}"
+            git pull --rebase origin "$GITHUB_REF_NAME"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
           fi
