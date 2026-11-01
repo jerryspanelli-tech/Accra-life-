@@ -42,16 +42,13 @@
     const hide = () => { pan.classList.remove("min"); pan.style.display = "none"; onPan = null; lock = false; ptOpen = false; };
 
     // ---- clothes: wardrobe (owned only), fitting room (buy), first join (free) ----
-    const STYLE_N = ["Tee and trousers", "Suit and tie", "Dress", "Hoodie and shorts", "Batik kaftan (Accra)", "Ghana jersey", "Kente shirt (Accra)", "Leather jacket"];
-    const HAIR_N = ["Bald", "Fade", "Afro", "Dreads", "Braids", "Cornrows", "Locs", "Mohawk", "Low cut", "Twists"];
     const SKIN_N = ["Deep brown", "Brown", "Dark brown", "Espresso", "Caramel", "Ebony", "Light brown", "Honey"];
-    const ACC_N = ["None", "Gold chain", "Cap", "Beanie", "Sunglasses", "Kente headwrap (Accra)"];
     const SHOE_N = ["White sneakers", "Black shoes", "Brown leather", "Red sneakers"];
     const HCOL_N = ["Black", "Dark brown", "Brown", "Honey"];
-    const OPT = [["Outfit", "style", 8, STYLE_N], ["Hairstyle", "hair", 10, HAIR_N], ["Hair colour", "hcol", 4, HCOL_N], ["Top colour", "top", 8], ["Trousers", "pants", 6], ["Skin tone", "skin", 8, SKIN_N], ["Accessory", "acc", 6, ACC_N], ["Shoes", "shoe", 4, SHOE_N]];
-    const PR = { style: [0, 150, 100, 80, 120, 140, 160, 130], hair: 15, hcol: 10, top: 20, pants: 20, skin: 0, acc: 25, shoe: 30 };
+    const OPT = [["Hair colour", "hcol", 4, HCOL_N], ["Top colour", "top", 8], ["Trousers", "pants", 6], ["Skin tone", "skin", 8, SKIN_N], ["Shoes", "shoe", 4, SHOE_N]];
+    const PR = { hcol: 10, top: 20, pants: 20, skin: 0, shoe: 30 };
     const price = (k, v) => Array.isArray(PR[k]) ? PR[k][v] : PR[k];
-    const owned = Object.assign({ style: [0], hair: [1], hcol: [0], top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], acc: [0], shoe: [0] }, ls("accra-owned", {}));
+    const owned = Object.assign({ hcol: [0], top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], shoe: [0] }, ls("accra-owned", {}));
     const has = (k, v) => owned[k].includes(v);
     const markOwned = L => { OPT.forEach(o => { if (!has(o[1], L[o[1]])) owned[o[1]].push(L[o[1]]); }); sv("accra-owned", owned); };
     function styler(mode) {
