@@ -52,7 +52,7 @@
     const owned = Object.assign({ top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], shoe: [0], outfit: [0] }, ls("accra-owned", {}));
     ["top", "pants", "skin", "shoe", "outfit"].forEach(k => { if (!Array.isArray(owned[k])) owned[k] = k === "skin" ? [0,1,2,3,4,5,6,7] : [0]; });
     const has = (k, v) => owned[k].includes(v);
-    const optionsFor = L => {
+    const optionsFor = (L, mode) => {
       const list = OPT.slice();
       if (mode !== "first") {
         const choices = OUTFITS[L.gender === "female" ? "female" : "male"];
@@ -61,26 +61,26 @@
       }
       return list;
     };
-    const markOwned = L => { optionsFor(L).forEach(o => { if (!has(o[1], L[o[1]])) owned[o[1]].push(L[o[1]]); }); sv("accra-owned", owned); };
+    const markOwned = (L, mode) => { optionsFor(L, mode).forEach(o => { if (!has(o[1], L[o[1]])) owned[o[1]].push(L[o[1]]); }); sv("accra-owned", owned); };
     function styler(mode) {
       const av = window.ACCRA_AVATAR; if (!av) return note("Character not ready yet");
       const L = av.look, backup = JSON.stringify(L);
-      const cost = () => optionsFor(L).reduce((s, o) => s + (has(o[1], L[o[1]]) ? 0 : price(o[1], L[o[1]])), 0);
+      const cost = () => optionsFor(L, mode).reduce((s, o) => s + (has(o[1], L[o[1]]) ? 0 : price(o[1], L[o[1]])), 0);
       const click = d => {
         if (d.i !== undefined) {
-          const o = optionsFor(L)[+d.i]; if (!o) return; const k = o[1]; let v = L[k], c = 0;
+          const o = optionsFor(L, mode)[+d.i]; if (!o) return; const k = o[1]; let v = L[k], c = 0;
           do { v = (v + 1) % o[2]; c++; } while ((mode === "wardrobe" || mode === "edit") && !has(k, v) && c < o[2]);
           L[k] = v; av.apply(); draw();
         } else if (d.buy) {
           const c = cost(); if (c > cash()) return note("Not enough cash. You need GH\u00A2" + c);
-          if (c) pay(c, "Clothing store"); markOwned(L); hide(); note(c ? "Bought and wearing it!" : "Looks good!");
-        } else if (d.done) { markOwned(L); hide(); }
+          if (c) pay(c, "Clothing store"); markOwned(L, mode); hide(); note(c ? "Bought and wearing it!" : "Looks good!");
+        } else if (d.done) { markOwned(L, mode); hide(); }
         else if (d.x) { Object.assign(L, JSON.parse(backup)); av.apply(); hide(); }
       };
       const draw = () => {
         const c = cost(), shop = mode === "shop";
         show(ttl(shop ? "Fitting room" : mode === "first" ? "Create your character" : mode === "edit" ? "Edit look" : "Your wardrobe") +
-          optionsFor(L).map((o, i) => '<button data-i="' + i + '" style="' + BS + '">' + o[0] + " \u00B7 " + (o[3] ? o[3][L[o[1]]] : (L[o[1]] + 1) + " / " + o[2]) +
+          optionsFor(L, mode).map((o, i) => '<button data-i="' + i + '" style="' + BS + '">' + o[0] + " \u00B7 " + (o[3] ? o[3][L[o[1]]] : (L[o[1]] + 1) + " / " + o[2]) +
             (shop ? (has(o[1], L[o[1]]) ? " \u00B7 owned" : " \u00B7 GH\u00A2" + price(o[1], L[o[1]])) : "") + "</button>").join("") +
           (shop ? '<button data-buy="1" style="' + GOLD + '">' + (c ? "Buy & wear \u00B7 GH\u00A2" + c : "Wear") + '</button><button data-x="1" style="' + BS + ';text-align:center">Cancel</button>'
                 : '<button data-done="1" style="' + GOLD + '">Done</button>'), click);
@@ -88,7 +88,7 @@
       draw(); lock = mode === "first";
     }
     window.ACCRA_STYLER = styler;
-    if (window.ACCRA_AVATAR) { markOwned(window.ACCRA_AVATAR.look); if (window.ACCRA_AVATAR.isNew) setTimeout(() => styler("first"), 1000); }
+    if (window.ACCRA_AVATAR) { markOwned(window.ACCRA_AVATAR.look, "first"); if (window.ACCRA_AVATAR.isNew) setTimeout(() => styler("first"), 1000); }
 
     function tag(t, x, y, z, tw) {
       const w = tw || 2.2, dt = new B.DynamicTexture("tg", { width: 256, height: 64 }, scene, false), c = dt.getContext();
