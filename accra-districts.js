@@ -104,13 +104,14 @@
 
     // ----- landmark areas: the districts must not build inside them (they have their own buildings) -----
     const LANDMARK_ZONES = [
-      { n: "mall", x1: 4, x2: 66, z1: 4, z2: 66 },            // Accra Mall (Makola)
       { n: "pub", x1: -142, x2: -74, z1: -70, z2: -22 },      // The Accra Vibes Pub, its VIP lodge and car park
-      { n: "police", x1: 14, x2: 56, z1: 80, z2: 116 },       // Police Department
-      { n: "hospital", x1: 82, x2: 140, z1: 78, z2: 124 },    // Accra Hospital
+      { n: "police", x1: -140, x2: -60, z1: 60, z2: 130 },    // New western Police HQ compound
+      { n: "old-police-plot", x1: 14, x2: 56, z1: 80, z2: 116 }, // reserved for future civic redevelopment
+      { n: "hospital", x1: 80, x2: 140, z1: 75, z2: 135 },   // New eastern Accra General Hospital
       { n: "stadium", x1: 78, x2: 142, z1: 2, z2: 68 },       // Sports Stadium
       { n: "dealership", x1: 12, x2: 58, z1: -54, z2: -16 },  // Accra Motors
       { n: "amoamah", x1: 78, x2: 142, z1: -64, z2: -6 },     // Amoamah Estate plots (own houses)
+      { n: "galleria", x1: 228, x2: 292, z1: 88, z2: 152 },  // Accra Galleria Mall
       { n: "villa", x1: VX - 26, x2: VX + 26, z1: VZ - 26, z2: VZ + 26 }
     ];
     const inLandmark = (x, z) => LANDMARK_ZONES.some(a => x > a.x1 && x < a.x2 && z > a.z1 && z < a.z2);
