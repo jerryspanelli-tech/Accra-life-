@@ -45,12 +45,11 @@ const { chromium } = require('playwright');
     await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.setGender('female'));
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
 
-    const startPosition=await page.evaluate(()=>window.__accraPlayerPosition);
     await page.keyboard.down('s');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='walk',null,{timeout:10000});
     await page.waitForTimeout(400);
-    const keyboardWalk=await page.evaluate((start)=>{const p=window.__accraPlayerPosition,dx=p.x-start.x,dz=p.z-start.z,expected=Math.atan2(dx,dz),yaw=window.__accraPlayerFacingYaw;return{animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:p,yaw,expectedYaw:expected,yawError:Math.abs(Math.atan2(Math.sin(yaw-expected),Math.cos(yaw-expected)))};},startPosition);
-    if(keyboardWalk.yawError>.2)throw new Error('Player facing does not match movement direction: '+JSON.stringify(keyboardWalk));
+    const keyboardWalk=await page.evaluate(()=>{const p=window.__accraPlayerPosition,m=window.__accraMovementDirection,expected=Math.atan2(m.x,m.z),yaw=window.__accraPlayerFacingYaw;return{animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:p,movement:m,yaw,expectedYaw:expected,yawError:Math.abs(Math.atan2(Math.sin(yaw-expected),Math.cos(yaw-expected)))};});
+    if(keyboardWalk.yawError>.02)throw new Error('Player facing does not match live movement vector: '+JSON.stringify(keyboardWalk));
     await page.keyboard.down('Shift');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='run',null,{timeout:10000});
     await page.keyboard.up('Shift');await page.keyboard.up('s');
