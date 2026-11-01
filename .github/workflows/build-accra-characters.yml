@@ -1,6 +1,6 @@
 name: Build Accra Life player characters
 
-on:
+"on":
   push:
     branches:
       - feature/character-selection-sync
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    if: github.ref_name == 'feature/character-selection-sync'
+    if: ${{ github.ref_name == 'feature/character-selection-sync' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
