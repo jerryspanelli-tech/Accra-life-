@@ -20,8 +20,8 @@ root=new BABYLON.TransformNode('characterRoot',scene);result.meshes.filter(m=>!m
 const bounds=root.getHierarchyBoundingVectors(true),height=bounds.max.y-bounds.min.y;if(!height||!isFinite(height))throw Error('Model has invalid dimensions');
 root.scaling.setAll(1.8/height);root.position.y=-bounds.min.y*(1.8/height);
 groups=result.animationGroups||[];groups.forEach(g=>g.stop());current=gender;
-status.textContent=gender+' loaded · '+groups.map(g=>g.name).join(', ')+' · '+Math.round(height*100)+' cm source height';
 play('Idle');
+status.textContent=gender+' loaded · '+groups.map(g=>g.name).join(', ')+' · '+Math.round(height*100)+' cm source height';
 }catch(e){status.textContent='LOAD ERROR: '+e.message;console.error(e)}finally{busy=false}}
 function play(name){const g=groups.find(x=>x.name.toLowerCase()===name.toLowerCase());if(!g){status.textContent+=' · Missing '+name;return}groups.forEach(x=>x.stop());g.start(true);status.textContent=current+' · Playing '+g.name}
 document.getElementById('male').onclick=()=>load('male');document.getElementById('female').onclick=()=>load('female');['idle','walk','run'].forEach(n=>document.getElementById(n).onclick=()=>play(n));
