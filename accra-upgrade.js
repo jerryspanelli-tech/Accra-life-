@@ -45,11 +45,22 @@
     const SKIN_N = ["Deep brown", "Brown", "Dark brown", "Espresso", "Caramel", "Ebony", "Light brown", "Honey"];
     const SHOE_N = ["White sneakers", "Black shoes", "Brown leather", "Red sneakers"];
     const OPT = [["Top colour", "top", 8], ["Trousers", "pants", 6], ["Skin tone", "skin", 8, SKIN_N], ["Shoes", "shoe", 4, SHOE_N]];
+    const OUTFITS = { male: [["Streetwear", "street"], ["Suit & tie", "suit"], ["Kente outfit", "kente"]], female: [["Streetwear", "street"], ["Pantsuit", "suit"], ["Ankara gown", "ankara"]] };
+    const OUTFIT_PRICE = [0, 180, 150];
     const PR = { top: 20, pants: 20, skin: 0, shoe: 30 };
-    const price = (k, v) => Array.isArray(PR[k]) ? PR[k][v] : PR[k];
-    const owned = Object.assign({ top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], shoe: [0] }, ls("accra-owned", {}));
+    const price = (k, v) => k === "outfit" ? (OUTFIT_PRICE[v] || 0) : (Array.isArray(PR[k]) ? PR[k][v] : PR[k]);
+    const owned = Object.assign({ top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], shoe: [0], outfit: [0] }, ls("accra-owned", {}));
+    ["top", "pants", "skin", "shoe", "outfit"].forEach(k => { if (!Array.isArray(owned[k])) owned[k] = k === "skin" ? [0,1,2,3,4,5,6,7] : [0]; });
     const has = (k, v) => owned[k].includes(v);
-    const optionsFor = L => OPT;
+    const optionsFor = L => {
+      const list = OPT.slice();
+      if (mode !== "first") {
+        const choices = OUTFITS[L.gender === "female" ? "female" : "male"];
+        if (typeof L.outfit !== "number") L.outfit = L.outfit === "suit" ? 1 : (L.outfit === "kente" || L.outfit === "ankara" ? 2 : 0);
+        list.push(["Outfit", "outfit", choices.length, choices.map(x => x[0])]);
+      }
+      return list;
+    };
     const markOwned = L => { optionsFor(L).forEach(o => { if (!has(o[1], L[o[1]])) owned[o[1]].push(L[o[1]]); }); sv("accra-owned", owned); };
     function styler(mode) {
       const av = window.ACCRA_AVATAR; if (!av) return note("Character not ready yet");
@@ -58,7 +69,7 @@
       const click = d => {
         if (d.i !== undefined) {
           const o = optionsFor(L)[+d.i]; if (!o) return; const k = o[1]; let v = L[k], c = 0;
-          do { v = (v + 1) % o[2]; c++; } while (mode === "wardrobe" && !has(k, v) && c < o[2]);
+          do { v = (v + 1) % o[2]; c++; } while ((mode === "wardrobe" || mode === "edit") && !has(k, v) && c < o[2]);
           L[k] = v; av.apply(); draw();
         } else if (d.buy) {
           const c = cost(); if (c > cash()) return note("Not enough cash. You need GH\u00A2" + c);
