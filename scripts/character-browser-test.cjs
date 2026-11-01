@@ -1,0 +1,34 @@
+const { chromium } = require('playwright');
+
+(async()=>{
+  const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
+  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+  const errors=[];
+  page.on('pageerror',e=>errors.push('pageerror: '+e.message));
+  page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
+  try{
+    await page.goto('http://127.0.0.1:4173/test-accra-characters.html',{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('male loaded'),null,{timeout:45000});
+    const maleStatus=await page.locator('#status').innerText();
+    await page.locator('#female').click();
+    await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('female loaded'),null,{timeout:45000});
+    const femaleStatus=await page.locator('#status').innerText();
+    await page.locator('#walk').click();
+    await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('Playing Walk'),null,{timeout:10000});
+    const walkStatus=await page.locator('#status').innerText();
+    await page.locator('#run').click();
+    await page.waitForFunction(()=>document.querySelector('#status')?.textContent.includes('Playing Run'),null,{timeout:10000});
+    const runStatus=await page.locator('#status').innerText();
+    const labErrors=errors.splice(0);
+    if(labErrors.length)throw new Error('Character Lab browser errors: '+labErrors.join(' | '));
+
+    await page.goto('http://127.0.0.1:4173/babylon.html',{waitUntil:'domcontentloaded'});
+    await page.waitForFunction(()=>document.body.innerText.includes('ACCRA LIFE'),null,{timeout:15000});
+    await page.waitForFunction(()=>window.__accraCharacterLoaded===true || document.querySelector('#startScreen'),null,{timeout:45000});
+    await page.waitForTimeout(5000);
+    const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer]')||x.includes('babylon.js'));
+    if(mainErrors.length)throw new Error('Main game browser errors: '+mainErrors.join(' | '));
+    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,mainPageLoaded:true,mainConsoleErrors:mainErrors},null,2));
+  }catch(e){console.error(e);process.exitCode=1;}
+  finally{await browser.close();}
+})();
