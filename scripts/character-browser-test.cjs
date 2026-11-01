@@ -33,6 +33,6 @@ const { chromium } = require('playwright');
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed'));
     if(mainErrors.length)throw new Error('Main game browser errors: '+mainErrors.join(' | '));
     console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,mainPageLoaded:true,mainConsoleErrors:mainErrors},null,2));
-  }catch(e){console.error(e);process.exitCode=1;}
+  }catch(e){const status=await page.locator('#status').innerText().catch(()=>'(no status element)');console.error(JSON.stringify({error:e.message,status,errors},null,2));process.exitCode=1;}
   finally{await browser.close();}
 })();
