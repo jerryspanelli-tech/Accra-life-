@@ -1,7 +1,7 @@
 /* accra-hospital.js - Accra General Hospital, on its own eastern city site (x 80..140, z 75..125).
  * Exterior: a three-storey main block with a central red-cross tower and sign, an emergency entrance, an ambulance
  * bay, outpatient and maternity entrances, a rooftop helipad, a car park with ambulances, and palm trees.
- * The interior departments (triage, ER, ICU, theatres, labs, maternity, wards, pharmacy) are planned for a later step.
+ * Walkable departments and room furnishings are supplied by accra-interiors.js.
  * Built with simple solid boxes, once, at startup. */
 (function () {
   try {

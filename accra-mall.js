@@ -1,4 +1,4 @@
-/* accra-mall.js - Accra Galleria Mall, on its own site south-east of the city (x 230..290, z 90..150).
+/* accra-mall.js - Accra Galleria Mall, on its own site east of the city (x 230..290, z 90..150).
  * Exterior: a compound wall with a gate and sign board, a glass-roofed entrance arch with the mall name,
  * a fountain court, shop fronts (food court, supermarket, designer and luxury retail), a cinema block,
  * a multi-level parking garage, a rooftop garden, and palm trees.
@@ -89,9 +89,7 @@
         ac.createTree(scene, { type: "palm", position: [p[0], 0, p[1]] }));
     }
 
-    // ----- planned, next steps -----
-    // Interior: the food court, supermarket and shop units become walkable, with doors, stock and tills.
-    // Game links: the mall entrance becomes the mall door; the shop and phone links point here; the old mall is removed.
+    // Walkable floors, clothing purchase interaction and entry/exit links are supplied by accra-interiors.js and accra-entries.js.
 
     window.ACCRA_MALL = { x: CX, z: CZ, door: { x: CX, z: AZ - 8 }, bounds: { x0: X0, x1: X1, z0: Z0, z1: Z1 } };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).mall = 1;

@@ -275,7 +275,7 @@
     }
     } catch (e) { banner("Amoamah/stadium: " + e.message); }
 
-    // ===== POLICE DEPARTMENT, ACCRA HOSPITAL and CAR DEALERSHIP: real buildings with separate rooms =====
+    // ===== LEGACY POLICE/HOSPITAL SHELLS RETIRED; new facilities are built by their dedicated modules. CAR DEALERSHIP remains here. =====
     try {
       const inB = (m, x0, x1, z0, z1) => m.position.x > x0 && m.position.x < x1 && m.position.z > z0 && m.position.z < z1;
       scene.meshes.filter(m => (m.name === "bd" || m.name === "rf") && (inB(m, 12, 58, 82, 112) || inB(m, 82, 138, 82, 112) || inB(m, 12, 58, -58, -12))).forEach(m => m.dispose());
@@ -298,32 +298,6 @@
         const mt = new B.StandardMaterial("fsm", scene); mt.diffuseTexture = dt; mt.emissiveTexture = dt; mt.disableLighting = true; mt.backFaceCulling = false; sn.material = mt;
       }
       const fl = (x, z, w, d, c) => box(w, .04, d, x, .06, z, c, false);
-      // ---- POLICE DEPARTMENT: lobby, 2 offices, interview room, holding cells ----
-      { const cx = 35, cz = 98;
-        bld(cx, cz, 30, 18, "#dfe6ee", "#c9d3de", [[-9, -1, 12, .3], [9, -1, 12, .3], [-3, 0, .3, 2], [-3, 4.1, .3, 3.8], [-3, 8.1, .3, 1.8], [3, 0, .3, 2], [3, 4.1, .3, 3.8], [3, 8.1, .3, 1.8], [-9, 4.1, 12, .3], [11, 2.1, 8, .3], [11, 5.4, 8, .3]], "POLICE DEPARTMENT", "#1d3b6b", "#ffffff");
-        fl(cx - 9, cz + 1.5, 11.5, 5, "#b9c6d6"); fl(cx - 9, cz + 6.5, 11.5, 4.5, "#cdbfa5"); fl(cx + 9, cz + 4, 11.5, 10, "#8f979f");
-        SOLID(7, 1.1, 1.2, cx, .55, cz - 5.2, "#5a4a3a"); D(.6, .4, .05, cx - 1.5, 1.3, cz - 5.2, "#111");
-        [-13, -11.2, -9.4].forEach(x => I("chair", cx + x, cz - 7, PI, .9));
-        I("desk", cx - 14, cz + 1.5, PI / 2, 1); I("shelf", cx - 8, cz + .3, 0, 1); I("desk", cx - 14, cz + 6.8, PI / 2, 1); I("dining", cx - 8.5, cz + 6.8, 0, .9);
-        for (let i = 0; i < 17; i++) D(.07, 3, .07, cx + 7, 1.5, cz - .8 + i * .6, "#555");
-        [0, 3.3, 6.6].forEach(z => D(2.2, .45, .8, cx + 13.6, .22, cz + z + .6, "#7a7a7a"));
-        box(.15, 8, .15, 18, 4, 86, "#cccccc", false); [["#c8102e", 7.6], ["#fcd116", 7.1], ["#006b3f", 6.6]].forEach(f => D(1.8, .5, .05, 18.95, f[1], 86, f[0]));
-        D(6, .02, 10, cx, .07, 83, "#ffffff"); D(5.6, .03, 9.6, cx, .075, 83, "#3a3d42");
-        A.createTrotro(scene, { position: [24, 0, 83], rotY: PI / 2, color: "#1d3b6b", stripe: "#ffffff" });
-      }
-      // ---- HOSPITAL: reception, emergency room, consulting room, pharmacy, 2 wards ----
-      { const cx = 110, cz = 98;
-        bld(cx, cz, 44, 24, "#f4f7fa", "#e6eef2", [[-19.5, -3, 5, .3], [-8.9, -3, 13.8, .3], [8, -3, 12, .3], [18.6, -3, 6.8, .3], [-11, 4.5, .3, 15], [-2, 0, .3, 6], [-2, 8.1, .3, 7.8], [2, 0, .3, 6], [2, 8.1, .3, 7.8], [9, 4.5, .3, 15], [11.5, 4.5, 5, .3], [18.6, 4.5, 6.8, .3]], "ACCRA HOSPITAL", "#ffffff", "#c8102e");
-        D(4.4, 4.4, .3, cx, 9.4, cz - 12.4, "#ffffff"); D(1.2, 3.6, .4, cx, 9.4, cz - 12.5, "#c8102e"); D(3.6, 1.2, .4, cx, 9.4, cz - 12.5, "#c8102e");
-        fl(cx - 16.5, cz + 4.5, 11, 15, "#d6e6ea"); fl(cx - 6.5, cz + 4.5, 9, 15, "#e0e8f0"); fl(cx + 5.5, cz + 4.5, 7, 15, "#e4efe0"); fl(cx + 15.5, cz + 4.5, 13, 15, "#dce8f0");
-        SOLID(8, 1.1, 1.2, cx, .55, cz - 6.5, "#ffffff"); D(8.4, .1, 1.4, cx, 1.15, cz - 6.5, "#c8102e");
-        [-10, -8, -6, 6, 8, 10].forEach(x => I("chair", cx + x, cz - 9.5, 0, .9));
-        [-19, -14.5].forEach(x => I("bed1", cx + x, cz + 10.5, PI)); D(.7, 1.6, .5, cx - 21, .8, cz + 3, "#9aa7b0");
-        I("desk", cx - 10, cz + 1, PI / 2, 1); I("bed1", cx - 4, cz + 10, PI);
-        SOLID(5, 1, .8, cx + 5.5, .5, cz + 1.5, "#cfd6dc"); I("shelf", cx + 8.4, cz + 7, -PI / 2); I("shelf", cx + 8.4, cz + 9.4, -PI / 2);
-        [-1.8, .8, 3.2].forEach(z => I("bed1", cx + 20.4, cz + z, -PI / 2)); [6, 8.5, 11].forEach(z => I("bed1", cx + 20.4, cz + z, -PI / 2));
-        A.createTrotro(scene, { position: [100, 0, 83], rotY: PI / 2, color: "#f0f0f0", stripe: "#c8102e" });
-      }
       // ---- CAR DEALERSHIP (Makola, east) ----
       { const cx = 35, cz = -35;
         bld(cx, cz, 36, 22, "#e4ebf0", "#d9dde3", [[12, 6, .3, 8], [14.5, 2.2, 5, .3]], "ACCRA MOTORS \u00B7 CAR DEALERSHIP", "#17191c", "#fcd116", 8);
@@ -336,8 +310,8 @@
       const meshDec = mergeAsset(dec); if (meshDec) meshDec.isPickable = false;
       scene.onBeforeRenderObservable.add(() => { const p = player.position; roofs.forEach(r => r[0].setEnabled(!(Math.abs(p.x - r[1]) < r[3] + .5 && Math.abs(p.z - r[2]) < r[4] + .5))); });
       window.ACCRA_PLACES = {
-        pd: { x: 35, z: 94.4, ox: 35, oz: 84, depot: { x: 35, z: 83, h: Math.PI } },
-        hp: { x: 110, z: 89.5, ox: 110, oz: 82, depot: { x: 110, z: 81, h: Math.PI } },
+        pd: { x: -100, z: 114.4, ox: -100, oz: 60, depot: { x: -100, z: 60, h: Math.PI } },
+        hp: { x: 92, z: 110.4, ox: 110, oz: 131, depot: { x: 110, z: 131, h: Math.PI } },
         dealer: { x: 24, z: -26, ox: 35, oz: -50 }
       };
     } catch (e) { banner("Police/Hospital/Dealership: " + e.message); }
