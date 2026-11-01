@@ -90,7 +90,7 @@ fl(-8.2,4.5,9.4,9,'#9b6b43');fl(8.2,4.5,9.4,9,'#e8e2d6');fl(0,5,6.8,8,'#8f9296')
 const roof=box(26.6,.3,18.6,VX,3.35,VZ,'#7b4b33',false);
 const player=BABYLON.MeshBuilder.CreateCapsule('p',{height:1.8,radius:.4},scene);
 player.position.set(0,.91,10);player.isVisible=false;player.ellipsoid=V(.4,.9,.4);
-let playerVisual=null,playerAnimations=[],playerGender='male',playerLoadToken=0,smv=0;
+let playerVisual=null,playerAnimations=[],playerGender='male',playerLoadToken=0,smv=0,pendingPlayerLook=null;
 async function setPlayerGender(gender){
   gender=gender==='female'?'female':'male';
   if(playerVisual&&playerGender===gender)return true;
@@ -107,6 +107,7 @@ async function setPlayerGender(gender){
     holder.parent=player;holder.position.set(0,-.91,0);
     root.parent=holder;root.scaling.setAll(scale);root.position.y=-bb.min.y*scale;
     playerVisual=holder;playerGender=gender;
+    if(pendingPlayerLook)applyPlayerAppearance(pendingPlayerLook);
     window.__accraCharacterLoaded=true;
     playerAnimations.forEach(g=>g.stop());
     const idle=playerAnimations.find(g=>g.name.toLowerCase()==='idle');
@@ -115,7 +116,36 @@ async function setPlayerGender(gender){
     return true;
   }catch(err){console.error('[AccraLifePlayer] Model load failed:',gender,err);return false;}
 }
-window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,gender:()=>playerGender,ready:()=>!!playerVisual,inspect:()=>{if(!playerVisual)return[];playerVisual.computeWorldMatrix(true);const inv=playerVisual.getWorldMatrix().clone();inv.invert();return playerVisual.getChildMeshes(false).map(m=>{m.computeWorldMatrix(true);const indices=m.getIndices()||[],positions=m.getVerticesData(BABYLON.VertexBuffer.PositionKind)||[],ranges=(m.subMeshes||[]).map(sm=>{let x=0,y=0,z=0,n=0;for(let k=sm.indexStart;k<sm.indexStart+sm.indexCount;k++){const vi=indices[k];if(vi==null)continue;const w=BABYLON.Vector3.TransformCoordinates(new BABYLON.Vector3(positions[vi*3],positions[vi*3+1],positions[vi*3+2]),m.getWorldMatrix());const p=BABYLON.Vector3.TransformCoordinates(w,inv);x+=p.x;y+=p.y;z+=p.z;n++;}return{materialIndex:sm.materialIndex,indexCount:sm.indexCount,center:n?[x/n,y/n,z/n]:null};});return{name:m.name,material:m.material&&m.material.name,vertices:m.getTotalVertices(),ranges};});}};
+function applyPlayerAppearance(look){
+  if(!playerVisual||!look)return 0;
+  const data=window.ACCRA_LOOKDATA||{};
+  const SK=data.SK||['#c68a5e','#8d5a3b','#6b4028','#4a2c1c','#a8754f','#3a2216','#f1c9a5','#e0a878'];
+  const HC=data.HC||['#0d0d0d','#2a1a10','#5a3b22','#9a7b3c'];
+  const TP=data.TP||['#9a4a42','#c9a54a','#56705a','#4d6a8a','#e8e6df','#2a2c30','#7a6a8a','#c08a5a'];
+  const PN=data.PN||['#1f2a44','#111111','#5b4630','#6b6b6b','#2f5d3a','#b8a27a'];
+  const SH=data.SH||['#f0f0ec','#111111','#5a3a22','#b5182c'];
+  const pick=(arr,v)=>arr[((Math.floor(Number(v)||0)%arr.length)+arr.length)%arr.length];
+  const colors={skin:pick(SK,look.skin),hair:pick(HC,look.hcol),top:pick(TP,look.top),pants:pick(PN,look.pants),shoes:pick(SH,look.shoe)};
+  let changed=0;
+  playerVisual.getChildMeshes(false).forEach(mesh=>{
+    const material=mesh.material;if(!material)return;
+    const name=String(material.name||'').toLowerCase();
+    let hex=null;
+    if(name==='skin'||name==='skin details')hex=colors.skin;
+    else if(name.includes('oversized tee')||name.includes('tee rib'))hex=colors.top;
+    else if(name.includes('baggy jeans')||name.includes('jeans legs'))hex=colors.pants;
+    else if(name.includes('sneaker leather'))hex=colors.shoes;
+    else if(/braid|buzz|cornrow|hair|loc/.test(name))hex=colors.hair;
+    if(!hex)return;
+    const color=C3(hex);
+    if(material.albedoColor&&material.albedoColor.copyFrom)material.albedoColor.copyFrom(color);
+    if(material.diffuseColor&&material.diffuseColor.copyFrom)material.diffuseColor.copyFrom(color);
+    changed++;
+  });
+  return changed;
+}
+function setPlayerAppearance(look){pendingPlayerLook=Object.assign({},look||{});return applyPlayerAppearance(pendingPlayerLook);}
+window.ACCRA_PLAYER_MODEL={setGender:setPlayerGender,setAppearance:setPlayerAppearance,gender:()=>playerGender,ready:()=>!!playerVisual,inspect:()=>{if(!playerVisual)return[];playerVisual.computeWorldMatrix(true);const inv=playerVisual.getWorldMatrix().clone();inv.invert();return playerVisual.getChildMeshes(false).map(m=>{m.computeWorldMatrix(true);const indices=m.getIndices()||[],positions=m.getVerticesData(BABYLON.VertexBuffer.PositionKind)||[],ranges=(m.subMeshes||[]).map(sm=>{let x=0,y=0,z=0,n=0;for(let k=sm.indexStart;k<sm.indexStart+sm.indexCount;k++){const vi=indices[k];if(vi==null)continue;const w=BABYLON.Vector3.TransformCoordinates(new BABYLON.Vector3(positions[vi*3],positions[vi*3+1],positions[vi*3+2]),m.getWorldMatrix());const p=BABYLON.Vector3.TransformCoordinates(w,inv);x+=p.x;y+=p.y;z+=p.z;n++;}return{materialIndex:sm.materialIndex,indexCount:sm.indexCount,center:n?[x/n,y/n,z/n]:null};});const mat=m.material,color=mat&&(mat.albedoColor||mat.diffuseColor);return{name:m.name,material:mat&&mat.name,color:color&&color.toHexString?color.toHexString().toLowerCase():null,vertices:m.getTotalVertices(),ranges};});}};
 setPlayerGender('male');
 let lpx=player.position.x,lpz=player.position.z;
 scene.onBeforeRenderObservable.add(()=>{
