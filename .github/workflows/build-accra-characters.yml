@@ -31,6 +31,13 @@ jobs:
           ref: ${{ github.ref_name }}
           fetch-depth: 0
 
+      - name: Fetch pinned Ara 3D Gen source
+        run: |
+          git init "$ARA_DIR"
+          git -C "$ARA_DIR" remote add origin https://github.com/olatunde85/3d-gen.git
+          git -C "$ARA_DIR" fetch --depth 1 origin "$ARA_REF"
+          git -C "$ARA_DIR" checkout --detach FETCH_HEAD
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -45,13 +52,6 @@ jobs:
             ${{ runner.temp }}/ara3dgen/vendor
             ${{ runner.temp }}/ara3dgen/public/assets
           key: ara-assets-${{ runner.os }}-${{ env.ARA_REF }}
-
-      - name: Fetch pinned Ara 3D Gen source
-        run: |
-          git init "$ARA_DIR"
-          git -C "$ARA_DIR" remote add origin https://github.com/olatunde85/3d-gen.git
-          git -C "$ARA_DIR" fetch --depth 1 origin "$ARA_REF"
-          git -C "$ARA_DIR" checkout --detach FETCH_HEAD
 
       - name: Install generator and prepare CC0 assets
         working-directory: ${{ runner.temp }}/ara3dgen
