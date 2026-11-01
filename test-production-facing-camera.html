@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>Accra Life · Production Facing Diagnostic</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:none;font-family:system-ui,sans-serif;color:#fff}#c{position:fixed;inset:0;width:100%;height:100%;touch-action:none}#joy{position:fixed;left:18px;bottom:18px;width:130px;height:130px;border-radius:50%;background:#2228;border:2px solid #fff9;touch-action:none}#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px;border-radius:50%;background:#d6ad45;pointer-events:none}.panel{position:fixed;top:8px;left:8px;max-width:min(440px,calc(100vw - 32px));padding:10px 12px;background:#111d;border:1px solid #ffffff55;border-radius:10px;font-size:12px;line-height:1.45}.panel b{color:#ffd166}.hint{color:#d3dbe4}.btn{position:fixed;right:14px;bottom:20px;padding:12px;border:0;border-radius:9px;background:#d6ad45;color:#111;font-weight:700}
+</style></head><body><canvas id="c"></canvas>
+<div class="panel"><b>PRODUCTION FACING DIAGNOSTIC</b><br><span id="status">Loading CesiumMan…</span><br>Red arrow = model's local forward (+Z). Green arrow = actual movement direction.<br><span id="stats"></span><br><span class="hint">Use joystick/WASD to move. Walk forward, backward and sideways. Drag screen to orbit.</span></div>
+<div id="joy"><div id="knob"></div></div><button class="btn" id="reset">RESET CAMERA</button>
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script><script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z);
+const engine=new BABYLON.Engine($('c'),true,{adaptToDeviceRatio:true});if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.5);
+const scene=new BABYLON.Scene(engine);scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);scene.collisionsEnabled=true;
+new BABYLON.HemisphericLight('hemi',V(0,1,0),scene).intensity=.85;
+const sun=new BABYLON.DirectionalLight('sun',V(-.5,-1,-.4),scene);sun.intensity=1.1;
+const ground=BABYLON.MeshBuilder.CreateGround('ground',{width:120,height:120},scene);ground.checkCollisions=true;
+const gm=new BABYLON.StandardMaterial('groundMat',scene);gm.diffuseColor=new BABYLON.Color3(.34,.48,.29);ground.material=gm;
+const grid=BABYLON.MeshBuilder.CreateGround('grid',{width:120,height:120,subdivisions:24},scene);grid.position.y=.012;grid.isPickable=false;const gmat=new BABYLON.StandardMaterial('gridMat',scene);gmat.wireframe=true;gmat.emissiveColor=new BABYLON.Color3(.4,.5,.35);gmat.alpha=.18;grid.material=gmat;
+const player=BABYLON.MeshBuilder.CreateCapsule('player',{height:1.8,radius:.4},scene);player.position.set(0,.91,0);player.isVisible=false;player.ellipsoid=V(.4,.9,.4);
+const camT=new BABYLON.TransformNode('cameraTarget',scene);const cam=new BABYLON.ArcRotateCamera('camera',Math.PI/2,1.1,9,V(0,1,0),scene);cam.lockedTarget=camT;cam.lowerRadiusLimit=3;cam.upperRadiusLimit=16;cam.lowerBetaLimit=.25;cam.upperBetaLimit=1.45;cam.attachControl($('c'),true);
+let cesiumNode=null,animGroup=null,ready=false;
+BABYLON.SceneLoader.ImportMeshAsync('','People/CesiumMan/','CesiumMan.glb',scene).then(res=>{
+ cesiumNode=new BABYLON.TransformNode('cesium_player_node',scene);cesiumNode.parent=player;cesiumNode.position.set(0,-.91,0);
+ const root=res.meshes[0];root.parent=cesiumNode;root.rotationQuaternion=null;root.rotation.y=0;
+ const bb=root.getHierarchyBoundingVectors(true),h=bb.max.y-bb.min.y;if(h>0)root.scaling.setAll(1.8/h);
+ if(res.animationGroups.length){animGroup=res.animationGroups[0];animGroup.pause();}
+ // Red forward arrow is attached to the model's local +Z axis, above the head.
+ const red=BABYLON.MeshBuilder.CreateCylinder('modelForward',{height:.72,diameterTop:0,diameterBottom:.24,tessellation:12},scene);red.parent=cesiumNode;red.position.set(0,1.28,.42);red.rotation.x=Math.PI/2;
+ const redMat=new BABYLON.StandardMaterial('redMat',scene);redMat.emissiveColor=new BABYLON.Color3(1,.05,.03);red.material=redMat;
+ ready=true;$('status').textContent='Model loaded. Red = model front.';
+}).catch(e=>{$('status').textContent='MODEL LOAD ERROR: '+e.message;console.error(e)});
+ // Green arrow points along the movement vector in world space.
+const green=BABYLON.MeshBuilder.CreateCylinder('movementArrow',{height:.9,diameterTop:0,diameterBottom:.25,tessellation:12},scene);green.position.y=.16;green.isVisible=false;
+const greenMat=new BABYLON.StandardMaterial('greenMat',scene);greenMat.emissiveColor=new BABYLON.Color3(.05,1,.18);green.material=greenMat;
+let jx=0,jy=0,jid=null,vy=0,jump=0;const joy=$('joy'),kn=$('knob');
+function jm(e){const r=joy.getBoundingClientRect(),R=r.width/2,m=R*.62;let dx=e.clientX-(r.left+R),dy=e.clientY-(r.top+R),l=Math.hypot(dx,dy);if(l>m){dx*=m/l;dy*=m/l}kn.style.transform='translate('+dx+'px,'+dy+'px)';jx=dx/m;jy=dy/m}
+joy.addEventListener('pointerdown',e=>{e.preventDefault();jid=e.pointerId;joy.setPointerCapture(e.pointerId);jm(e)});joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e)});
+const end=e=>{if(e.pointerId!==jid)return;jid=null;jx=jy=0;kn.style.transform='translate(0,0)'};joy.addEventListener('pointerup',end);joy.addEventListener('pointercancel',end);
+const K={};addEventListener('keydown',e=>K[e.key.toLowerCase()]=1);addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
+$('reset').onclick=()=>{cam.alpha=Math.PI/2;cam.beta=1.1;cam.radius=9;lastTouch=0};
+let lpx=0,lpz=0,smv=0,lastPos=null,lastTouch=0,camSpeed=0;
+const touched=()=>{lastTouch=performance.now()};$('c').addEventListener('pointerdown',touched);$('c').addEventListener('pointermove',e=>{if(e.buttons)touched()});
+const wrap=a=>{while(a>Math.PI)a-=Math.PI*2;while(a< -Math.PI)a+=Math.PI*2;return a};
+function update(dt){
+ const ix=jx+(K.d?1:0)-(K.a?1:0),iy=jy+(K.s?1:0)-(K.w?1:0);
+ const f=V(-Math.cos(cam.alpha),0,-Math.sin(cam.alpha)),r=V(f.z,0,-f.x),mv=f.scale(-iy).add(r.scale(ix));
+ const sp=Math.min(1,mv.length())*5.2;if(mv.length()>.05)mv.normalize();
+ vy-=22*dt;player.moveWithCollisions(V(mv.x*sp*dt,vy*dt,mv.z*sp*dt));if(player.position.y<=.91){player.position.y=.91;if(vy<0)vy=0}
+ if(sp>.2)player.rotation.y=Math.atan2(mv.x,mv.z);
+ const dist=Math.hypot(player.position.x-lpx,player.position.z-lpz)/dt;lpx=player.position.x;lpz=player.position.z;smv+=(Math.min(dist,9)-smv)*Math.min(1,dt*9);
+ camT.position.set(player.position.x,player.position.y+.7,player.position.z);
+ if(sp>.2){green.isVisible=true;green.position.x=player.position.x;green.position.z=player.position.z;green.rotation.y=Math.atan2(mv.x,mv.z)}
+ else green.isVisible=false;
+ $('stats').textContent='player yaw: '+(player.rotation.y*180/Math.PI).toFixed(1)+'° | camera alpha: '+(cam.alpha*180/Math.PI).toFixed(1)+'° | speed: '+smv.toFixed(2)+' m/s';
+}
+scene.onBeforeRenderObservable.add(()=>{
+ const dt=Math.min(engine.getDeltaTime()/1000,.05),now=performance.now(),pos=player.position;
+ if(lastPos)camSpeed=Math.hypot(pos.x-lastPos.x,pos.z-lastPos.z)/Math.max(dt,.001);lastPos=pos.clone();
+ const yaw=player.rotation.y,fx=Math.sin(yaw),fz=Math.cos(yaw),wantAlpha=Math.atan2(-fz,-fx),wantRadius=7.5;
+ if(now-lastTouch<1500){cam.radius+=(wantRadius-cam.radius)*.024;return}
+ if(camSpeed>.5)cam.alpha+=wrap(wantAlpha-cam.alpha)*.07;
+ cam.beta+=(1.15-cam.beta)*.07;cam.radius+=(wantRadius-cam.radius)*.08;
+});
+engine.runRenderLoop(()=>{const dt=Math.min(engine.getDeltaTime()/1000,.05);update(dt);scene.render()});addEventListener('resize',()=>engine.resize());
+})();
+</script></body></html>
