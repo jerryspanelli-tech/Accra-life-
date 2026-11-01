@@ -126,6 +126,7 @@ scene.onBeforeRenderObservable.add(()=>{
   const moving=smv>.15;
   const desired=moving?(window.__accraRunning?'run':'walk'):'idle';
   window.__accraCurrentAnimation=desired;
+  window.__accraPlayerPosition={x:player.position.x,y:player.position.y,z:player.position.z};
   const active=playerAnimations.find(g=>g.name.toLowerCase()===desired);
   if(active){
     if(!active.isPlaying){playerAnimations.forEach(g=>g!==active&&g.stop());active.start(true);}
