@@ -90,37 +90,44 @@ fl(-8.2,4.5,9.4,9,'#9b6b43');fl(8.2,4.5,9.4,9,'#e8e2d6');fl(0,5,6.8,8,'#8f9296')
 const roof=box(26.6,.3,18.6,VX,3.35,VZ,'#7b4b33',false);
 const player=BABYLON.MeshBuilder.CreateCapsule('p',{height:1.8,radius:.4},scene);
 player.position.set(0,.91,10);player.isVisible=false;player.ellipsoid=V(.4,.9,.4);
-let cesiumNode=null,animGroup=null;
-BABYLON.SceneLoader.ImportMeshAsync('','People/CesiumMan/','CesiumMan.glb',scene).then(res=>{
-  cesiumNode=new BABYLON.TransformNode('cesium_player_node',scene);
-  cesiumNode.parent=player;
-  cesiumNode.position.set(0,-.91,0);
-  const root=res.meshes[0];
-  root.parent=cesiumNode;
-  root.rotationQuaternion=null;
-  root.rotation.y=0;
-  const bb=root.getHierarchyBoundingVectors(true);
-  const h=bb.max.y-bb.min.y;
-  if(h>0)root.scaling.setAll(1.8/h);
-  if(res.animationGroups.length>0){
-    animGroup=res.animationGroups[0];
-    animGroup.pause();
-  }
-}).catch(err=>console.error('[CesiumPlayer] Load error:',err));
-
-let lpx=player.position.x,lpz=player.position.z,smv=0;
+let playerVisual=null,playerAnimations=[],playerGender='male',playerLoadToken=0,smv=0;
+async function setPlayerGender(gender){
+  gender=gender==='female'?'female':'male';
+  if(playerVisual&&playerGender===gender)return true;
+  const token=++playerLoadToken;
+  try{
+    const file=gender==='female'?'AccraLife_Female.glb':'AccraLife_Male.glb';
+    const res=await BABYLON.SceneLoader.ImportMeshAsync('','People/AccraLife/',file,scene);
+    if(token!==playerLoadToken){res.animationGroups.forEach(g=>g.dispose());res.meshes.forEach(m=>m.dispose(false,true));return false;}
+    if(playerVisual){playerAnimations.forEach(g=>g.dispose());playerVisual.dispose(false,true);}
+    playerAnimations=res.animationGroups||[];
+    const holder=new BABYLON.TransformNode('accra_life_player_'+gender,scene);
+    holder.parent=player;holder.position.set(0,-.91,0);
+    const root=res.meshes[0];root.parent=holder;root.rotationQuaternion=null;root.rotation.set(0,0,0);
+    const bb=root.getHierarchyBoundingVectors(true),height=bb.max.y-bb.min.y,scale=height>0?1.8/height:1;
+    root.scaling.setAll(scale);root.position.y=-bb.min.y*scale;
+    playerVisual=holder;playerGender=gender;
+    playerAnimations.forEach(g=>g.stop());
+    const idle=playerAnimations.find(g=>g.name.toLowerCase()==='idle');
+    if(idle)idle.start(true);
+    console.log('[AccraLifePlayer] Loaded',gender,'model with',playerAnimations.map(g=>g.name).join(', '));
+    return true;
+  }catch(err){console.error('[AccraLifePlayer] Model load failed:',gender,err);return false;}
+}
+window.ACCRA_PLAYER_MODEL={setGender,gender:()=>playerGender,ready:()=>!!playerVisual};
+setPlayerGender('male');
+let lpx=player.position.x,lpz=player.position.z;
 scene.onBeforeRenderObservable.add(()=>{
   const dt=Math.max(engine.getDeltaTime()/1000,.001);
   const dist=Math.hypot(player.position.x-lpx,player.position.z-lpz)/dt;
   lpx=player.position.x;lpz=player.position.z;
   smv+=(Math.min(dist,9)-smv)*Math.min(1,dt*9);
-  if(animGroup){
-    if(smv>.15){
-      if(!animGroup.isPlaying)animGroup.play(true);
-      animGroup.speedRatio=Math.min(Math.max(smv/2.5,.6),2.2);
-    }else{
-      if(animGroup.isPlaying)animGroup.pause();
-    }
+  const moving=smv>.15;
+  const desired=moving?'walk':'idle';
+  const active=playerAnimations.find(g=>g.name.toLowerCase()===desired);
+  if(active){
+    if(!active.isPlaying){playerAnimations.forEach(g=>g!==active&&g.stop());active.start(true);}
+    active.speedRatio=moving?Math.min(Math.max(smv/2.5,.65),1.8):1;
   }
 });
 const camT=new BABYLON.TransformNode('ct',scene);
