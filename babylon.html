@@ -216,7 +216,7 @@ function update(dt){
  }else{
   $('spd').style.display='none';
   const f=V(-Math.cos(cam.alpha),0,-Math.sin(cam.alpha)),r=V(f.z,0,-f.x),mv=f.scale(-iy).add(r.scale(ix));
-  const input=Math.min(1,mv.length()),joystickStrength=Math.min(1,Math.hypot(jx,jy)),running=!!K.shift||joystickStrength>.85;window.__accraRunning=running;const sp=input*(running?7:5.2);if(input>.05){mv.normalize();window.__accraMovementDirection={x:mv.x,z:mv.z};}else window.__accraMovementDirection={x:0,z:0};
+  const input=Math.min(1,mv.length()),joystickStrength=Math.min(1,Math.hypot(jx,jy)),running=!!K.shift||joystickStrength>.85;window.__accraRunning=running;const sp=input*(running?5:3.5);if(input>.05){mv.normalize();window.__accraMovementDirection={x:mv.x,z:mv.z};}else window.__accraMovementDirection={x:0,z:0};
   if(jump&&player.position.y<=.93){vy=7;}jump=0;vy-=22*dt;
   player.moveWithCollisions(V(mv.x*sp*dt,vy*dt,mv.z*sp*dt));
   if(player.position.y<=.91){player.position.y=.91;if(vy<0)vy=0}
