@@ -74,6 +74,7 @@
       setTimeout(() => {
         try {
           if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply();
+          if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.isNew && window.ACCRA_STYLER) window.ACCRA_STYLER("first");
           if (window.ACCRA_LIFE && window.ACCRA_LIFE.api) window.ACCRA_LIFE.api.note("Welcome to Accra, " + name);
         } catch (err) {
           console.error("accra-start: character selection failed", err);
