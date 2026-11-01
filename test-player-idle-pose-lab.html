@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Accra Life - Idle Pose Lab</title>
+<style>
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#18212b;color:#fff;font:14px system-ui}
+#c{width:100%;height:100%;display:block;touch-action:none}
+#panel{position:fixed;left:10px;right:10px;top:10px;max-width:460px;padding:12px;background:#101820ed;border:1px solid #52616b;border-radius:12px;z-index:5}
+#status{color:#ffd166;margin:0 0 8px;line-height:1.4}
+button{padding:9px 11px;margin:3px;border:0;border-radius:8px;background:#e6b84a;color:#17202a;font-weight:700}
+button:disabled,input:disabled{opacity:.5}
+small{display:block;color:#d2d9df;margin-top:8px;line-height:1.4}
+#scrub{width:100%;margin:8px 0}
+#frame{font-variant-numeric:tabular-nums;color:#ffd166}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="panel">
+ <div id="status">Loading character and walk animation…</div>
+ <div>
+  <button id="play" disabled>Play walk</button>
+  <button id="pause" disabled>Pause</button>
+  <button id="bind" disabled>Show T-pose</button>
+ </div>
+ <label for="scrub">Scrub the walk cycle: <span id="frame">—</span></label>
+ <input id="scrub" type="range" min="0" max="48" step="1" value="0" disabled>
+ <small>Pose research only. Move the slider to inspect different points in the existing walk cycle and find the least awkward candidate for a future idle pose. This page does not edit the live game. Drag the scene to rotate the camera.</small>
+</div>
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+(()=>{
+ const canvas=document.getElementById('c'),status=document.getElementById('status');
+ const engine=new BABYLON.Engine(canvas,true,{adaptToDeviceRatio:true});
+ const scene=new BABYLON.Scene(engine);scene.clearColor=new BABYLON.Color4(.12,.16,.2,1);
+ const camera=new BABYLON.ArcRotateCamera('camera',Math.PI/2,1.2,4.8,new BABYLON.Vector3(0,.9,0),scene);
+ camera.attachControl(canvas,true);camera.lowerRadiusLimit=2.2;camera.upperRadiusLimit=9;
+ const hemi=new BABYLON.HemisphericLight('hemi',new BABYLON.Vector3(0,1,0),scene);hemi.intensity=.9;
+ const sun=new BABYLON.DirectionalLight('sun',new BABYLON.Vector3(-1,-2,-1),scene);sun.position=new BABYLON.Vector3(4,8,5);sun.intensity=.9;
+ const ground=BABYLON.MeshBuilder.CreateGround('ground',{width:20,height:20},scene);
+ const mat=new BABYLON.StandardMaterial('groundMat',scene);mat.diffuseColor=new BABYLON.Color3(.22,.26,.3);ground.material=mat;
+ const slider=document.getElementById('scrub'),frameLabel=document.getElementById('frame');
+ let group=null,skeleton=null,loaded=false;
+ function showFrame(v){
+   if(!loaded)return;
+   const n=Number(v);group.stop();group.goToFrame(n);group.pause();
+   slider.value=String(n);frameLabel.textContent=n.toFixed(0);
+   status.textContent='Holding walk-cycle frame '+n+'. Rotate the camera and inspect the arms, hands, legs and feet.';
+ }
+ BABYLON.SceneLoader.ImportMeshAsync('','People/CesiumMan/','CesiumMan.glb',scene).then(res=>{
+   const root=res.meshes[0];root.rotationQuaternion=null;root.rotation.y=Math.PI;
+   const bb=root.getHierarchyBoundingVectors(true),h=bb.max.y-bb.min.y;
+   if(h>0)root.scaling.setAll(1.8/h);
+   group=res.animationGroups[0]||null;skeleton=res.skeletons[0]||null;
+   if(!group||!skeleton){status.textContent='The model loaded, but its walk animation or skeleton is missing.';return;}
+   const from=Number.isFinite(group.from)?group.from:0,to=Number.isFinite(group.to)?group.to:48;
+   slider.min=String(from);slider.max=String(to);slider.step='1';slider.value=String(from);
+   ['play','pause','bind'].forEach(id=>document.getElementById(id).disabled=false);slider.disabled=false;loaded=true;
+   showFrame(from);
+   status.textContent='Loaded. Scrub the slider to inspect the full walk cycle.';
+ }).catch(err=>{status.textContent='Load failed: '+err.message;console.error(err);});
+ slider.addEventListener('input',()=>showFrame(slider.value));
+ document.getElementById('play').onclick=()=>{if(!loaded)return;group.stop();group.play(true);status.textContent='Walking animation playing. Pause or scrub to inspect a frame.';};
+ document.getElementById('pause').onclick=()=>{if(!loaded)return;group.pause();status.textContent='Walk animation paused at its current frame.';};
+ document.getElementById('bind').onclick=()=>{if(!loaded)return;group.stop();skeleton.returnToRest();status.textContent='Bind/rest pose shown (T-pose reference).';frameLabel.textContent='T-pose';};
+ engine.runRenderLoop(()=>scene.render());addEventListener('resize',()=>engine.resize());
+})();
+</script>
+</body>
+</html>
