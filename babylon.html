@@ -107,6 +107,7 @@ async function setPlayerGender(gender){
     const bb=root.getHierarchyBoundingVectors(true),height=bb.max.y-bb.min.y,scale=height>0?1.8/height:1;
     root.scaling.setAll(scale);root.position.y=-bb.min.y*scale;
     playerVisual=holder;playerGender=gender;
+    window.__accraCharacterLoaded=true;
     playerAnimations.forEach(g=>g.stop());
     const idle=playerAnimations.find(g=>g.name.toLowerCase()==='idle');
     if(idle)idle.start(true);
