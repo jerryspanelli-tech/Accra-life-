@@ -44,25 +44,27 @@
     const sw = (arr, key, cur) => arr.map(c => `<button data-k="${key}" data-v="${c}" style="width:38px;height:38px;border-radius:50%;border:${c === cur ? "3px solid #c9a54a" : "2px solid rgba(255,255,255,.3)"};background:${c};padding:0"></button>`).join("");
     const chips = (arr, key, cur) => arr.map(c => `<button data-k="${key}" data-v="${c}" style="border:0;border-radius:12px;padding:8px 10px;font:700 12px system-ui;background:${c === cur ? "#c9a54a" : "rgba(255,255,255,.12)"};color:${c === cur ? "#17191c" : "#fff"}">${c}</button>`).join("");
 
+    let previewEngine=null,previewScene=null,previewToken=0;
     function drawPreview(cv) {
-      if (!cv) return;
-      const c = cv.getContext("2d"); c.clearRect(0, 0, 200, 260);
-      const g = c.createLinearGradient(0, 0, 0, 260); g.addColorStop(0, "#cfe6f5"); g.addColorStop(1, "#eaf4fb"); c.fillStyle = g; c.fillRect(0, 0, 200, 260);
-      const fem = sel.gender === "female";
-      c.fillStyle = sel.shirtHex; c.fillRect(fem ? 66 : 62, 92, fem ? 68 : 76, 86);
-      c.fillStyle = "#15171c"; c.fillRect(70, 176, 26, 40); c.fillRect(104, 176, 26, 40);
-      c.fillStyle = sel.skinTone; c.fillRect(70, 214, 22, 30); c.fillRect(108, 214, 22, 30);
-      c.fillStyle = "#f4f4f2"; c.fillRect(64, 244, 30, 12); c.fillRect(106, 244, 30, 12);
-      c.fillStyle = sel.shirtHex; c.fillRect(46, 96, 14, 70); c.fillRect(140, 96, 14, 70);
-      c.fillStyle = sel.skinTone; c.beginPath(); c.arc(100, 72, 24, 0, Math.PI * 2); c.fill();
-      c.fillStyle = "#1a1410";
-      if (sel.hairStyle === "dreads") for (let i = -3; i <= 3; i++) c.fillRect(100 + i * 8 - 2, 88, 4, 28);
-      if (sel.hairStyle === "braids") for (let i = -3; i <= 3; i++) c.fillRect(100 + i * 8 - 1, 88, 3, 34);
-      if (sel.hairStyle === "afro") { c.beginPath(); c.arc(100, 58, 36, 0, Math.PI * 2); c.fill(); c.fillStyle = sel.skinTone; c.beginPath(); c.arc(100, 74, 22, 0, Math.PI * 2); c.fill(); }
-      if (sel.hairStyle === "fade") { c.beginPath(); c.arc(100, 68, 25, Math.PI, 0); c.fill(); }
-      if (sel.hatStyle === "cap") { c.fillStyle = "#3a3a44"; c.fillRect(74, 42, 52, 12); c.fillRect(70, 52, 34, 6); }
-      if (sel.hatStyle === "beanie") { c.fillStyle = "#c9d13a"; c.beginPath(); c.arc(100, 52, 28, Math.PI, 0); c.fill(); }
-      if (sel.hatStyle === "hood") { c.fillStyle = sel.shirtHex; c.beginPath(); c.arc(100, 66, 34, Math.PI * 0.9, Math.PI * 2.1); c.fill(); }
+      const token=++previewToken;
+      if(previewEngine){previewEngine.stopRenderLoop();previewEngine.dispose();previewEngine=null;previewScene=null;}
+      if(!cv||!window.BABYLON)return;
+      try{
+        previewEngine=new BABYLON.Engine(cv,false,{adaptToDeviceRatio:true,stencil:false,preserveDrawingBuffer:false});
+        if(/iPhone|iPad|Android/i.test(navigator.userAgent))previewEngine.setHardwareScalingLevel(1.6);
+        previewScene=new BABYLON.Scene(previewEngine);previewScene.clearColor=new BABYLON.Color4(.72,.81,.85,1);
+        const hemi=new BABYLON.HemisphericLight("startHemi",new BABYLON.Vector3(0,1,0),previewScene);hemi.intensity=.9;
+        const sun=new BABYLON.DirectionalLight("startSun",new BABYLON.Vector3(-.4,-1,-.5),previewScene);sun.position.set(3,8,5);sun.intensity=1.1;
+        const camera=new BABYLON.ArcRotateCamera("startCamera",-Math.PI/2,1.2,3.6,new BABYLON.Vector3(0,.9,0),previewScene);
+        camera.lowerRadiusLimit=2.7;camera.upperRadiusLimit=5;camera.lowerBetaLimit=.8;camera.upperBetaLimit=1.45;camera.attachControl(cv,true);
+        BABYLON.SceneLoader.ImportMeshAsync("","People/AccraLife/","AccraLife_"+(sel.gender==="female"?"Female":"Male")+".glb",previewScene).then(res=>{
+          if(token!==previewToken){res.animationGroups.forEach(g=>g.dispose());res.meshes.forEach(m=>m.dispose(false,true));return;}
+          const root=res.meshes[0],bb=root.getHierarchyBoundingVectors(true),h=bb.max.y-bb.min.y,scale=h>0?1.8/h:1;
+          root.scaling.setAll(scale);root.position.y=-bb.min.y*scale;
+          const idle=(res.animationGroups||[]).find(g=>g.name.toLowerCase()==="idle");if(idle)idle.start(true);
+        }).catch(err=>console.error("[accra-start] 3D preview failed:",err));
+        previewEngine.runRenderLoop(()=>{if(previewScene)previewScene.render();});
+      }catch(err){console.error("[accra-start] Preview engine failed:",err);}
     }
 
     function render() {
@@ -71,19 +73,12 @@
           <div style="font:800 22px system-ui;color:#c9a54a;letter-spacing:1px">ACCRA LIFE</div>
           <div style="color:#aaa;font-size:12px">Create your character</div>
         </div>
-        <div style="display:flex;justify-content:center;margin-bottom:10px"><canvas id="sPrev" width="200" height="260" style="width:130px;height:169px;border-radius:14px"></canvas></div>
-        <div style="margin:8px 0 4px;color:#c9a54a;font-weight:700">Gender</div>
+        <div style="display:flex;justify-content:center;margin-bottom:10px"><canvas id="sPrev" width="200" height="260" style="width:180px;height:234px;border-radius:14px;touch-action:pan-y"></canvas></div>
+        <div style="margin:8px 0 4px;color:#c9a54a;font-weight:700">Choose your character</div>
         <div style="display:flex;gap:8px">${btn(sel.gender === "male", "male")}${btn(sel.gender === "female", "female")}</div>
         <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Name</div>
         <input id="sName" maxlength="16" value="${escHtml(sel.name)}" placeholder="Your name" style="width:100%;box-sizing:border-box;border:0;border-radius:12px;padding:11px 12px;font:600 15px system-ui;background:#fff;color:#111">
-        <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Skin tone</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">${sw(SKINS, "skinTone", sel.skinTone)}</div>
-        <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Shirt colour</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">${sw(SHIRTS, "shirtHex", sel.shirtHex)}</div>
-        <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Hairstyle</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${chips(HAIRS, "hairStyle", sel.hairStyle)}</div>
-        <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Hat or hood</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${chips(HATS, "hatStyle", sel.hatStyle)}</div>
+        <div style="color:#aaa;font-size:11px;margin-top:8px">The preview uses the actual in-game 3D character. Clothing, hairstyles and further appearance options will be added to this model system next.</div>
         <button id="sStart" style="margin-top:16px;width:100%;border:0;border-radius:16px;padding:14px;font:800 17px system-ui;background:#c9a54a;color:#17191c">Start Game</button>`;
       drawPreview(document.getElementById("sPrev"));
     }
@@ -94,7 +89,7 @@
       if (b.dataset.k) { sel[b.dataset.k] = b.dataset.v; render(); return; }
       if (b.dataset.v === "male" || b.dataset.v === "female") { sel.gender = b.dataset.v; render(); }
     });
-    card.addEventListener("input", e => { if (e.target.id === "sName") { sel.name = e.target.value.trim(); drawPreview(document.getElementById("sPrev")); } });
+    card.addEventListener("input", e => { if (e.target.id === "sName") { sel.name = e.target.value.trim(); } });
 
     function startGame() {
       const name = (sel.name || "").slice(0, 16) || "Citizen";
@@ -116,6 +111,7 @@
         });
         if (sel.hatStyle === 'hood') console.log('[accra-start] hood not yet supported on the 3D avatar, using no hat');
       }
+      if(previewEngine){previewEngine.stopRenderLoop();previewEngine.dispose();previewEngine=null;previewScene=null;}
       ov.remove();
       setTimeout(() => {
         try {
