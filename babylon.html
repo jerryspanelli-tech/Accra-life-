@@ -101,11 +101,11 @@ async function setPlayerGender(gender){
     if(token!==playerLoadToken){res.animationGroups.forEach(g=>g.dispose());res.meshes.forEach(m=>m.dispose(false,true));return false;}
     if(playerVisual){playerAnimations.forEach(g=>g.dispose());playerVisual.dispose(false,true);}
     playerAnimations=res.animationGroups||[];
+    const root=res.meshes[0];root.rotationQuaternion=null;root.rotation.set(0,0,0);
+    const bb=root.getHierarchyBoundingVectors(true),height=bb.max.y-bb.min.y,scale=height>0?1.8/height:1;
     const holder=new BABYLON.TransformNode('accra_life_player_'+gender,scene);
     holder.parent=player;holder.position.set(0,-.91,0);
-    const root=res.meshes[0];root.parent=holder;root.rotationQuaternion=null;root.rotation.set(0,0,0);
-    const bb=root.getHierarchyBoundingVectors(true),height=bb.max.y-bb.min.y,scale=height>0?1.8/height:1;
-    root.scaling.setAll(scale);root.position.y=-bb.min.y*scale;
+    root.parent=holder;root.scaling.setAll(scale);root.position.y=-bb.min.y*scale;
     playerVisual=holder;playerGender=gender;
     window.__accraCharacterLoaded=true;
     playerAnimations.forEach(g=>g.stop());
