@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Accra Life · Adult Walk Reference Lab</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111820;color:#f3f4f6;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+#renderCanvas{width:100%;height:100%;display:block;touch-action:none;outline:none}
+#panel{position:fixed;left:10px;top:calc(env(safe-area-inset-top) + 10px);width:min(360px,calc(100vw - 20px));max-height:calc(100dvh - 150px);overflow:auto;padding:13px;background:rgba(13,20,29,.92);border:1px solid #536273;border-radius:13px;z-index:4}
+h1{font-size:16px;margin:0 0 6px;color:#ffd166}p{font-size:12px;line-height:1.45;color:#cbd5e1;margin:5px 0 10px}
+.row{display:flex;gap:7px;flex-wrap:wrap;margin:8px 0}.row button{border:1px solid #64748b;border-radius:8px;padding:8px 11px;background:#263445;color:white;font-weight:650;font-size:12px}.row button.active{background:#ffd166;color:#171b20;border-color:#ffd166}
+#status{font-size:12px;color:#fbbf24;margin-top:8px;line-height:1.4}
+#foot{position:fixed;left:10px;right:10px;bottom:calc(env(safe-area-inset-bottom) + 9px);z-index:4;background:rgba(13,20,29,.86);border:1px solid #536273;border-radius:10px;padding:8px 10px;font-size:11px;line-height:1.4;color:#cbd5e1}
+@media(max-height:600px){#panel{max-height:calc(100dvh - 100px);padding:9px}#foot{font-size:10px}}
+</style>
+</head>
+<body>
+<canvas id="renderCanvas"></canvas>
+<section id="panel">
+<h1>Adult walk · reference motion</h1>
+<p>This is a separate reference character and animation, not a change to the Accra Life player. Use it to inspect a natural adult walk from the front, side and rear before we retarget the motion.</p>
+<div class="row" id="cadence">
+<button data-rate="100">100 steps/min</button><button class="active" data-rate="110">110 steps/min</button><button data-rate="120">120 steps/min</button>
+</div>
+<div class="row" id="views">
+<button class="active" data-alpha="1.57">Side</button><button data-alpha="0">Front</button><button data-alpha="3.14">Rear</button>
+</div>
+<div class="row"><button id="pause">Pause</button><button id="restart">Restart</button></div>
+<div id="status">Loading reference model…</div>
+</section>
+<div id="foot">Reference: “Relaxed walk – Sam”, CC0 public-domain asset. The 2-second loop is retimed for the selected cadence. Check for balanced posture, opposite arm/leg swing, heel-to-toe contact and smooth weight transfer. This page does not modify the production game.</div>
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+(()=>{
+const canvas=document.getElementById('renderCanvas'),status=document.getElementById('status');
+const engine=new BABYLON.Engine(canvas,true,{adaptToDeviceRatio:true,preserveDrawingBuffer:false,stencil:true});
+engine.setHardwareScalingLevel(Math.max(1,window.devicePixelRatio>2?1.5:1));
+const scene=new BABYLON.Scene(engine);scene.clearColor=new BABYLON.Color4(.43,.58,.68,1);
+const hemi=new BABYLON.HemisphericLight('hemi',new BABYLON.Vector3(0,1,0),scene);hemi.intensity=.9;
+const sun=new BABYLON.DirectionalLight('sun',new BABYLON.Vector3(-.5,-1,-.35),scene);sun.position.set(10,18,8);sun.intensity=1.1;
+const ground=BABYLON.MeshBuilder.CreateGround('ground',{width:30,height:30},scene);
+const gm=new BABYLON.StandardMaterial('groundMat',scene);gm.diffuseColor=new BABYLON.Color3(.22,.31,.25);ground.material=gm;
+const grid=BABYLON.MeshBuilder.CreateGround('grid',{width:12,height:12,subdivisions:12},scene);grid.position.y=.006;grid.isPickable=false;
+const gridMat=new BABYLON.StandardMaterial('gridMat',scene);gridMat.diffuseColor=new BABYLON.Color3(.3,.4,.34);gridMat.wireframe=true;gridMat.alpha=.28;grid.material=gridMat;
+const target=new BABYLON.TransformNode('target',scene);
+const camera=new BABYLON.ArcRotateCamera('camera',Math.PI/2,1.22,4.4,new BABYLON.Vector3(0,.9,0),scene);
+camera.attachControl(canvas,true);camera.lowerRadiusLimit=2.5;camera.upperRadiusLimit=8;camera.wheelPrecision=50;camera.panningSensibility=0;
+let group=null,loaded=false,paused=false,rate=110;
+const modelUrl='https://files.innerscene.com/library/relaxed-walk-sam-3d-person-animated-732f1206/b11d02f72ad777e03d68/relaxed-walk-sam-3d-person-animated.glb';
+BABYLON.SceneLoader.ImportMeshAsync('', 'https://files.innerscene.com/library/relaxed-walk-sam-3d-person-animated-732f1206/b11d02f72ad777e03d68/','relaxed-walk-sam-3d-person-animated.glb',scene).then(res=>{
+ const root=res.meshes.find(m=>m.name==='__root__')||res.meshes[0];
+ const bounds=root.getHierarchyBoundingVectors(true),height=bounds.max.y-bounds.min.y;
+ if(height>0)root.scaling.setAll(1.75/height);
+ root.position.y=-bounds.min.y*(height>0?1.75/height:1);
+ if(res.animationGroups.length){group=res.animationGroups[0];group.start(true);group.speedRatio=rate/60;}
+ loaded=true;status.textContent='Loaded · '+(res.animationGroups.length||0)+' animation clip(s) · '+rate+' steps/min target';
+}).catch(err=>{console.error(err);status.textContent='Could not load the reference model. Check connection or try again later.';});
+function setRate(v){rate=v;if(group)group.speedRatio=rate/60;document.querySelectorAll('#cadence button').forEach(b=>b.classList.toggle('active',Number(b.dataset.rate)===v));status.textContent=loaded?'Playing · '+rate+' steps/min target':status.textContent;}
+document.querySelectorAll('#cadence button').forEach(b=>b.addEventListener('click',()=>setRate(Number(b.dataset.rate))));
+document.querySelectorAll('#views button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#views button').forEach(x=>x.classList.toggle('active',x===b));camera.alpha=Number(b.dataset.alpha);camera.beta=1.22;}));
+document.getElementById('pause').addEventListener('click',()=>{if(!group)return;if(paused){group.play(true);group.speedRatio=rate/60;document.getElementById('pause').textContent='Pause';}else{group.pause();document.getElementById('pause').textContent='Play';}paused=!paused;});
+document.getElementById('restart').addEventListener('click',()=>{if(group){group.stop();group.start(true);group.speedRatio=rate/60;paused=false;document.getElementById('pause').textContent='Pause';}});
+engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
+})();
+</script>
+</body></html>
