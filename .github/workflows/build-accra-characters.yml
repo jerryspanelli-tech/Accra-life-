@@ -74,13 +74,17 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/People/AccraLife"
           npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-male.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
           npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-female.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-male-suit.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-female-pantsuit.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-male-kente.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
+          npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-female-ankara.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
 
       - name: Validate both GLB files, rigs and animations
         run: |
           python3 - <<'PY'
           import json, pathlib, struct
           root = pathlib.Path("People/AccraLife")
-          for name in ("AccraLife_Male.glb", "AccraLife_Female.glb"):
+          for name in ("AccraLife_Male.glb", "AccraLife_Female.glb", "AccraLife_Male_Suit.glb", "AccraLife_Female_Pantsuit.glb", "AccraLife_Male_Kente.glb", "AccraLife_Female_Ankara.glb"):
               p = root / name
               data = p.read_bytes()
               if len(data) < 20:
@@ -106,7 +110,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add People/AccraLife/AccraLife_Male.glb People/AccraLife/AccraLife_Female.glb
+          git add People/AccraLife/*.glb
           if git diff --cached --quiet; then
             echo "No generated asset changes to commit."
           else
