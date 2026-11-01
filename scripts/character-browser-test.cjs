@@ -2,7 +2,7 @@ const { chromium } = require('playwright');
 
 (async()=>{
   const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
-  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,hasTouch:true,isMobile:true});
   const errors=[];
   page.on('pageerror',e=>errors.push('pageerror: '+e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
@@ -27,16 +27,47 @@ const { chromium } = require('playwright');
     await page.waitForFunction(()=>window.__accraCharacterLoaded===true,null,{timeout:45000});
     await page.waitForSelector('#startScreen button[data-v="female"]',{timeout:30000});
     await page.locator('#startScreen button[data-v="female"]').click();
+    await page.waitForFunction(()=>window.__accraSelectionPreviewLoaded==='female',null,{timeout:45000});
     await page.locator('#sStart').click();
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
+
     await page.keyboard.down('s');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='walk',null,{timeout:10000});
+    const keyboardWalk=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition}));
     await page.keyboard.down('Shift');
     await page.waitForFunction(()=>window.__accraCurrentAnimation==='run',null,{timeout:10000});
     await page.keyboard.up('Shift');await page.keyboard.up('s');
-    const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed'));
-    if(mainErrors.length)throw new Error('Main game browser errors: '+mainErrors.join(' | '));
-    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,mainPageLoaded:true,mainConsoleErrors:mainErrors},null,2));
-  }catch(e){const status=await page.locator('#status').innerText().catch(()=>'(no status element)');const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);console.error(JSON.stringify({error:e.message,status,diagnostics,errors},null,2));process.exitCode=1;}
-  finally{await browser.close();}
+
+    // Exercise the same pointer events used by the phone joystick.
+    const joystick=await page.locator('#joy').boundingBox();
+    await page.evaluate(({x,y})=>{
+      const joy=document.getElementById('joy');
+      joy.setPointerCapture=()=>{};
+      const fire=(type,px,py)=>joy.dispatchEvent(new PointerEvent(type,{bubbles:true,cancelable:true,pointerId:7,pointerType:'touch',clientX:px,clientY:py}));
+      fire('pointerdown',x,y);
+      fire('pointermove',x+15,y);
+    },{x:joystick.x+joystick.width/2,y:joystick.y+joystick.height/2});
+    await page.waitForFunction(()=>window.__accraRunning===false,null,{timeout:5000});
+    await page.waitForFunction(()=>window.__accraCurrentAnimation==='walk',null,{timeout:10000});
+    const joystickWalk=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning}));
+    await page.evaluate(({x,y})=>{
+      const joy=document.getElementById('joy');
+      joy.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,cancelable:true,pointerId:7,pointerType:'touch',clientX:x+42,clientY:y}));
+    },{x:joystick.x+joystick.width/2,y:joystick.y+joystick.height/2});
+    await page.waitForFunction(()=>window.__accraRunning===true,null,{timeout:5000});
+    await page.waitForFunction(()=>window.__accraCurrentAnimation==='run',null,{timeout:10000});
+    const joystickRun=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning}));
+    await page.evaluate(({x,y})=>{
+      const joy=document.getElementById('joy');
+      joy.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:7,pointerType:'touch',clientX:x,clientY:y}));
+    },{x:joystick.x+joystick.width/2,y:joystick.y+joystick.height/2});
+
+    const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed')||x.includes('[accra-start] 3D preview failed'));
+    if(mainErrors.length)throw new Error('Main game character errors: '+mainErrors.join(' | '));
+    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
+  }catch(e){
+    const status=await page.locator('#status').innerText().catch(()=>'(no status element)');
+    const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);
+    console.error(JSON.stringify({error:e.message,status,diagnostics,errors},null,2));process.exitCode=1;
+  }finally{await browser.close();}
 })();
