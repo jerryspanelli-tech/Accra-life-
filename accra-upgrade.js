@@ -50,14 +50,15 @@
     const price = (k, v) => Array.isArray(PR[k]) ? PR[k][v] : PR[k];
     const owned = Object.assign({ hcol: [0], top: [3], pants: [0], skin: [0, 1, 2, 3, 4, 5, 6, 7], shoe: [0] }, ls("accra-owned", {}));
     const has = (k, v) => owned[k].includes(v);
-    const markOwned = L => { OPT.forEach(o => { if (!has(o[1], L[o[1]])) owned[o[1]].push(L[o[1]]); }); sv("accra-owned", owned); };
+    const optionsFor = L => OPT.filter(o => o[1] !== "hcol" || L.gender === "female");
+    const markOwned = L => { optionsFor(L).forEach(o => { if (!has(o[1], L[o[1]])) owned[o[1]].push(L[o[1]]); }); sv("accra-owned", owned); };
     function styler(mode) {
       const av = window.ACCRA_AVATAR; if (!av) return note("Character not ready yet");
       const L = av.look, backup = JSON.stringify(L);
-      const cost = () => OPT.reduce((s, o) => s + (has(o[1], L[o[1]]) ? 0 : price(o[1], L[o[1]])), 0);
+      const cost = () => optionsFor(L).reduce((s, o) => s + (has(o[1], L[o[1]]) ? 0 : price(o[1], L[o[1]])), 0);
       const click = d => {
         if (d.i !== undefined) {
-          const o = OPT[+d.i], k = o[1]; let v = L[k], c = 0;
+          const o = optionsFor(L)[+d.i]; if (!o) return; const k = o[1]; let v = L[k], c = 0;
           do { v = (v + 1) % o[2]; c++; } while (mode === "wardrobe" && !has(k, v) && c < o[2]);
           L[k] = v; av.apply(); draw();
         } else if (d.buy) {
@@ -69,7 +70,7 @@
       const draw = () => {
         const c = cost(), shop = mode === "shop";
         show(ttl(shop ? "Fitting room" : mode === "first" ? "Create your character" : mode === "edit" ? "Edit look" : "Your wardrobe") +
-          OPT.map((o, i) => '<button data-i="' + i + '" style="' + BS + '">' + o[0] + " \u00B7 " + (o[3] ? o[3][L[o[1]]] : (L[o[1]] + 1) + " / " + o[2]) +
+          optionsFor(L).map((o, i) => '<button data-i="' + i + '" style="' + BS + '">' + o[0] + " \u00B7 " + (o[3] ? o[3][L[o[1]]] : (L[o[1]] + 1) + " / " + o[2]) +
             (shop ? (has(o[1], L[o[1]]) ? " \u00B7 owned" : " \u00B7 GH\u00A2" + price(o[1], L[o[1]])) : "") + "</button>").join("") +
           (shop ? '<button data-buy="1" style="' + GOLD + '">' + (c ? "Buy & wear \u00B7 GH\u00A2" + c : "Wear") + '</button><button data-x="1" style="' + BS + ';text-align:center">Cancel</button>'
                 : '<button data-done="1" style="' + GOLD + '">Done</button>'), click);
