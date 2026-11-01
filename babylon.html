@@ -24,7 +24,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:n
 window.__useCesiumPlayer=true;
 const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z),C3=h=>BABYLON.Color3.FromHexString(h);
 const engine=new BABYLON.Engine($('c'),true,{adaptToDeviceRatio:true});
-if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.5);
+if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.0);
 const scene=new BABYLON.Scene(engine);
 scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);scene.collisionsEnabled=true;
 const ipc=scene.imageProcessingConfiguration;ipc.toneMappingEnabled=true;ipc.toneMappingType=BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;ipc.exposure=1.05;ipc.contrast=1.15;
