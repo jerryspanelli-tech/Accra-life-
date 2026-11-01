@@ -69,7 +69,7 @@ jobs:
           PY
 
       - name: Export male and female low-detail game-rig GLBs
-        working-directory: ${{ runner.temp }}/ara3dgen
+        working-directory: ara3dgen
         run: |
           mkdir -p "$GITHUB_WORKSPACE/People/AccraLife"
           npm run export -- --params "$GITHUB_WORKSPACE/character-pipeline/accra-player-male.params.json" --formats glb --detail low --out "$GITHUB_WORKSPACE/People/AccraLife"
