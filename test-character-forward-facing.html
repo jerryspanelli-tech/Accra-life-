@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Accra Life · Character Forward-Facing Test</title>
+<style>
+html,body{margin:0;height:100%;overflow:hidden;background:#8cc3df;touch-action:none;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#fff;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+#c{position:fixed;inset:0;width:100%;height:100%;outline:none;touch-action:none}
+.pill{position:fixed;top:calc(env(safe-area-inset-top,0px) + 8px);left:8px;background:rgba(20,24,30,.88);border:1px solid #3c4856;border-radius:14px;padding:7px 14px;font:700 13px system-ui;color:#e6b84a;z-index:10;backdrop-filter:blur(6px)}
+#modeToggle{left:auto;right:8px;background:#e6b84a;color:#14181e;border:0;cursor:pointer}
+#infoPanel{position:fixed;left:10px;top:calc(env(safe-area-inset-top,0px) + 48px);max-width:390px;background:rgba(18,24,32,.92);border:1px solid #485666;border-radius:12px;padding:12px 14px;font-size:12px;line-height:1.45;color:#e2e8f0;z-index:10;backdrop-filter:blur(6px)}
+#infoPanel h3{margin:0 0 6px;color:#ffd166;font-size:14px}
+.badge{display:inline-block;padding:2px 6px;border-radius:4px;font-weight:700;font-size:11px;margin-bottom:6px}
+.badge-improved{background:#2e7d32;color:#fff}
+.badge-original{background:#c62828;color:#fff}
+.stat-row{display:flex;justify-content:space-between;margin:3px 0;color:#94a3b8}
+.stat-val{color:#ffd166;font-weight:600;font-variant-numeric:tabular-nums}
+.controls-hint{margin-top:8px;padding-top:6px;border-top:1px solid #334155;color:#94a3b8;font-size:11px}
+#camPresets{margin-top:8px;display:flex;gap:4px}
+.btn-sm{padding:4px 8px;border:0;border-radius:6px;background:#334155;color:#fff;font-size:11px;cursor:pointer}
+.btn-sm.active{background:#e6b84a;color:#14181e;font-weight:700}
+#joy{position:fixed;left:calc(env(safe-area-inset-left,0px) + 18px);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);width:130px;height:130px;border-radius:50%;background:rgba(20,24,30,.4);border:2px solid rgba(255,255,255,.45);touch-action:none;z-index:10}
+#knob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;border-radius:50%;background:rgba(230,184,74,.92);pointer-events:none}
+.pb{position:fixed;width:60px;height:60px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(20,24,30,.55);color:#fff;font-size:22px;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);touch-action:none;z-index:10;cursor:pointer}
+#sprintBtn{right:calc(env(safe-area-inset-right,0px) + 84px);background:rgba(230,184,74,.85);color:#14181e;font-size:12px;font-weight:700}
+#jumpBtn{right:calc(env(safe-area-inset-right,0px) + 18px)}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="pill">Accra Life · Forward-Facing A/B Test</div>
+<button id="modeToggle" class="pill" title="Toggle between original and improved walking">Mode: IMPROVED</button>
+
+<div id="infoPanel">
+  <div style="display:flex;align-items:center;justify-content:space-between">
+    <h3 style="margin:0">Locomotion Diagnostics</h3>
+    <span id="modeBadge" class="badge badge-improved">IMPROVED</span>
+  </div>
+  <div class="stat-row"><span>Ground Speed:</span><span id="statSpeed" class="stat-val">0.00 m/s</span></div>
+  <div class="stat-row"><span>Animation Rate:</span><span id="statAnimSpeed" class="stat-val">0.00x</span></div>
+  <div class="stat-row"><span>Stride Sync Ratio:</span><span id="statSync" class="stat-val">Stationary</span></div>
+  <div class="stat-row"><span>Slip Telemetry:</span><span id="statSlip" class="stat-val">0.00 m/s</span></div>
+  <div class="stat-row"><span>Arm Tuck Offset:</span><span id="statArms" class="stat-val">-33° (Natural)</span></div>
+  <div class="stat-row"><span>Torso Forward Lean:</span><span id="statLean" class="stat-val">0.0°</span></div>
+  <div class="stat-row"><span>Grounded Foot:</span><span id="statFoot" class="stat-val">Both (Stand)</span></div>
+
+  <div id="camPresets">
+    <button class="btn-sm active" data-alpha="1.57" data-beta="1.2" data-rad="5.0">Behind</button>
+    <button class="btn-sm" data-alpha="0.0" data-beta="1.3" data-rad="4.2">Right Side</button>
+    <button class="btn-sm" data-alpha="3.14" data-beta="1.3" data-rad="4.2">Left Side</button>
+    <button class="btn-sm" data-alpha="-1.57" data-beta="1.25" data-rad="4.5">Front</button>
+  </div>
+  <div class="controls-hint">
+    WASD / Arrows / Joystick to walk. Shift or RUN button to sprint. Space or ⬆ to jump. Click 'Mode' or press 'T' to toggle Original vs Improved walking. Drag to orbit camera.
+  </div>
+</div>
+
+<div id="joy"><div id="knob"></div></div>
+<button id="sprintBtn" class="pb" aria-label="Run">RUN</button>
+<button id="jumpBtn" class="pb" aria-label="Jump">⬆</button>
+
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z),C3=h=>BABYLON.Color3.FromHexString(h);
+const canvas=$('c');
+const engine=new BABYLON.Engine(canvas,true,{adaptToDeviceRatio:true});
+const scene=new BABYLON.Scene(engine);
+scene.clearColor=new BABYLON.Color4(.48,.68,.85,1);
+scene.collisionsEnabled=true;
+
+// Lighting setup
+const hemi=new BABYLON.HemisphericLight('h',V(0,1,0),scene);hemi.intensity=.85;hemi.groundColor=new BABYLON.Color3(.3,.3,.3);
+const sun=new BABYLON.DirectionalLight('s',V(-.5,-1,-.4),scene);sun.intensity=1.2;sun.position=V(40,80,32);
+
+// Textured tiled ground with measuring grid lines every 1m for stride inspection
+const ground=BABYLON.MeshBuilder.CreateGround('g',{width:200,height:200,subdivisions:100},scene);
+const gMat=new BABYLON.StandardMaterial('gm',scene);
+gMat.diffuseColor=C3('#4a6e38');
+gMat.specularColor=new BABYLON.Color3(.05,.05,.05);
+// Dynamic texture for grid lines
+const dtGround=new BABYLON.DynamicTexture('gridTexture',{width:512,height:512},scene,false);
+const ctx=dtGround.getContext();
+ctx.fillStyle='#4c703b';ctx.fillRect(0,0,512,512);
+ctx.strokeStyle='rgba(255,255,255,0.2)';ctx.lineWidth=2;
+ctx.beginPath();
+for(let i=0;i<=512;i+=64){ctx.moveTo(i,0);ctx.lineTo(i,512);ctx.moveTo(0,i);ctx.lineTo(512,i);}
+ctx.stroke();
+ctx.strokeStyle='rgba(255,209,102,0.4)';ctx.lineWidth=4;
+ctx.strokeRect(0,0,512,512);
+dtGround.update();
+dtGround.uScale=25;dtGround.vScale=25;
+gMat.diffuseTexture=dtGround;
+ground.material=gMat;ground.checkCollisions=true;
+
+// Player collision capsule proxy
+const player=BABYLON.MeshBuilder.CreateCapsule('p',{height:1.8,radius:.38},scene);
+player.position.set(0,.91,0);player.isVisible=false;player.ellipsoid=V(.38,.9,.38);
+window.player=player;
+
+// Camera
+const camT=new BABYLON.TransformNode('ct',scene);
+const cam=new BABYLON.ArcRotateCamera('cam',Math.PI/2,1.2,5.0,V(0,0,0),scene);
+cam.lockedTarget=camT;cam.attachControl(canvas,true);
+cam.lowerRadiusLimit=1.8;cam.upperRadiusLimit=14;cam.wheelPrecision=40;
+
+// Camera preset buttons
+document.querySelectorAll('#camPresets .btn-sm').forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll('#camPresets .btn-sm').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    cam.alpha=parseFloat(btn.dataset.alpha);
+    cam.beta=parseFloat(btn.dataset.beta);
+    cam.radius=parseFloat(btn.dataset.rad);
+  };
+});
+
+// Mode state: 'improved' or 'original'
+let walkMode='improved';
+function setWalkMode(mode){
+  walkMode=mode;
+  if(mode==='improved') poseNeedsCorrection=true;
+  if(mode==='improved'){
+    $('modeToggle').textContent='Mode: IMPROVED';
+    $('modeBadge').textContent='IMPROVED';
+    $('modeBadge').className='badge badge-improved';
+    $('statArms').textContent='-33° (Natural)';
+  }else{
+    $('modeToggle').textContent='Mode: ORIGINAL';
+    $('modeBadge').textContent='ORIGINAL';
+    $('modeBadge').className='badge badge-original';
+    $('statArms').textContent='0° (T-flare)';
+    $('statLean').textContent='0.0°';
+  }
+}
+$('modeToggle').onclick=()=>{
+  setWalkMode(walkMode==='improved'?'original':'improved');
+};
+window.addEventListener('keydown',e=>{
+  if(e.key.toLowerCase()==='t') setWalkMode(walkMode==='improved'?'original':'improved');
+});
+
+// Character and skeleton transform references
+let cesiumNode=null, animGroup=null, skeleton=null;
+let armL=null, armR=null, elbowL=null, elbowR=null, spine=null, neck=null, footL=null, footR=null;
+// A paused animation is not guaranteed to reset joint rotations each frame.
+// Apply the idle correction only after the final rest frame is selected.
+let poseNeedsCorrection=true;
+
+// Postural correction quaternions for natural walking
+// In CesiumMan.glb, arms flare outward by ~35-40 deg.
+// Rotating around local Z brings arms down naturally along torso.
+const qArmL_Tuck=BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(0,0,1),0.58);
+const qArmR_Tuck=BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(0,0,1),-0.58);
+const qElbowL=BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(0,1,0),-0.12);
+const qElbowR=BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(0,1,0),0.12);
+
+// Load CesiumMan model
+BABYLON.SceneLoader.ImportMeshAsync('','People/CesiumMan/','CesiumMan.glb',scene).then(res=>{
+  cesiumNode=new BABYLON.TransformNode('cesium_player',scene);
+  cesiumNode.parent=player;
+  cesiumNode.position.set(0,-.91,0);
+
+  const root=res.meshes[0];
+  root.parent=cesiumNode;
+  root.rotationQuaternion=null;
+  root.rotation.y=0; // A/B test: remove the extra 180-degree model rotation
+
+  const bb=root.getHierarchyBoundingVectors(true);
+  const h=bb.max.y-bb.min.y;
+  if(h>0) root.scaling.setAll(1.8/h);
+
+  skeleton=res.skeletons[0]||null;
+  if(res.animationGroups.length>0){
+    animGroup=res.animationGroups[0];
+    animGroup.pause();
+    animGroup.goToFrame(12);
+  }
+
+  // Cache key transform nodes
+  armL=scene.getTransformNodeByName('Skeleton_arm_joint_L__4_');
+  armR=scene.getTransformNodeByName('Skeleton_arm_joint_R');
+  elbowL=scene.getTransformNodeByName('Skeleton_arm_joint_L__3_');
+  elbowR=scene.getTransformNodeByName('Skeleton_arm_joint_R__2_');
+  spine=scene.getTransformNodeByName('Skeleton_torso_joint_2');
+  neck=scene.getTransformNodeByName('Skeleton_neck_joint_1');
+  footL=scene.getTransformNodeByName('leg_joint_L_3');
+  footR=scene.getTransformNodeByName('leg_joint_R_3');
+
+  window.__cesiumReady=true;
+  console.log('[FacingTest] CesiumMan loaded with zero model yaw offset');
+}).catch(e=>console.error('[WalkingTest] Load failed:',e));
+
+// Movement input tracking
+let jx=0,jy=0,jid=null,vy=0,jump=0,sprint=false;
+const joy=$('joy'),kn=$('knob');
+function jm(e){
+  const r=joy.getBoundingClientRect(),R=r.width/2,m=R*.62;
+  let dx=e.clientX-(r.left+R),dy=e.clientY-(r.top+R);
+  const l=Math.hypot(dx,dy);
+  if(l>m){dx*=m/l;dy*=m/l;}
+  kn.style.transform='translate('+dx+'px,'+dy+'px)';
+  jx=dx/m;jy=dy/m;
+}
+joy.addEventListener('pointerdown',e=>{e.preventDefault();jid=e.pointerId;joy.setPointerCapture(e.pointerId);jm(e);});
+joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e);});
+const jend=e=>{if(e.pointerId!==jid)return;jid=null;jx=jy=0;kn.style.transform='translate(0,0)';};
+joy.addEventListener('pointerup',jend);joy.addEventListener('pointercancel',jend);
+
+$('jumpBtn').addEventListener('pointerdown',e=>{e.preventDefault();jump=1;});
+$('sprintBtn').addEventListener('pointerdown',e=>{
+  e.preventDefault();
+  sprint=!sprint;
+  $('sprintBtn').style.background=sprint?'#2e7d32':'rgba(230,184,74,.85)';
+  $('sprintBtn').style.color=sprint?'#fff':'#14181e';
+});
+
+const K={};
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();K[k]=1;
+  if(e.key===' ')jump=1;
+  if(e.key==='Shift')sprint=true;
+});
+addEventListener('keyup',e=>{
+  const k=e.key.toLowerCase();K[k]=0;
+  if(e.key==='Shift')sprint=false;
+});
+
+// Locomotion update loop
+let lpx=player.position.x,lpz=player.position.z,smv=0;
+let isStopping=false; // retained for diagnostics; idle selection is now a one-shot operation
+let prevFootLPos=null, prevFootRPos=null, measuredFootSlip=0;
+
+function getCurrentAnimFrame(){
+  if(!animGroup||!animGroup.targetedAnimations.length) return 12;
+  const tAnim=animGroup.targetedAnimations[0];
+  if(tAnim&&tAnim.animation&&tAnim.animation.runtimeAnimations.length){
+    return tAnim.animation.runtimeAnimations[0].currentFrame;
+  }
+  return 12;
+}
+
+function update(dt){
+  if(!dt||dt<=0)dt=0.016;
+  const ix=jx+(K.d?1:0)-(K.a?1:0),iy=jy+(K.s?1:0)-(K.w?1:0);
+  const f=V(-Math.cos(cam.alpha),0,-Math.sin(cam.alpha)),r=V(f.z,0,-f.x);
+  const mv=f.scale(-iy).add(r.scale(ix));
+
+  // Speed settings: Normal walk ~2.2 m/s, sprint ~4.8 m/s
+  const baseSpeed=sprint?4.8:2.4;
+  const rawInputLen=mv.length();
+  const inputMagnitude=Math.min(1,rawInputLen);
+  const sp=inputMagnitude*baseSpeed;
+  if(rawInputLen>.05) mv.normalize();
+
+  if(jump&&player.position.y<=.93){vy=6.5;}
+  jump=0;
+  vy-=22*dt;
+  player.moveWithCollisions(V(mv.x*sp*dt,vy*dt,mv.z*sp*dt));
+  if(player.position.y<=.91){player.position.y=.91;if(vy<0)vy=0;}
+
+  // Character rotation towards movement heading
+  if(inputMagnitude>.15){
+    const targetRot=Math.atan2(mv.x,mv.z);
+    let diff=targetRot-player.rotation.y;
+    while(diff<-Math.PI)diff+=Math.PI*2;
+    while(diff>Math.PI)diff-=Math.PI*2;
+    player.rotation.y+=diff*Math.min(1,dt*14);
+  }
+
+  // Filtered actual ground speed
+  const dist=Math.hypot(player.position.x-lpx,player.position.z-lpz)/dt;
+  lpx=player.position.x;lpz=player.position.z;
+  smv+=(Math.min(dist,9)-smv)*Math.min(1,dt*10);
+  if(isNaN(smv)) smv=0;
+
+  // Stride speed synchronization & stopping
+  if(animGroup){
+    if(walkMode==='improved'){
+      // --- IMPROVED WALKING SYNCHRONIZATION ---
+      // In CesiumMan.glb, full 2-step stride cycle = 1.40m over 120 frames (2.0s at 1.0x).
+      // Stride velocity at speedRatio 1.0 is ~0.70 m/s.
+      // Therefore, ideal speedRatio = smv / 1.45 eliminates backward foot slip.
+      if(smv>.12){
+        isStopping=false;
+        if(!animGroup.isPlaying) animGroup.play(true);
+        const targetSpeedRatio=Math.min(Math.max(smv/1.45,.45),2.4);
+        animGroup.speedRatio=targetSpeedRatio;
+      }else{
+        // Freeze at one deterministic rest frame exactly once.
+        // Repeated goToFrame() calls while paused were re-evaluating the pose
+        // while the post-animation correction also changed the same joints.
+        // That made the hands appear to rotate/roll while the character stood.
+        if(animGroup.isPlaying){
+          animGroup.pause();
+          animGroup.goToFrame(12);
+          poseNeedsCorrection=true;
+        }
+        isStopping=false;
+      }
+    }else{
+      // --- ORIGINAL UNMODIFIED WALKING ---
+      isStopping=false;
+      if(smv>.15){
+        if(!animGroup.isPlaying) animGroup.play(true);
+        animGroup.speedRatio=Math.min(Math.max(smv/2.5,.6),2.2);
+      }else{
+        if(animGroup.isPlaying) animGroup.pause();
+      }
+    }
+  }
+
+  // Camera tracking
+  camT.position.set(player.position.x,player.position.y+.7,player.position.z);
+
+  // Measure empirical foot slip (motion of planted foot along ground in world space)
+  if(footL&&footR){
+    const posL=footL.getAbsolutePosition();
+    const posR=footR.getAbsolutePosition();
+    const isLPlanted=posL.y<=0.14;
+    const isRPlanted=posR.y<=0.14;
+    if(prevFootLPos&&prevFootRPos&&smv>.2){
+      let plantedSlip=0;
+      if(isLPlanted&&!isRPlanted){
+        plantedSlip=Math.hypot(posL.x-prevFootLPos.x,posL.z-prevFootLPos.z)/dt;
+      }else if(isRPlanted&&!isLPlanted){
+        plantedSlip=Math.hypot(posR.x-prevFootRPos.x,posR.z-prevFootRPos.z)/dt;
+      }
+      measuredFootSlip+=(plantedSlip-measuredFootSlip)*Math.min(1,dt*6);
+    }
+    prevFootLPos=posL.clone();
+    prevFootRPos=posR.clone();
+  }
+
+  // Diagnostics panel update
+  $('statSpeed').textContent=smv.toFixed(2)+' m/s';
+  $('statAnimSpeed').textContent=(animGroup?(animGroup.isPlaying?animGroup.speedRatio.toFixed(2):'0.00'):'0.00')+'x';
+  if(walkMode==='improved'){
+    $('statSync').textContent=smv>.12?(Math.abs(smv-(animGroup?animGroup.speedRatio*1.45:0))<.45?'Synchronized':'Calibrated'):'Stationary';
+    $('statLean').textContent=(Math.min(smv*0.024,0.11)*(180/Math.PI)).toFixed(1)+'°';
+    $('statSlip').textContent=smv>.2?(measuredFootSlip.toFixed(2)+' m/s (Low)'):'0.00 m/s';
+  }else{
+    $('statSync').textContent=smv>.15?'Uncalibrated (Slip)':'Stationary';
+    $('statSlip').textContent=smv>.2?'0.85+ m/s (High)':'0.00 m/s';
+  }
+  if(footL&&footR){
+    const fly=footL.getAbsolutePosition().y, fry=footR.getAbsolutePosition().y;
+    if(smv<.12) $('statFoot').textContent='Both (Rest)';
+    else if(fly<.15&&fry<.15) $('statFoot').textContent='Double Support';
+    else if(fly<fry) $('statFoot').textContent='Left Planted';
+    else $('statFoot').textContent='Right Planted';
+  }
+}
+
+// Procedural posture correction runs after animation evaluation.
+// During walking, the animation supplies a fresh pose each frame. When movement
+// stops, the controller selects frame 12 once and freezes it; the correction is
+// then applied once to that frozen pose. No paused-frame stepping or repeated
+// quaternion multiplication is allowed while idle.
+scene.onAfterAnimationsObservable.add(()=>{
+  if(walkMode!=='improved'||!window.__cesiumReady) return;
+  const animationIsDrivingPose=!!(animGroup&&animGroup.isPlaying);
+  if(!animationIsDrivingPose&&!poseNeedsCorrection) return;
+
+  // 1. Arm posture: tuck flaring arms down beside torso
+  if(armL&&armL.rotationQuaternion) armL.rotationQuaternion.multiplyToRef(qArmL_Tuck,armL.rotationQuaternion);
+  if(armR&&armR.rotationQuaternion) armR.rotationQuaternion.multiplyToRef(qArmR_Tuck,armR.rotationQuaternion);
+  if(elbowL&&elbowL.rotationQuaternion) elbowL.rotationQuaternion.multiplyToRef(qElbowL,elbowL.rotationQuaternion);
+  if(elbowR&&elbowR.rotationQuaternion) elbowR.rotationQuaternion.multiplyToRef(qElbowR,elbowR.rotationQuaternion);
+
+  // 2. Torso & spine balance: natural forward lean proportional to ground speed
+  const leanAngle=Math.min(smv*0.024,0.11); // up to ~6.3 degrees
+  if(leanAngle>0.005){
+    const qLean=BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(1,0,0),leanAngle);
+    const qHeadUp=BABYLON.Quaternion.RotationAxis(new BABYLON.Vector3(1,0,0),-leanAngle*0.8);
+    if(spine&&spine.rotationQuaternion) spine.rotationQuaternion.multiplyToRef(qLean,spine.rotationQuaternion);
+    if(neck&&neck.rotationQuaternion) neck.rotationQuaternion.multiplyToRef(qHeadUp,neck.rotationQuaternion);
+  }
+
+  // A paused pose now holds its corrected rotations without multiplying them again.
+  if(!animationIsDrivingPose) poseNeedsCorrection=false;
+});
+
+engine.runRenderLoop(()=>{
+  update(Math.min(engine.getDeltaTime()/1000,.05));
+  scene.render();
+});
+addEventListener('resize',()=>engine.resize());
+})();
+</script>
+</body>
+</html>
