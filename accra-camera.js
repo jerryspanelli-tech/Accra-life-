@@ -1,51 +1,102 @@
-/* accra-camera.js - a GTA-style chase camera.
- * The camera sits behind the player or the car, turns to follow the direction of travel, and pulls back a little
- * when driving. A finger drag on the screen takes control for a moment, then the camera returns behind you.
- * It uses the camera (cam), player, car, heading, spd and driving from babylon.html. */
+/* Accra Life — GTA-style third-person follow camera.
+ * Smooth over-the-shoulder chase view, free player-controlled orbit, then a gentle return behind the player.
+ * Uses cam, camT, player, car, heading, spd and driving from babylon.html.
+ */
 (function () {
+  "use strict";
   try {
-    const WALK_RADIUS = 7.5, DRIVE_RADIUS = 11, BETA = 1.15;
-    const TURN = .07, PULL = .08;               // how quickly the camera turns and pulls back
-    const DRAG_HOLD_MS = 1500;                  // after a drag, wait this long before the camera returns
-    let lastTouch = 0, lastPos = null, speed = 0;
-
     const canvas = document.getElementById("c");
-    const touched = () => { lastTouch = performance.now(); };
-    canvas.addEventListener("pointerdown", touched);
-    canvas.addEventListener("pointermove", e => { if (e.buttons) touched(); });
+    const DEFAULT_WALK_DISTANCE = 8.5;
+    const DRIVE_MULTIPLIER = 1.38;
+    const FOLLOW_SPEED = 5.5;
+    const RETURN_DELAY_MS = 2200;
+    const LOOK_HEIGHT = 1.15;
+    const DEFAULT_BETA = 1.12;
+    let walkDistance = DEFAULT_WALK_DISTANCE;
+    let lastPointerAt = -Infinity;
+    let lastPos = null;
+    let measuredSpeed = 0;
+    let dragging = false;
 
-    const wrap = a => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
+    const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
+    const wrap = a => {
+      while (a > Math.PI) a -= Math.PI * 2;
+      while (a < -Math.PI) a += Math.PI * 2;
+      return a;
+    };
+    const markLook = () => { lastPointerAt = performance.now(); };
+    canvas.addEventListener("pointerdown", e => {
+      dragging = true;
+      markLook();
+    });
+    window.addEventListener("pointerup", () => { dragging = false; });
+    window.addEventListener("pointercancel", () => { dragging = false; });
+    canvas.addEventListener("pointermove", e => {
+      if (dragging || e.buttons) markLook();
+    });
+    canvas.addEventListener("wheel", markLook, { passive: true });
+
+    // Start behind the player's forward direction, rather than at a side-on simulator angle.
+    const initialYaw = player.rotation.y || 0;
+    cam.alpha = Math.atan2(-Math.cos(initialYaw), -Math.sin(initialYaw));
+    cam.beta = DEFAULT_BETA;
+    cam.radius = walkDistance;
+    cam.lowerRadiusLimit = 4;
+    cam.upperRadiusLimit = 22;
+    cam.lowerBetaLimit = 0.55;
+    cam.upperBetaLimit = 1.42;
+    cam.panningSensibility = 0;
+    cam.inertia = 0.82;
+    cam.angularSensibility = 850;
+    cam.wheelPrecision = 45;
+    camT.position.copyFrom(player.position);
+    camT.position.y += LOOK_HEIGHT;
+
+    function setDistance(value) {
+      walkDistance = clamp(Number(value) || DEFAULT_WALK_DISTANCE, 5, 14);
+      cam.upperRadiusLimit = 22;
+    }
 
     scene.onBeforeRenderObservable.add(() => {
-      const dt = Math.min(engine.getDeltaTime() / 1000, .05);
+      const dt = Math.min(engine.getDeltaTime() / 1000, 0.05);
       const now = performance.now();
-
-      // how fast the player is moving (used to decide when to turn the camera)
-      const pos = driving ? car.position : player.position;
-      if (lastPos) speed = Math.hypot(pos.x - lastPos.x, pos.z - lastPos.z) / Math.max(dt, .001);
-      lastPos = pos.clone();
-
-      // the direction the character or car is facing
+      const focus = driving ? car.position : player.position;
       const yaw = driving ? heading : player.rotation.y;
-      const fx = Math.sin(yaw), fz = Math.cos(yaw);
+      const targetAlpha = Math.atan2(-Math.cos(yaw), -Math.sin(yaw));
+      const targetRadius = driving ? walkDistance * DRIVE_MULTIPLIER : walkDistance;
 
-      // the camera sits behind the direction of travel: its offset points back along the facing direction
-      const wantAlpha = Math.atan2(-fz, -fx);
-      const wantRadius = driving ? DRIVE_RADIUS : WALK_RADIUS;
-
-      // give way to a finger drag for a moment, so the player can look around
-      if (now - lastTouch < DRAG_HOLD_MS) { cam.radius += (wantRadius - cam.radius) * PULL * .3; return; }
-
-      // only turn the camera to follow movement, so it does not spin while standing still
-      if (speed > .5 || (driving && Math.abs(spd) > .5)) {
-        cam.alpha += wrap(wantAlpha - cam.alpha) * TURN;
+      if (lastPos) {
+        measuredSpeed = Math.hypot(focus.x - lastPos.x, focus.z - lastPos.z) / Math.max(dt, 0.001);
       }
-      cam.beta += (BETA - cam.beta) * TURN;
-      cam.radius += (wantRadius - cam.radius) * PULL;
+      lastPos = focus.clone();
+
+      // Keep the GTA chase camera orbitable. After the player stops looking, ease behind the character.
+      const playerIsLooking = dragging || now - lastPointerAt < RETURN_DELAY_MS;
+      const blend = 1 - Math.exp(-FOLLOW_SPEED * dt);
+      if (!playerIsLooking && (measuredSpeed > 0.12 || (driving && Math.abs(spd) > 0.12))) {
+        cam.alpha += wrap(targetAlpha - cam.alpha) * blend;
+      }
+      if (!playerIsLooking) {
+        cam.beta += (DEFAULT_BETA - cam.beta) * blend;
+      }
+      cam.radius += (targetRadius - cam.radius) * (1 - Math.exp(-3.2 * dt));
+      camT.position.set(focus.x, focus.y + (driving ? 1.15 : LOOK_HEIGHT), focus.z);
     });
 
-    window.ACCRA_CAMERA = { walkRadius: WALK_RADIUS, driveRadius: DRIVE_RADIUS };
-    (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).camera = 1;
-    console.log("Chase camera ready");
-  } catch (err) { console.error("accra-camera failed:", err); }
+    window.ACCRA_CAMERA = {
+      style: "gta-third-person",
+      walkRadius: walkDistance,
+      driveRadius: walkDistance * DRIVE_MULTIPLIER,
+      setDistance(value) {
+        setDistance(value);
+        this.walkRadius = walkDistance;
+        this.driveRadius = walkDistance * DRIVE_MULTIPLIER;
+      }
+    };
+    window.ACCRA_MODULES = window.ACCRA_MODULES || {};
+    window.ACCRA_MODULES.camera = 2;
+    console.log("[Accra Life] GTA third-person camera ready");
+  } catch (err) {
+    console.error("[Accra Life] GTA camera failed:", err);
+  }
 })();
