@@ -78,7 +78,7 @@
       const desiredRoot=new BABYLON.Vector3(target.x,target.y+(driving?1.2:1.12),target.z);
       if(!initialized){followRoot.position.copyFrom(desiredRoot);followRoot.rotation.y=desiredYaw;initialized=true;}
       else{
-        followRoot.position=BABYLON.Vector3.Lerp(followRoot.position,desiredRoot,1-Math.exp(9.0*dt));
+        followRoot.position=BABYLON.Vector3.Lerp(followRoot.position,desiredRoot,1-Math.exp(-9.0*dt));
         followRoot.rotation.y+=wrap(desiredYaw-followRoot.rotation.y)*yawBlend;
       }
 
