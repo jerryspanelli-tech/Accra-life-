@@ -24,6 +24,15 @@
     const pitchPivot=new BABYLON.TransformNode("accra-camera-pitch-pivot",scene);
     pitchPivot.parent=followRoot;
     cam.parent=pitchPivot;
+    // Compatibility: legacy game systems expect ArcRotateCamera's
+    // getAbsolutePosition() method. Provide it for this UniversalCamera rig.
+    if(typeof cam.getAbsolutePosition!=="function"){
+      cam.getAbsolutePosition=function(){
+        this.computeWorldMatrix(true);
+        if(this.globalPosition)return this.globalPosition;
+        return this.getWorldMatrix().getTranslation();
+      };
+    }
     cam.position.set(SHOULDER_OFFSET,0,-DEFAULT_DISTANCE);
     cam.rotation.set(0,-Math.atan2(SHOULDER_OFFSET,DEFAULT_DISTANCE),0);
 
