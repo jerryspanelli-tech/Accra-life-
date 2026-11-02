@@ -56,7 +56,7 @@ const { chromium } = require('playwright');
     await page.waitForSelector('#startScreen button[data-v="female"]',{timeout:30000});
     await page.locator('#startScreen button[data-v="female"]').click();
     await page.waitForFunction(()=>window.__accraSelectionPreviewLoaded==='female',null,{timeout:45000});
-    await page.locator('#sStart').click();
+    await page.locator('#sAge').fill('26');\n    await page.locator('#sStart').click();
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
     const femaleInspection=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect());
     const femaleEyeZ=femaleInspection.find(m=>m.material==='Eyes')?.ranges?.[0]?.center?.[2];
