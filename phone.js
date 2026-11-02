@@ -100,10 +100,37 @@
   SX.eng.frequency.setTargetAtTime(52+sp*5.5,c.currentTime,.08)}
  window.ACCRA_AUDIO={play:playSt,stop:stopSt,volume:v=>{AU.vol=v;if(AU.master)AU.master.gain.value=v},now:()=>AU.key,unlock:()=>audioOn(),sfx,engine:engineSnd};
 
- const APPS=[['bank','💰','Bank','#2e7d32'],['map','🗺️','Map','#1e88e5'],['jobs','💼','Jobs','#6d4c41'],['cam','📷','Camera','#546e7a'],['msg','💬','Messages','#00897b'],['vyba','📸','VYBA','#d62976'],['bet','⚽','AccraBet','#0b7a3b'],['date','💞','VybaDate','#c2185b'],['mart','🛍️','JOLLY MART','#1565c0'],['cedi','👛','CEDIPAY','#16a34a'],['jam','🎵','JAMBOX','#7c4dff'],['ride','🚕','Shaxi','#fcd116'],['set','⚙️','Settings','#37474f']];
+ const APPS=[['bank','💰','Bank','#2e7d32'],['map','🗺️','Map','#1e88e5'],['jobs','💼','Jobs','#6d4c41'],['cam','📷','Camera','#546e7a'],['msg','💬','Messages','#00897b'],['vyba','📸','VYBA','#d62976'],['bet','⚽','AccraBet','#0b7a3b'],['date','💞','VybaDate','#c2185b'],['mart','🛍️','JOLLY MART','#1565c0'],['cedi','👛','CEDIPAY','#16a34a'],['jam','🎵','JAMBOX','#7c4dff'],['radio','📻','Ghana Radio','#c62828'],['ride','🚕','Shaxi','#fcd116'],['set','⚙️','Settings','#37474f']];
+
+ const RADIO_STATIONS=[
+  {id:'citi',name:'Citi FM',frequency:'97.3 FM',area:'Accra',genre:'News · Talk',stream:'https://citi973fm.radioca.st/index.html:80/;stream.mp3',page:'https://citinewsroom.com/livestream/'},
+  {id:'joy',name:'Joy FM',frequency:'99.7 FM',area:'Accra',genre:'News · Talk · Music',page:'https://www.myjoyonline.com/live/'},
+  {id:'adom',name:'Adom FM',frequency:'106.3 FM',area:'Accra',genre:'Twi · News · Music',page:'https://www.myjoyonline.com/live/'},
+  {id:'peace',name:'Peace FM',frequency:'104.3 FM',area:'Accra',genre:'Twi · News · Talk',stream:'https://peacefm-atunwadigital.streamguys1.com/peacefm',page:'https://peacefmonline.com/'},
+  {id:'hitz',name:'Hitz FM',frequency:'103.9 FM',area:'Accra',genre:'Music · Entertainment',stream:'https://mmg.streamguys1.com/HitzFM-mp3',page:'https://www.myjoyonline.com/live/'},
+  {id:'yfm',name:'YFM Accra',frequency:'107.9 FM',area:'Accra',genre:'Urban · Music',stream:'https://atunwadigital.streamguys1.com/yfm1079accra',page:'https://www.yfmghana.com/'},
+  {id:'angel',name:'Angel FM',frequency:'96.1 FM',area:'Kumasi',genre:'News · Music',stream:'https://atunwadigital.streamguys1.com/angelfm',page:'https://angelonline.com.gh/'},
+  {id:'nhyira',name:'Nhyira FM',frequency:'104.5 FM',area:'Kumasi',genre:'Twi · News · Music',page:'https://www.myjoyonline.com/live/'},
+  {id:'atl',name:'ATL FM',frequency:'100.5 FM',area:'Cape Coast',genre:'Music · Talk',stream:'https://atlfm1005.radioca.st/stream?type=http&nocache=231',page:'https://atlfmonline.com/'},
+  {id:'oroko',name:'Oroko Radio',frequency:'Online',area:'Accra',genre:'Alternative · Community',stream:'https://oroko-radio.radiocult.fm/stream',page:'https://oroko.radio/'}
+ ];
+ const radioAudio=new Audio();radioAudio.preload='none';radioAudio.playsInline=true;radioAudio.volume=.72;
+ let radioCurrent='',radioStatus='Choose a station to start listening.';
+ function radioRefresh(){if(ph.classList.contains('on')&&tab==='radio')render()}
+ function radioStop(){radioAudio.pause();radioAudio.removeAttribute('src');radioAudio.load();radioCurrent='';radioStatus='Radio stopped.';radioRefresh()}
+ function radioPlay(id){const st=RADIO_STATIONS.find(x=>x.id===id);if(!st)return;
+  if(!st.stream){radioStatus=st.name+' opens in its official live player.';radioCurrent=id;radioRefresh();window.open(st.page,'_blank','noopener');return}
+  radioAudio.pause();radioCurrent=id;radioStatus='Connecting to '+st.name+'…';radioAudio.src=st.stream;radioAudio.load();radioRefresh();
+  const p=radioAudio.play();if(p&&p.catch)p.catch(()=>{radioStatus='This station stream did not start. Try its official website or another station.';radioRefresh()});
+ }
+ radioAudio.addEventListener('playing',()=>{radioStatus='LIVE · '+(RADIO_STATIONS.find(x=>x.id===radioCurrent)?.name||'Radio');radioRefresh()});
+ radioAudio.addEventListener('waiting',()=>{radioStatus='Buffering live broadcast…';radioRefresh()});
+ radioAudio.addEventListener('error',()=>{radioStatus='Stream unavailable right now. Try the official station website.';radioRefresh()});
+ const radioScreen=()=>'<div class="cd" style="text-align:center"><div style="font-size:30px">🇬🇭 📻</div><b>Ghana Live Radio</b><br><small>Listen to real stations while you explore Accra and Kumasi. Streaming uses mobile data.</small><p style="color:#c9a54a;font-weight:700">'+esc(radioStatus)+'</p>'+(radioCurrent?'<button class="bt" data-radio-stop="1">■ Stop radio</button>':'')+'</div>'+RADIO_STATIONS.map(st=>'<div class="cd tx"><span><b>'+esc(st.name)+'</b><br><small>'+esc(st.frequency)+' · '+esc(st.area)+'<br>'+esc(st.genre)+'</small></span>'+(st.stream?'<button class="bt" data-radio="'+st.id+'">'+(radioCurrent===st.id?'▶ Play again':'▶ Listen')+'</button>':'<button class="bt" data-radio="'+st.id+'">Open live</button>')+'</div>').join('')+'<div class="cd"><small>Station names and broadcasts belong to their respective broadcasters. Streams may occasionally be offline or change; use the official station link if playback fails.</small></div>';
  let tab='home',stack=[],shots=[];
  const txs=()=>S.tx.slice(0,8).map(x=>'<div class="cd tx"><span>'+esc(x.w)+'</span><b class="'+(x.d>0?'up':'dn')+'">'+(x.d>0?'+':'')+x.d+'</b></div>').join('')||'<div class="cd">No transactions yet</div>';
  const V2={ride:()=>{const r=window.ACCRA_RIDE_HTML;if(typeof r==='function')return r();if(typeof r==='string')return r;return '<div class="cd"><small>Shaxi loads when the game is ready.</small></div>'},
+  radio:()=>radioScreen(),
   bank:()=>'<div class="cd" style="text-align:center"><small>Balance</small><div class="big">GH₵ '+S.money.toLocaleString()+'</div><small>MoMo savings: GH₵ '+S.sav+'</small></div><button class="bt" data-do="dep">Save GH₵20</button><button class="bt" data-do="wd">Withdraw GH₵20</button><h3>Recent</h3>'+txs(),
   cedi:()=>{const L=window.ACCRA_LIFE,r=L&&L.rents?L.rents():[];return '<div class="cd" style="text-align:center"><small>Wallet</small><div class="big">GH₵ '+S.money.toLocaleString()+'</div><small>Savings: GH₵ '+S.sav+'</small></div><button class="bt" data-app="bank">Savings &amp; withdrawals</button>'+(r.length?'<h3>Rent due</h3>'+r.map(x=>'<div class="cd tx"><span>'+esc(x.name)+'</span><b>GH₵'+x.rent+' in '+x.mins+' min</b></div>').join(''):'')+'<h3>Transactions</h3>'+txs()+'<div class="cd"><small>Sending money to other players needs the online server (not built yet).</small></div>'},
   map:()=>(nav?'<div class="cd tx"><span>➤ '+esc(nav.n)+' · '+dist(nav)+' m</span><button class="bt" data-do="stop">Stop</button></div>':'')+ALLD().slice().sort((a,b)=>dist(a)-dist(b)).map(d=>'<div class="cd tx"><span>'+esc(d.n)+'<br><small>'+fd(dist(d))+' away</small></span><button class="bt" data-go="'+ALLD().indexOf(d)+'">Go</button></div>').join(''),
@@ -164,8 +191,10 @@
  function open(o){ph.classList.toggle('on',o);document.body.classList.toggle('po',o);if(o){tab='home';stack=[];$('ptm2').textContent=new Date().toTimeString().slice(0,5);$('psg').textContent=bars();render()}}
  btn.onclick=()=>open(!ph.classList.contains('on'));$('pcl').onclick=()=>open(false);$('phm').onclick=()=>{tab='home';stack=[];render()};$('pbk').onclick=()=>{tab=stack.pop()||'home';render()};
  ph.addEventListener('input',e=>{if(e.target.dataset.vol){const v=e.target.value/100;AU.vol=v;if(AU.master)AU.master.gain.value=v}});
- ph.addEventListener('click',e=>{const b=e.target.closest('[data-app],[data-do],[data-go],[data-buy],[data-st],[data-pick],[data-stake],[data-dt],[data-like],[data-pass],[data-chat],[data-say],[data-venue]');if(!b)return;const d=b.dataset;
+ ph.addEventListener('click',e=>{const b=e.target.closest('[data-app],[data-do],[data-go],[data-buy],[data-st],[data-pick],[data-stake],[data-dt],[data-like],[data-pass],[data-chat],[data-say],[data-venue],[data-radio],[data-radio-stop]');if(!b)return;const d=b.dataset;
   if(d.app)go(d.app);
+  else if(d.radio)radioPlay(d.radio);
+  else if(d.radioStop!==undefined)radioStop();
   else if(d.pick){const q=d.pick.split(':');slip={m:matches()[+q[0]],pick:+q[1]}}
   else if(d.stake){placeBet(+d.stake)}
   else if(d.do==='slipx')slip=null
