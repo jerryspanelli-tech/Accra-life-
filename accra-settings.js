@@ -8,7 +8,8 @@
   const defaults={quality:phone?"medium":"high",brightness:1.05,fog:true,cameraSensitivity:800,cameraDistance:9,sound:false,volume:.22};
   let prefs={...defaults};
   try{prefs={...prefs,...JSON.parse(localStorage.getItem(KEY)||"{}")};}catch(_){}
-  prefs.sound=false;\n  let audio=null,loop=null;
+  prefs.sound=false;
+  let audio=null,loop=null;
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(prefs));}catch(_){}}
   function quality(q){
