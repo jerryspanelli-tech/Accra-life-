@@ -32,7 +32,7 @@
       this.waterZones.push({ minX: -278, maxX: 278, minZ: 203.5, maxZ: 332 });
       const wall = this.box(600, 6, 2, 0, 3, 335, "#000000", true); wall.isVisible = false;   // keeps swimmers inside the sea
       for (let i = 0; i < 28; i++) { const b = BABYLON.MeshBuilder.CreateSphere("buoy", { diameter: .9, segments: 4 }, this.scene); b.position.set(-270 + i * 20, .3, 330); b.material = this.mat(i % 2 ? "#ff7a1a" : "#ffffff"); b.isPickable = false; }
-      [-120, -90, 44, 80, 120].forEach((x, i) => {                                            // beach umbrellas and loungers
+      [-120, -90, 120].forEach((x, i) => {                                            // outer beach umbrellas and loungers; central row lives in landmarks.js
         this.box(.12, 3, .12, x, 1.5, 190, "#dddddd");
         const u = BABYLON.MeshBuilder.CreateCylinder("umb", { diameterTop: .2, diameterBottom: 4, height: 1, tessellation: 8 }, this.scene);
         u.position.set(x, 3.3, 190); u.material = this.mat(["#c8102e", "#fcd116", "#006b3f"][i % 3]); u.isPickable = false;
