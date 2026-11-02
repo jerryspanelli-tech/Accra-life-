@@ -12,7 +12,7 @@
         console.warn('[AccraPeople] Character factory is not ready yet.');
         return null;
       }
-      const figure=window.AccraAssets.createCharacter(window.scene || window.accraScene || scene, options||{});
+      const figure=window.AccraAssets.createCharacter(scene, options||{});
       if(figure&&figure.root&&parent)figure.root.parent=parent;
       if(figure)spawned.push(figure);
       return figure;
