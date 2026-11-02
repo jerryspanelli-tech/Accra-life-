@@ -70,7 +70,7 @@
           <div style="font:800 22px system-ui;color:#c9a54a;letter-spacing:1px">ACCRA LIFE</div>
           <div style="color:#aaa;font-size:12px">Create your character</div>
         </div>
-        <div style="display:flex;justify-content:center;margin-bottom:10px"><canvas id="sPrev" width="200" height="260" style="width:180px;height:234px;border-radius:14px;touch-action:pan-y"></canvas></div>
+        <div style="display:flex;justify-content:center;margin-bottom:10px"><canvas id="sPrev" width="480" height="624" style="width:180px;height:234px;border-radius:14px;touch-action:pan-y"></canvas></div>
         <div style="margin:8px 0 4px;color:#c9a54a;font-weight:700">Choose your character</div>
         <div style="display:flex;gap:8px">${btn(sel.gender === "male", "male")}${btn(sel.gender === "female", "female")}</div>
         <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Your name</div>
