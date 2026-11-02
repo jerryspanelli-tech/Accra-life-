@@ -86,6 +86,12 @@
         // Margins include the generated building/roof half-width and depth.
         if (Math.abs(x - (T.x - 60)) < 32 && Math.abs(z - (T.z + 25)) < 19) continue; // market canopy
         if (Math.abs(x - (T.x + 55)) < 25 && Math.abs(z - (T.z - 45)) < 19) continue; // fuel-station canopy
+        // Reserve the remaining dedicated landmark footprints from generic town buildings.
+        if (T.n === "Nsawam" && Math.abs(x - (T.x + 10)) < 33 && Math.abs(z - (T.z - 70)) < 22) continue; // fish market and tower
+        if (T.n === "Suhum" && Math.hypot(Math.max(0, Math.abs(x - (T.x + 10)) - 11), Math.max(0, Math.abs(z - (T.z - 80)) - 11)) < 30) continue; // hill
+        if (T.big === 2 && Math.abs(x - T.x) < 71 && Math.abs(z - (T.z - 20)) < 39) continue; // Kejetia main market
+        if (T.big === 2 && Math.abs(x - (T.x + 70)) < 17 && Math.abs(z - (T.z - 40)) < 17) continue; // Kejetia tower
+        if (T.big === 2 && Math.abs(x - (T.x - 70)) < 51 && Math.abs(z - (T.z + 70)) < 39) continue; // streamed market slab and stalls
         const r = rng(hash(i, j, T.z | 0)); if (r() < .15) continue;
         const h = T.big === 2 ? 8 + r() * (Math.hypot(i, j) < 3 ? 40 : 14) : 4 + r() * 8, w = 14 + r() * 8, d = 14 + r() * 8, col = P[Math.floor(r() * P.length)];
         const b = B.MeshBuilder.CreateBox("tb", { width: w, height: h, depth: d }, scene); b.position.set(x, h / 2, z); b.material = facMat(col, Math.max(1, Math.round(h / 6)), Math.max(1, Math.round(w / 7))); b.checkCollisions = true; b.isPickable = false; list.push(b);
