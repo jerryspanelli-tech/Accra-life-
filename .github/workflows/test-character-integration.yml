@@ -9,6 +9,7 @@ on:
       - 'babylon.html'
       - 'online.js'
       - 'accra-start.js'
+      - 'accra-auth.js'
       - 'accra-people.js'
       - 'People/AccraLife/**'
       - 'test-accra-characters.html'
@@ -30,6 +31,10 @@ jobs:
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
+      - name: Check account and startup JavaScript syntax
+        run: |
+          node --check accra-auth.js
+          node --check accra-start.js
       - name: Start local game server
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/accra-http.log 2>&1 &
