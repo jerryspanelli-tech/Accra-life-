@@ -24,17 +24,17 @@ jobs:
           ref: a4947ffdd14acf2ff018cb3568c941595f86d86e
           path: generator
 
-      - name: Set up Node and pnpm
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+
+      - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
           cache-dependency-path: generator/pnpm-lock.yaml
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.19.0
 
       - name: Install generator dependencies
         working-directory: generator
