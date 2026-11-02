@@ -64,7 +64,7 @@ async function loadCrowd(){
  finally{loading=false;$('reload').disabled=false}
 }
 $('reload').addEventListener('click',loadCrowd);
-$('toggle').addEventListener('click',()=>{paused=!paused;actors.forEach(actor=>{if(paused)actor.setAnimation('idle');else actor.setAnimation('walk')});$('toggle').textContent=paused?'Resume animations':'Pause animations'});
+$('toggle').addEventListener('click',()=>{paused=!paused;actors.forEach(actor=>{if(paused)actor.pauseAnimation();else actor.resumeAnimation()});$('toggle').textContent=paused?'Resume animations':'Pause animations'});
 $('reset').addEventListener('click',()=>{camera.alpha=-Math.PI/2;camera.beta=1.18;camera.radius=15;camera.setTarget(new B.Vector3(0,.85,0))});
 loadCrowd();engine.runRenderLoop(()=>scene.render());addEventListener('resize',()=>engine.resize());
 })();
