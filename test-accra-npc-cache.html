@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Accra Life · Cached NPC Crowd Test</title>
+<style>
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#182128;color:#fff;font:13px system-ui}#view{width:100%;height:100%;display:block;touch-action:none}
+#panel{position:fixed;left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:5;max-width:680px;margin:auto;padding:11px;background:rgba(20,25,30,.94);border:1px solid #c9a54a;border-radius:13px;max-height:42vh;overflow:auto}
+h1{font-size:15px;margin:0 0 5px}p{margin:4px 0 8px;color:#d4d9dc;font-size:11px;line-height:1.4}#status{white-space:pre-wrap;font-size:11px;line-height:1.4;color:#e9e6dc}
+button{border:0;border-radius:8px;padding:9px 12px;background:#c9a54a;color:#17191c;font-weight:700;margin:4px 4px 0 0}
+#hint{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 9px);left:10px;right:10px;text-align:center;font-size:11px;text-shadow:0 1px 4px #000;pointer-events:none}
+</style></head><body>
+<canvas id="view"></canvas>
+<section id="panel"><h1>ACCRA LIFE · CACHED NPC / CROWD TEST</h1>
+<p>Creates eight NPC instances from four GLB assets. Each source asset is loaded once per scene and then reused to create multiple independently animated characters. Test scene only — production spawning is not connected.</p>
+<button id="reload">Reload eight NPCs</button><button id="toggle">Pause animations</button><button id="reset">Reset camera</button>
+<div id="status">Preparing cached model test…</div></section>
+<div id="hint">Drag to orbit · Pinch to zoom · Isolated test — not connected to live NPCs</div>
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script src="accra-npc-models.js"></script>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),status=$('status'),B=window.BABYLON;
+if(!B||!window.AccraNPCModels){status.textContent='ERROR: Babylon.js or AccraNPCModels failed to load.';return}
+const canvas=$('view'),engine=new B.Engine(canvas,true,{adaptToDeviceRatio:true});
+if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.5);
+const scene=new B.Scene(engine);scene.clearColor=new B.Color4(.48,.61,.65,1);
+const hemi=new B.HemisphericLight('hemi',new B.Vector3(0,1,0),scene);hemi.intensity=.95;
+const sun=new B.DirectionalLight('sun',new B.Vector3(-.5,-1,-.6),scene);sun.position.set(8,12,8);sun.intensity=1.1;
+const ground=B.MeshBuilder.CreateGround('ground',{width:24,height:18},scene);const gm=new B.StandardMaterial('groundMat',scene);gm.diffuseColor=new B.Color3(.25,.31,.28);ground.material=gm;
+const camera=new B.ArcRotateCamera('camera',-Math.PI/2,1.18,15,new B.Vector3(0,.85,0),scene);camera.lowerRadiusLimit=7;camera.upperRadiusLimit=24;camera.attachControl(canvas,true);
+const templates=[
+ {model:'male',label:'Male streetwear',x:-5.2,z:-2.2},
+ {model:'female',label:'Female streetwear',x:-1.75,z:-2.2},
+ {model:'maleSuit',label:'Male suit',x:1.75,z:-2.2},
+ {model:'femaleAnkara',label:'Female Ankara',x:5.2,z:-2.2},
+ {model:'male',label:'Male streetwear',x:-5.2,z:2.2},
+ {model:'female',label:'Female streetwear',x:-1.75,z:2.2},
+ {model:'maleSuit',label:'Male suit',x:1.75,z:2.2},
+ {model:'femaleAnkara',label:'Female Ankara',x:5.2,z:2.2}
+];
+let actors=[],paused=false,loading=false;
+function makeLabel(text,x,z,parent){
+ const tex=new B.DynamicTexture('label_'+actors.length,{width:512,height:80},scene,false),ctx=tex.getContext();
+ ctx.clearRect(0,0,512,80);ctx.fillStyle='#101820';ctx.fillRect(0,0,512,80);ctx.fillStyle='#f2d27a';ctx.font='bold 31px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,42);tex.update();
+ const plane=B.MeshBuilder.CreatePlane('npc_label',{width:2.35,height:.36},scene);plane.parent=parent;plane.position.set(0,2.2,0);plane.billboardMode=B.Mesh.BILLBOARDMODE_ALL;plane.isPickable=false;
+ const mat=new B.StandardMaterial('npc_label_mat',scene);mat.diffuseTexture=tex;mat.emissiveTexture=tex;mat.disableLighting=true;mat.backFaceCulling=false;plane.material=mat;
+}
+async function clearCrowd(){actors.forEach(actor=>actor.dispose());actors=[]}
+async function loadCrowd(){
+ if(loading)return;loading=true;$('reload').disabled=true;await clearCrowd();
+ status.textContent='Loading and instantiating eight NPCs…';
+ const results=[];
+ try{
+  for(let i=0;i<templates.length;i++){
+   const spec=templates[i];
+   const actor=await AccraNPCModels.create(scene,{model:spec.model,position:[spec.x,0,spec.z],height:1.8,animation:'walk'});
+   actors.push(actor);makeLabel(spec.label,spec.x,spec.z,actor.root);
+   results.push((i+1)+'. '+spec.label+' — '+actor.animationNames.length+' animation clip(s)');
+   status.textContent=results.join('\n')+'\n\nCached source GLB files: '+AccraNPCModels.cachedModelCount(scene)+' / 4';
+  }
+  status.textContent=results.join('\n')+'\n\nSUCCESS: 8 NPC instances created from '+AccraNPCModels.cachedModelCount(scene)+' cached source GLBs. The two rows share source assets but have separate roots and animation groups.';
+ }catch(e){status.textContent=results.join('\n')+'\nLOAD ERROR: '+(e&&e.message?e.message:String(e));console.error('[NPC cache test]',e)}
+ finally{loading=false;$('reload').disabled=false}
+}
+$('reload').addEventListener('click',loadCrowd);
+$('toggle').addEventListener('click',()=>{paused=!paused;actors.forEach(actor=>{if(paused)actor.setAnimation('idle');else actor.setAnimation('walk')});$('toggle').textContent=paused?'Resume animations':'Pause animations'});
+$('reset').addEventListener('click',()=>{camera.alpha=-Math.PI/2;camera.beta=1.18;camera.radius=15;camera.setTarget(new B.Vector3(0,.85,0))});
+loadCrowd();engine.runRenderLoop(()=>scene.render());addEventListener('resize',()=>engine.resize());
+})();
+</script></body></html>
