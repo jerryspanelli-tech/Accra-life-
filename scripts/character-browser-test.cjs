@@ -22,8 +22,35 @@ const { chromium } = require('playwright');
     const labErrors=errors.splice(0);
     if(labErrors.length)throw new Error('Character Lab browser errors: '+labErrors.join(' | '));
 
+    // Mock Supabase at the browser boundary so CI can exercise the real account UI without creating test users.
+    await page.addInitScript(()=>{
+      window.supabase={createClient:()=>({
+        auth:{
+          getSession:async()=>({data:{session:null},error:null}),
+          signUp:async()=>({data:{session:null},error:null}),
+          signInWithPassword:async()=>({data:{session:{user:{id:'ci-test-user'} }},error:null})
+        },
+        from:()=>({
+          select:()=>({eq:()=>({maybeSingle:async()=>({data:null,error:null})})}),
+          upsert:async()=>({error:null})
+        })
+      })};
+    });
     await page.goto('http://127.0.0.1:4173/babylon.html',{waitUntil:'domcontentloaded'});
     await page.waitForFunction(()=>document.body.innerText.includes('ACCRA LIFE'),null,{timeout:15000});
+    await page.waitForSelector('#accra-auth-screen',{timeout:30000});
+    await page.locator('#accra-auth-switch').click();
+    await page.locator('#accra-auth-email').fill('ci-player@example.com');
+    await page.locator('#accra-auth-password').fill('test-password-123');
+    await page.locator('#accra-auth-submit').click();
+    await page.waitForFunction(()=>document.querySelector('#accra-auth-message')?.textContent.includes('Check your email'),null,{timeout:10000});
+    const signupMessage=await page.locator('#accra-auth-message').innerText();
+    await page.locator('#accra-auth-switch').click();
+    await page.locator('#accra-auth-email').fill('ci-player@example.com');
+    await page.locator('#accra-auth-password').fill('test-password-123');
+    await page.locator('#accra-auth-submit').click();
+    await page.waitForSelector('#accra-auth-screen',{state:'detached',timeout:10000});
+    const accountScreenPassed=true;
     await page.waitForFunction(()=>window.__accraCharacterLoaded===true,null,{timeout:45000});
     await page.waitForFunction(()=>window.__accraSelectionPreviewLoaded==='male',null,{timeout:45000});
     await page.waitForSelector('#startScreen button[data-v="female"]',{timeout:30000});
@@ -119,7 +146,7 @@ const { chromium } = require('playwright');
 
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed')||x.includes('[accra-start] 3D preview failed'));
     if(mainErrors.length)throw new Error('Main game character errors: '+mainErrors.join(' | '));
-    console.log(JSON.stringify({pass:true,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,maleAppearanceMaterials,maleWardrobe:'clothing only; no barber options',femaleWardrobe:'clothing only; no barber options',oldMallFittingRoom:'clothing only; no barber options',appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
+    console.log(JSON.stringify({pass:true,accountScreenPassed,signupMessage,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,maleAppearanceMaterials,maleWardrobe:'clothing only; no barber options',femaleWardrobe:'clothing only; no barber options',oldMallFittingRoom:'clothing only; no barber options',appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
   }catch(e){
     const status=await page.locator('#status').innerText().catch(()=>'(no status element)');
     const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);
