@@ -26,7 +26,8 @@
     ipc.exposure=clamp(Number(prefs.brightness)||1.05,.65,1.5);
     scene.fogEnabled=!!prefs.fog;
     cam.angularSensibility=clamp(Number(prefs.cameraSensitivity)||800,300,1800);
-    cam.radius=clamp(Number(prefs.cameraDistance)||9,4,16);\n    if(window.ACCRA_CAMERA)window.ACCRA_CAMERA.setDistance(prefs.cameraDistance);
+    cam.radius=clamp(Number(prefs.cameraDistance)||9,4,16);
+    if(window.ACCRA_CAMERA)window.ACCRA_CAMERA.setDistance(prefs.cameraDistance);
   }
   function tone(freq,wave,volume,duration){
     if(!audio||audio.state!=="running")return;
