@@ -28,7 +28,7 @@
     cam.rotation.set(0,-Math.atan2(SHOULDER_OFFSET,DEFAULT_DISTANCE),0);
 
     let distance=DEFAULT_DISTANCE,currentDistance=DEFAULT_DISTANCE;
-    let orbitOffset=0,pitch=BASE_PITCH,dragging=false,pointerId=null,lastX=0,lastY=0,lastLookAt=-Infinity,initialized=false;
+    let cameraYaw=player.rotation.y||0,pitch=BASE_PITCH,dragging=false,pointerId=null,lastX=0,lastY=0,lastLookAt=-Infinity,initialized=false,collisionTimer=0,collisionDistance=DEFAULT_DISTANCE;
     const markLook=()=>{lastLookAt=performance.now();};
     canvas.addEventListener("pointerdown",e=>{
       if(e.pointerType==="mouse"&&e.button!==0)return;
@@ -38,7 +38,7 @@
     canvas.addEventListener("pointermove",e=>{
       if(!dragging||e.pointerId!==pointerId)return;
       const dx=e.clientX-lastX,dy=e.clientY-lastY;lastX=e.clientX;lastY=e.clientY;
-      orbitOffset=wrap(orbitOffset-dx/Math.max(320,cam.angularSensibility));
+      cameraYaw=wrap(cameraYaw-dx/Math.max(320,cam.angularSensibility));
       pitch=clamp(pitch+dy*0.0028,0.06,0.52);markLook();
     });
     function endDrag(e){if(pointerId!==null&&e&&e.pointerId!==pointerId)return;dragging=false;pointerId=null;}
@@ -70,21 +70,21 @@
       const direction=window.__accraMovementDirection;
       const moving=driving?Math.abs(spd)>0.12:!!(direction&&(Math.abs(direction.x)+Math.abs(direction.z)>0.08));
       const looking=dragging||performance.now()-lastLookAt<RETURN_DELAY_MS;
-      if(!looking&&moving)orbitOffset+=wrap(-orbitOffset)*(1-Math.exp(-FOLLOW_SPEED*dt));
+      if(!looking&&moving)cameraYaw+=wrap(facingYaw-cameraYaw)*(1-Math.exp(-FOLLOW_SPEED*dt));
       if(!looking)pitch+=(BASE_PITCH-pitch)*(1-Math.exp(-3.2*dt));
 
-      const desiredYaw=facingYaw+orbitOffset;
+      const desiredYaw=facingYaw;
       const yawBlend=1-Math.exp(-(driving?7.5:FOLLOW_SPEED)*dt);
       const desiredRoot=new BABYLON.Vector3(target.x,target.y+(driving?1.2:1.12),target.z);
-      if(!initialized){followRoot.position.copyFrom(desiredRoot);followRoot.rotation.y=desiredYaw;initialized=true;}
+      if(!initialized){followRoot.position.copyFrom(desiredRoot);followRoot.rotation.y=cameraYaw;initialized=true;}
       else{
         followRoot.position=BABYLON.Vector3.Lerp(followRoot.position,desiredRoot,1-Math.exp(-9.0*dt));
-        followRoot.rotation.y+=wrap(desiredYaw-followRoot.rotation.y)*yawBlend;
+        cameraYaw+=wrap(desiredYaw-cameraYaw)*yawBlend;followRoot.rotation.y=cameraYaw;
       }
 
       pitchPivot.rotation.x=pitch;
       const wanted=distance*(driving?DRIVE_MULTIPLIER:1);
-      const unobstructed=collisionAdjustedDistance(followRoot.position,wanted);
+      collisionTimer-=dt;if(collisionTimer<=0){collisionDistance=collisionAdjustedDistance(followRoot.position,wanted);collisionTimer=0.075;}const unobstructed=collisionDistance;
       const distanceBlend=1-Math.exp(-(unobstructed<currentDistance?14:4.5)*dt);
       currentDistance+= (unobstructed-currentDistance)*distanceBlend;
       cam.position.set(SHOULDER_OFFSET,0,-currentDistance);
@@ -93,13 +93,13 @@
     });
 
     // Preserve the old movement/settings contract: alpha is the camera's world azimuth.
-    Object.defineProperty(cam,"alpha",{configurable:true,get:()=>Math.atan2(-Math.cos(followRoot.rotation.y),-Math.sin(followRoot.rotation.y)),set:v=>{if(Number.isFinite(v))followRoot.rotation.y=Math.atan2(-Math.cos(v),-Math.sin(v));}});
+    Object.defineProperty(cam,"alpha",{configurable:true,get:()=>Math.atan2(-Math.cos(cameraYaw),-Math.sin(cameraYaw)),set:v=>{if(Number.isFinite(v)){cameraYaw=Math.atan2(-Math.cos(v),-Math.sin(v));followRoot.rotation.y=cameraYaw;}}});
     Object.defineProperty(cam,"radius",{configurable:true,get:()=>distance,set:v=>setDistance(v)});
     Object.defineProperty(cam,"beta",{configurable:true,get:()=>Math.PI/2-pitch,set:v=>{if(Number.isFinite(v))pitch=clamp(Math.PI/2-v,.06,.52);}});
     window.ACCRA_CAMERA={
       style:"gta-follow-rig",walkRadius:distance,driveRadius:distance*DRIVE_MULTIPLIER,
       setDistance(value){setDistance(value);this.walkRadius=distance;this.driveRadius=distance*DRIVE_MULTIPLIER;},
-      getYaw:()=>followRoot.rotation.y,
+      getYaw:()=>cameraYaw,
       getActive:()=>scene.activeCamera===cam
     };
     window.ACCRA_MODULES=window.ACCRA_MODULES||{};
