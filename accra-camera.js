@@ -71,7 +71,7 @@
       const moving=driving?Math.abs(spd)>0.12:!!(direction&&(Math.abs(direction.x)+Math.abs(direction.z)>0.08));
       const looking=dragging||performance.now()-lastLookAt<RETURN_DELAY_MS;
       if(!looking&&moving)orbitOffset+=wrap(-orbitOffset)*(1-Math.exp(-FOLLOW_SPEED*dt));
-      if(!looking)pitch+=(BASE_PITCH-pitch)*(1-Math.exp(3.2*dt));
+      if(!looking)pitch+=(BASE_PITCH-pitch)*(1-Math.exp(-3.2*dt));
 
       const desiredYaw=facingYaw+orbitOffset;
       const yawBlend=1-Math.exp(-(driving?7.5:FOLLOW_SPEED)*dt);
@@ -85,7 +85,7 @@
       pitchPivot.rotation.x=pitch;
       const wanted=distance*(driving?DRIVE_MULTIPLIER:1);
       const unobstructed=collisionAdjustedDistance(followRoot.position,wanted);
-      const distanceBlend=1-Math.exp((unobstructed<currentDistance?14:4.5)*dt);
+      const distanceBlend=1-Math.exp(-(unobstructed<currentDistance?14:4.5)*dt);
       currentDistance+= (unobstructed-currentDistance)*distanceBlend;
       cam.position.set(SHOULDER_OFFSET,0,-currentDistance);
       cam.rotation.set(0,-Math.atan2(SHOULDER_OFFSET,currentDistance),0);
