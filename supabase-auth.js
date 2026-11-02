@@ -67,6 +67,9 @@
     $('al-submit').textContent = mode === 'login' ? 'Sign in' : 'Create account';
     $('al-password').setAttribute('autocomplete', mode === 'login' ? 'current-password' : 'new-password');
     $('al-forgot').style.display = mode === 'login' ? 'block' : 'none';
+    $('al-auth-tabs').style.display = mode === 'recovery' ? 'none' : 'flex';
+    $('al-password').previousElementSibling.textContent = mode === 'recovery' ? 'New password' : 'Password';
+    $('al-submit').textContent = mode === 'recovery' ? 'Update password' : (mode === 'login' ? 'Sign in' : 'Create account');
     message('');
   };
   $('al-tab-login').addEventListener('click', () => setMode('login'));
@@ -118,7 +121,13 @@
     $('al-submit').disabled = true;
     message(mode === 'login' ? 'Signing in…' : 'Creating your account…');
     try {
-      if (mode === 'signup') {
+      if (mode === 'recovery') {
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+        await supabase.auth.signOut();
+        setMode('login');
+        message('Password updated. Sign in with your new password.');
+      } else if (mode === 'signup') {
         const { data, error } = await supabase.auth.signUp({
           email, password, options: { emailRedirectTo: APP_URL }
         });
@@ -150,17 +159,10 @@
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
       lockGame();
-      const newPassword = prompt('Enter your new Accra Life password (at least 6 characters):');
-      if (newPassword && newPassword.length >= 6) {
-        supabase.auth.updateUser({ password: newPassword }).then(({ error }) => {
-          if (error) message(error.message, true);
-          else message('Password updated. You can now sign in with your new password.');
-          supabase.auth.signOut();
-        });
-      } else {
-        message('Password was not changed. Please request another reset link.');
-        supabase.auth.signOut();
-      }
+      setMode('recovery');
+      $('al-password').value = '';
+      $('al-password').focus();
+      message('Choose a new password with at least 6 characters.');
     } else if (session) {
       enterGame(session.user);
     } else {
