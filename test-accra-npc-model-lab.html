@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Accra Life · NPC Model Lab</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#17212a;font:14px system-ui;color:#f4f1e9}#view{width:100%;height:100%;display:block;touch-action:none}
+#panel{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + 10px);z-index:5;background:rgba(20,25,30,.92);border:1px solid #c9a54a;border-radius:15px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:620px;margin:auto}
+#panel strong,#status{grid-column:1/-1}select,button{min-width:0;border:1px solid #6c7278;border-radius:9px;padding:10px;background:#28323b;color:#fff;font:600 13px system-ui}button{background:#c9a54a;color:#17191c;border:0}#status{font-size:12px;line-height:1.45;color:#e4e5e6;white-space:pre-wrap}
+#hint{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 10px);left:12px;right:12px;text-align:center;color:#e7e2d6;font-size:11px;text-shadow:0 1px 3px #000;pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="panel">
+<strong>ACCRA LIFE · REAL 3D CHARACTER / NPC MODEL LAB</strong>
+<select id="model" aria-label="Character model">
+<option value="AccraLife_Male.glb">Male · Kente streetwear</option>
+<option value="AccraLife_Female.glb">Female · Kente streetwear</option>
+<option value="AccraLife_Male_Kente.glb">Male · Kente outfit</option>
+<option value="AccraLife_Male_Suit.glb">Male · Suit</option>
+<option value="AccraLife_Female_Ankara.glb">Female · Ankara</option>
+<option value="AccraLife_Female_Pantsuit.glb">Female · Pantsuit</option>
+</select>
+<select id="animation" aria-label="Animation"><option value="">Choose animation after loading</option></select>
+<button id="reload">Load selected model</button><button id="reset">Reset camera</button>
+<div id="status">Preparing Babylon.js character lab…</div>
+</div>
+<div id="hint">Drag to rotate · Pinch to zoom · This is an isolated asset test; it does not change the live game.</div>
+<script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
+<script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
+<script>
+(()=>{
+const $=id=>document.getElementById(id),canvas=$('view'),status=$('status');
+if(!window.BABYLON){status.textContent='ERROR: Babylon.js failed to load.';return}
+const B=BABYLON,engine=new B.Engine(canvas,true,{adaptToDeviceRatio:true,antialias:true});
+if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.5);
+const scene=new B.Scene(engine);scene.clearColor=new B.Color4(.47,.60,.65,1);
+const hemi=new B.HemisphericLight('hemi',new B.Vector3(0,1,0),scene);hemi.intensity=.95;hemi.groundColor=new B.Color3(.28,.30,.27);
+const sun=new B.DirectionalLight('sun',new B.Vector3(-.5,-1,-.6),scene);sun.position.set(5,10,7);sun.intensity=1.05;
+const ground=B.MeshBuilder.CreateGround('stage',{width:30,height:30},scene);const gm=new B.StandardMaterial('stageMat',scene);gm.diffuseColor=new B.Color3(.24,.29,.27);gm.specularColor=new B.Color3(.03,.03,.03);ground.material=gm;
+const camera=new B.ArcRotateCamera('camera',-Math.PI/2,1.18,4.8,new B.Vector3(0,.9,0),scene);camera.lowerRadiusLimit=2.1;camera.upperRadiusLimit=9;camera.lowerBetaLimit=.45;camera.upperBetaLimit=1.55;camera.wheelPrecision=45;camera.attachControl(canvas,true);
+let root=null,groups=[],busy=false,currentFile='';
+const stop=()=>groups.forEach(g=>g.stop());
+function fit(rootNode){
+const bounds=rootNode.getHierarchyBoundingVectors(true),height=bounds.max.y-bounds.min.y;
+if(!Number.isFinite(height)||height<.1)throw new Error('Invalid model bounds; height='+height);
+const scale=1.8/height;rootNode.scaling.setAll(scale);rootNode.position.y=-bounds.min.y*scale;
+return {height,scale};
+}
+async function load(){
+if(busy)return;busy=true;stop();
+if(root){root.dispose(false,true);root=null}groups=[];$('animation').innerHTML='<option value="">Loading animation list…</option>';
+const file=$('model').value;status.textContent='Loading '+file+'…';
+try{
+const result=await B.SceneLoader.ImportMeshAsync('','People/AccraLife/',file,scene);
+root=new B.TransformNode('npc_preview_root',scene);
+result.meshes.filter(m=>!m.parent).forEach(m=>m.parent=root);
+const dims=fit(root);groups=result.animationGroups||[];groups.forEach(g=>g.stop());
+const select=$('animation');select.innerHTML='';
+if(!groups.length){select.add(new Option('No embedded animation clips',''));status.textContent='Loaded '+file+'\nHeight: '+dims.height.toFixed(3)+' source units · normalized to 1.8m\nWARNING: No animation groups found.'}
+else{
+select.add(new Option('Select animation…',''));
+groups.forEach((g,i)=>select.add(new Option(g.name||('Animation '+(i+1)),String(i))));
+const idle=groups.findIndex(g=>/idle/i.test(g.name));if(idle>=0){select.value=String(idle);play(idle)}
+status.textContent='Loaded '+file+'\nSource height: '+dims.height.toFixed(3)+' units · display height: 1.8m\nAnimation clips: '+groups.map(g=>g.name).join(', ')+'\nMeshes: '+result.meshes.length+' · Skeletons: '+(result.skeletons||[]).length;
+}
+currentFile=file;
+}catch(e){status.textContent='LOAD FAILED: '+(e&&e.message?e.message:String(e));console.error('[NPC model lab]',e)}
+finally{busy=false}
+}
+function play(index){if(!groups[index])return;stop();groups[index].start(true);status.textContent='Loaded '+currentFile+'\nPlaying animation: '+(groups[index].name||index)}
+$('animation').addEventListener('change',()=>{const i=Number($('animation').value);if(Number.isInteger(i))play(i)});
+$('reload').addEventListener('click',load);
+$('reset').addEventListener('click',()=>{camera.alpha=-Math.PI/2;camera.beta=1.18;camera.radius=4.8;camera.setTarget(new B.Vector3(0,.9,0))});
+load();engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
+})();
+</script>
+</body></html>
