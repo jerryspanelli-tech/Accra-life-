@@ -129,7 +129,7 @@
           msg.style.color = "#e7d59b"; msg.textContent = "Connecting securely…";
           try {
             if (mode === "signup") {
-              const { data, error } = await client.auth.signUp({ email, password });
+              const { data, error } = await client.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin + window.location.pathname } });
               if (error) throw error;
               if (!data.session) {
                 msg.textContent = "Account created. Check your email for the confirmation link, then return here and sign in.";
@@ -147,7 +147,13 @@
             resolve();
           } catch (err) {
             msg.style.color = "#ff9999";
-            msg.textContent = err.message || "Could not sign in. Check your details and try again.";
+            if (err.code === "over_email_send_rate_limit" || /email rate limit exceeded/i.test(err.message || "")) {
+              msg.textContent = "Supabase has temporarily limited confirmation emails. Your account may already exist. Please wait before requesting another email; do not keep creating accounts.";
+            } else if (err.code === "email_not_confirmed" || /email not confirmed/i.test(err.message || "")) {
+              msg.textContent = "Your account exists, but its email is not confirmed yet. Open the newest confirmation email first. If no valid email arrived, wait for the temporary email limit to reset, then request one new confirmation.";
+            } else {
+              msg.textContent = err.message || "Could not sign in. Check your details and try again.";
+            }
             submit.disabled = false; submit.textContent = mode === "signin" ? "Sign In" : "Create Account";
           }
         };
