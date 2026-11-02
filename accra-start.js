@@ -64,7 +64,7 @@
     });
     card.addEventListener("input", e => { if (e.target.id === "sName") sel.name = e.target.value.trim(); });
 
-    function startGame() {
+    async function startGame() {
       const name = (sel.name || "").slice(0, 16) || "Citizen";
       localStorage.setItem("accra-name", name);
       const look = window.ACCRA_AVATAR && window.ACCRA_AVATAR.look;
