@@ -40,7 +40,7 @@
       <div class="al-auth-brand">ACCRA LIFE</div>
       <h1 class="al-auth-title" id="al-auth-heading">Welcome to Accra</h1>
       <p class="al-auth-sub">Sign in or create an account to enter the game. Your login will be saved on this device.</p>
-      <div class="al-auth-tabs">
+      <div class="al-auth-tabs" id="al-auth-tabs">
         <button type="button" id="al-tab-login" aria-selected="true">Sign in</button>
         <button type="button" id="al-tab-signup" aria-selected="false">Create account</button>
       </div>
