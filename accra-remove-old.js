@@ -1,6 +1,7 @@
-/* accra-remove-old.js - removes the OLD police station and hospital that accra-upgrade.js builds,
- * and their shop and kiosk points, then points the game's police, hospital and job positions at the NEW buildings.
- * Runs after accra-upgrade.js and before accra-hq.js. The pub, dealership, stadium and Amoamah estate are kept. */
+/* accra-remove-old.js - retires legacy police/hospital plot content and stale interaction points.
+ * Runs after the city districts and accra-upgrade.js, before the dedicated civic buildings are built.
+ * The footprint sweep is retained for the reserved old sites; an AABB audit reports any intersecting
+ * meshes left behind without deleting them automatically. */
 (function () {
   try {
     // old footprints (x0..x1, z0..z1) from accra-upgrade.js
@@ -11,13 +12,32 @@
     const inOld = (x, z) => OLD.some(f => x > f.x0 && x < f.x1 && z > f.z0 && z < f.z1);
     const keepName = /^(g|ground|road|sea|sand|sg)/;
 
-    // 1. remove every old building mesh (and its signs, roofs, furniture and parked cars) inside the old footprints
+    // 1. Retire content centred inside the reserved legacy footprints.
+    //    Do not expand deletion to every intersecting mesh: that could cut into neighbouring lots.
     let gone = 0;
     scene.meshes.slice().forEach(m => {
       if (!m || m.isDisposed() || keepName.test(m.name || "")) return;
       m.computeWorldMatrix(true);
       const c = m.getBoundingInfo().boundingBox.centerWorld;
       if (inOld(c.x, c.z)) { m.dispose(); gone++; }
+    });
+
+    // 1b. Audit any non-road mesh whose world bounds still intersect a retired footprint.
+    //     These are candidates for visual inspection, not automatic deletion.
+    const remainingIntersecting = [];
+    scene.meshes.forEach(m => {
+      if (!m || m.isDisposed() || keepName.test(m.name || "") || !m.getBoundingInfo) return;
+      m.computeWorldMatrix(true);
+      const bb = m.getBoundingInfo().boundingBox, lo = bb.minimumWorld, hi = bb.maximumWorld;
+      const hit = OLD.some(f => hi.x > f.x0 && lo.x < f.x1 && hi.z > f.z0 && lo.z < f.z1);
+      if (hit) {
+        const c = bb.centerWorld;
+        remainingIntersecting.push({
+          name: m.name || "(unnamed)",
+          center: [Number(c.x.toFixed(2)), Number(c.y.toFixed(2)), Number(c.z.toFixed(2))],
+          bounds: [Number(lo.x.toFixed(2)), Number(hi.x.toFixed(2)), Number(lo.z.toFixed(2)), Number(hi.z.toFixed(2))]
+        });
+      }
     });
 
     // 2. the game's police, hospital and job positions now point at the new buildings
@@ -45,7 +65,7 @@
       removePoints(L.points);
     }, 300);
 
-    window.ACCRA_REMOVED_OLD = { meshes: gone, kitPoints: kitRemoved };
-    console.log("Old police, hospital and mall removed:", gone, "meshes");
+    window.ACCRA_REMOVED_OLD = { meshes: gone, kitPoints: kitRemoved, remainingIntersecting };
+    console.log("Legacy police/hospital plot cleanup:", gone, "meshes removed;", remainingIntersecting.length, "intersecting meshes need visual review");
   } catch (err) { console.error("accra-remove-old failed:", err); }
 })();
