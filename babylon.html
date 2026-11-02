@@ -170,7 +170,7 @@ scene.onBeforeRenderObservable.add(()=>{
     active.speedRatio=moving?Math.min(Math.max(smv/2.5,.65),1.8):1;
   }
 });
-const cam=new BABYLON.UniversalCamera('cam-bootstrap',V(0,5,-9),scene);cam.minZ=.2;cam.maxZ=60000;cam.speed=0;cam.inputs.clear();
+let cam=new BABYLON.UniversalCamera('cam-bootstrap',V(0,5,-9),scene);cam.minZ=.2;cam.maxZ=60000;cam.speed=0;cam.inputs.clear();
 window.ACCRA_SETTINGS_API={engine,scene,cam,ipc,sun,shadowGenerator:sg,phone:PHONE};
 const car=BABYLON.MeshBuilder.CreateBox('car',{width:2.2,height:1.4,depth:4.6},scene);
 car.isVisible=false;car.position.set(2,.8,22);car.checkCollisions=true;car.ellipsoid=V(1.15,.7,1.15);
