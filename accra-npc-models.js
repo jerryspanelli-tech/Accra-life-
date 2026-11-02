@@ -107,6 +107,8 @@
         if (moving) setAnimation("walk", true);
         else setAnimation("idle", true);
       },
+      pauseAnimation() { if (active) active.pause(); },
+      resumeAnimation() { if (active) active.play(true); },
       dispose() {
         if (disposed) return;
         disposed = true;
