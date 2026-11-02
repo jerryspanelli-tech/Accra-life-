@@ -60,10 +60,10 @@ async function loadCrowd(){
    const spec=templates[i];
    const actor=await AccraNPCModels.create(scene,{model:spec.model,position:[spec.x,0,spec.z],height:1.8,animation:'walk'});
    actors.push(actor);makeLabel(spec.label,spec.x,spec.z,actor.root);
-   results.push((i+1)+'. '+spec.label+' — '+actor.animationNames.length+' animation clip(s)');
+   results.push((i+1)+'. '+spec.label+' — clips: '+actor.animationNames.join(', ')+' — requested walk: '+(actor.activeAnimation||'MISSING WALK CLIP'));
    status.textContent=results.join('\n')+'\n\nCached source GLB files: '+AccraNPCModels.cachedModelCount(scene)+' / 6';
   }
-  status.textContent=results.join('\n')+'\n\nMale models: 6 · Female models: 6\nSUCCESS: 12 NPC instances created from all '+AccraNPCModels.cachedModelCount(scene)+' cached male/female GLB variants. Each model has two separate roots and animation groups.';
+  status.textContent=results.join('\n')+'\n\nMale models: 6 · Female models: 6\nCreated 12 NPC instances from all '+AccraNPCModels.cachedModelCount(scene)+' cached male/female GLB variants. Check each line above: requested walk must resolve to a real walk/locomotion clip; MISSING WALK CLIP means the source GLB needs a locomotion export. Each model has separate roots and animation groups.';
  }catch(e){status.textContent=results.join('\n')+'\nLOAD ERROR: '+(e&&e.message?e.message:String(e));console.error('[NPC cache test]',e)}
  finally{loading=false;$('reload').disabled=false}
 }
