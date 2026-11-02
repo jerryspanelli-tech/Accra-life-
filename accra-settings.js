@@ -14,7 +14,7 @@
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(prefs));}catch(_){}}
   function quality(q){
     prefs.quality=q;
-    const levels={low:{scale:1.6,shadows:false},medium:{scale:1.25,shadows:false},high:{scale:1,shadows:!phone},ultra:{scale:.85,shadows:true}};
+    const levels={low:{scale:1.6,shadows:false},medium:{scale:1.25,shadows:false},high:{scale:1,shadows:!phone},ultra:{scale:phone?1:.85,shadows:!phone}};
     const v=levels[q]||levels.medium;
     engine.setHardwareScalingLevel(v.scale);
     sun.shadowEnabled=v.shadows;
