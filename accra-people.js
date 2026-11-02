@@ -1,8 +1,8 @@
 /* accra-people.js
  * The old Superhero_Male_FullBody override is intentionally retired.
- * Player characters now use People/AccraLife male/female GLBs through
- * ACCRA_PLAYER_MODEL. Until a dedicated realistic NPC library is integrated,
- * NPC creation falls back to the game's existing AccraFigure implementation.
+ * Civilian NPCs are routed through AccraAssets.createCharacter, which swaps
+ * the safe procedural fallback for cached realistic People/AccraLife GLBs.
+ * Police keep their uniformed fallback until a dedicated police GLB exists.
  */
 (function(){
   try{
@@ -24,6 +24,6 @@
       legacySuperheroDisabled:true
     };
     (window.ACCRA_MODULES=window.ACCRA_MODULES||{}).people=1;
-    console.log('[AccraPeople] Legacy superhero replacement disabled; using safe NPC fallback.');
+    console.log('[AccraPeople] Civilian GLB replacement enabled; police uniform fallback retained.');
   }catch(err){console.error('accra-people compatibility layer failed:',err);}
 })();
