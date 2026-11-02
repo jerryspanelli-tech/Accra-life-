@@ -9,7 +9,7 @@ on:
       - 'babylon.html'
       - 'online.js'
       - 'accra-start.js'
-      - 'accra-auth.js'
+      - 'accra-auth.js'\n      - 'accra-settings.js'
       - 'accra-people.js'
       - 'People/AccraLife/**'
       - 'test-accra-characters.html'
@@ -34,7 +34,7 @@ jobs:
       - name: Check account and startup JavaScript syntax
         run: |
           node --check accra-auth.js
-          node --check accra-start.js
+          node --check accra-start.js\n          node --check accra-settings.js
       - name: Start local game server
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/accra-http.log 2>&1 &
