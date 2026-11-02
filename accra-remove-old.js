@@ -1,4 +1,4 @@
-/* accra-remove-old.js - retires legacy police/hospital plot content and stale interaction points.
+/* accra-remove-old.js - retires legacy police/hospital/mall plot content and stale interaction points.
  * Runs after the city districts and accra-upgrade.js, before the dedicated civic buildings are built.
  * The footprint sweep is retained for the reserved old sites; an AABB audit reports any intersecting
  * meshes left behind without deleting them automatically. */
@@ -7,7 +7,8 @@
     // old footprints (x0..x1, z0..z1) from accra-upgrade.js
     const OLD = [
       { n: "police",   x0: 17, x1: 54,  z0: 76, z1: 111 },
-      { n: "hospital", x0: 85, x1: 136, z0: 76, z1: 113 }
+      { n: "hospital", x0: 85, x1: 136, z0: 76, z1: 113 },
+      { n: "mall",     x0: 228, x1: 292, z0: 88, z1: 152 }
     ];
     const inOld = (x, z) => OLD.some(f => x > f.x0 && x < f.x1 && z > f.z0 && z < f.z1);
     const keepName = /^(g|ground|road|sea|sand|sg)/;
@@ -47,7 +48,7 @@
       hp: { x: 92, z: 110.4, ox: 110, oz: 131, depot: { x: 110, z: 131, h: Math.PI } } // Accra General Hospital
     });
 
-    // 3. remove any legacy shop points still located inside the retired police/hospital footprints
+    // 3. remove any legacy interaction points still located inside the retired police/hospital/mall footprints
     const removePoints = arr => {
       if (!arr) return 0;
       let n = 0;
@@ -66,6 +67,6 @@
     }, 300);
 
     window.ACCRA_REMOVED_OLD = { meshes: gone, kitPoints: kitRemoved, remainingIntersecting };
-    console.log("Legacy police/hospital plot cleanup:", gone, "meshes removed;", remainingIntersecting.length, "intersecting meshes need visual review");
+    console.log("Legacy police/hospital/mall plot cleanup:", gone, "meshes removed;", remainingIntersecting.length, "intersecting meshes need visual review");
   } catch (err) { console.error("accra-remove-old failed:", err); }
 })();
