@@ -1,6 +1,8 @@
 /* accra-start.js - character selection uses the same 3D male/female GLBs as the playable character. */
-(function () {
+(async function () {
   try {
+    const auth = await window.ACCRA_AUTH_READY;
+    await auth.requireSession();
     const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const saved = (window.ACCRA_AVATAR && window.ACCRA_AVATAR.look) || {};
     const sel = {
@@ -69,6 +71,8 @@
       localStorage.setItem("accra-name", name);
       const look = window.ACCRA_AVATAR && window.ACCRA_AVATAR.look;
       if (look) look.gender = sel.gender;
+      try { await auth.saveProfile({ display_name: name, gender: sel.gender, look: look || { gender: sel.gender } }); }
+      catch (err) { console.error("[AccraAuth] Could not save player profile:", err); }
       if(previewEngine){previewEngine.stopRenderLoop();previewEngine.dispose();previewEngine=null;previewScene=null;}
       ov.remove();
       setTimeout(() => {
