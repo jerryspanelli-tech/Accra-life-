@@ -27,6 +27,16 @@
     };
 
     const cyl = (d, h, x, y, z, hex, solid, tess) => { const c = B.MeshBuilder.CreateCylinder("tw_cyl", { diameter: d, height: h, tessellation: tess || 10 }, scene); c.position.set(x, y, z); c.material = mat(hex); c.checkCollisions = !!solid; return c; };
+    const palmTree = (x, z) => {
+      const trunk = B.MeshBuilder.CreateCylinder("tw_palm_trunk", { height: 8, diameterTop: .22, diameterBottom: .48, tessellation: 7 }, scene);
+      trunk.position.set(x, 4, z); trunk.material = mat("#76502f"); trunk.checkCollisions = true; trunk.isPickable = false;
+      for (let i = 0; i < 7; i++) {
+        const leaf = B.MeshBuilder.CreateBox("tw_palm_leaf", { width: .42, height: .12, depth: 4.2 }, scene);
+        leaf.position.set(x + Math.sin(i * Math.PI * 2 / 7) * 1.5, 8, z + Math.cos(i * Math.PI * 2 / 7) * 1.5);
+        leaf.rotation.y = i * Math.PI * 2 / 7; leaf.rotation.x = -.22; leaf.material = mat(i % 2 ? "#287345" : "#3b8a4f");
+        leaf.isPickable = false; leaf.checkCollisions = false;
+      }
+    };
 
     TOWNS.forEach(t => {
       const rx = hx(t.z), cx = rx + 220, cz = t.z;
@@ -61,10 +71,10 @@
       } else if (t.landmark === "grove") {
         const grove = B.MeshBuilder.CreateCylinder("tw_bunso_grove", { diameter: 26, height: .5, tessellation: 20 }, scene);
         grove.position.set(cx + 10, .25, cz - 80); grove.material = mat("#668b43"); grove.isPickable = false;
-        for (let k = -1; k <= 1; k++) palm(cx + 10 + k * 9, cz - 80 + (k % 2) * 8);
+        for (let k = -1; k <= 1; k++) palmTree(cx + 10 + k * 9, cz - 80 + (k % 2) * 8);
       } else if (t.landmark === "market") {
         box(34, 5, 18, cx + 10, 2.5, cz - 80, "#d9c7a4", true);
-        for (let k = -12; k <= 12; k += 8) box(6, .3, 5, cx + 10 + k, 5.2, cz - 80, ["#c8102e", "#fcd116", "#006b3f"][Math.abs(k / 8) % 3], false);
+        for (let k = -12; k <= 12; k += 8) box(6, .3, 5, cx + 10 + k, 5.2, cz - 80, ["#c8102e", "#fcd116", "#006b3f"][Math.abs(Math.round(k / 8)) % 3], false);
         sign("ANYINAM MARKET", cx + 10, 8.5, cz - 80, 22, 3, "#17191c", "#fcd116");
       } else if (t.landmark === "roundabout") {
         const ring = B.MeshBuilder.CreateTorus("tw_round", { diameter: 40, thickness: 6, tessellation: 40 }, scene);
@@ -84,7 +94,7 @@
         box(12, 26, 12, cx + 70, 13, cz - 40, "#b8a58a", true);
         sign("KEJETIA MARKET", cx, 11, cz - 49, 40, 6, "#17191c", "#fcd116");
       }
-      palm(cx - 80, cz + 40); palm(cx + 90, cz + 40);
+      palmTree(cx - 80, cz + 40); palmTree(cx + 90, cz + 40);
     });
 
     window.ACCRA_TOWNS = TOWNS.map(t => ({ n: t.n, z: t.z, x: hx(t.z) + 220 }));
