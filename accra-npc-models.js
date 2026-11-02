@@ -64,7 +64,7 @@
     const bounds = root.getHierarchyBoundingVectors(true);
     const sourceHeight = bounds.max.y - bounds.min.y;
     if (!Number.isFinite(sourceHeight) || sourceHeight < 0.1) {
-      root.dispose(false, true);
+      root.dispose(false, false);
       (instance.animationGroups || []).forEach(group => group.dispose());
       throw new Error("Invalid character model bounds for " + key);
     }
@@ -113,7 +113,7 @@
         if (disposed) return;
         disposed = true;
         groups.forEach(group => group.dispose());
-        root.dispose(false, true);
+        root.dispose(false, false);
       }
     };
   }
