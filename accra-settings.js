@@ -8,7 +8,7 @@
   const defaults={quality:phone?"medium":"high",brightness:1.05,fog:true,cameraSensitivity:800,cameraDistance:9,sound:false,volume:.22};
   let prefs={...defaults};
   try{prefs={...prefs,...JSON.parse(localStorage.getItem(KEY)||"{}")};}catch(_){}
-  let audio=null,loop=null;
+  prefs.sound=false;\n  let audio=null,loop=null;
   const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
   function persist(){try{localStorage.setItem(KEY,JSON.stringify(prefs));}catch(_){}}
   function quality(q){
@@ -17,7 +17,7 @@
     const v=levels[q]||levels.medium;
     engine.setHardwareScalingLevel(v.scale);
     sun.shadowEnabled=v.shadows;
-    if(shadowGenerator)shadowGenerator.getShadowMap().resize(q==="ultra"?2048:q==="high"?1024:512);
+    const map=shadowGenerator&&shadowGenerator.getShadowMap();if(map&&map.resize)map.resize(q==="ultra"?2048:q==="high"?1024:512);
     persist();
   }
   function apply(){
