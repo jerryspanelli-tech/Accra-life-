@@ -38,20 +38,15 @@
   function pickAnimation(groups, preference) {
     if (!groups || !groups.length) return null;
     const wanted = String(preference || "idle").toLowerCase();
-    const named = pattern => groups.find(group => pattern.test(group.name || ""));
-    // Never label an idle clip as walking: a missing locomotion clip must be visible.
-    if (wanted === "walk" || wanted === "walking") return named(/walk|locomotion/i);
-    if (wanted === "run" || wanted === "running") return named(/run/i) || named(/walk|locomotion/i);
-    if (wanted === "idle" || wanted === "stand") return named(/idle|stand|breath/i) || groups[0];
-    return named(new RegExp(wanted.replace(/[.*+?^${}()|[\]\\]/g, "\\  function pickAnimation(groups, preference) {
-    if (!groups || !groups.length) return null;
-    const wanted = String(preference || "idle").toLowerCase();
-    const exact = groups.find(g => g.name && g.name.toLowerCase().includes(wanted));
-    if (exact) return exact;
-    if (wanted === "walk") return groups.find(g => /idle/i.test(g.name || "")) || groups[0];
-    if (wanted === "idle") return groups.find(g => /idle/i.test(g.name || "")) || groups[0];
-    return groups[0];
-  }"), "i")) || null;
+    const named = terms => groups.find(group => {
+      const name = String(group.name || "").toLowerCase();
+      return terms.some(term => name.includes(term));
+    });
+    // Never label an idle clip as walking: missing locomotion must stay visible.
+    if (wanted === "walk" || wanted === "walking") return named(["walk", "locomotion"]);
+    if (wanted === "run" || wanted === "running") return named(["run"]) || named(["walk", "locomotion"]);
+    if (wanted === "idle" || wanted === "stand") return named(["idle", "stand", "breath"]) || groups[0];
+    return named([wanted]) || null;
   }
 
   async function create(scene, options) {
