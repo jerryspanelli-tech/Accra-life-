@@ -1,0 +1,174 @@
+{
+  "schemaVersion": 1,
+  "title": "Accra Life clothing and footwear catalogue",
+  "purpose": "Production design brief for a broad, mix-and-match Ghanaian fashion wardrobe for player characters and NPCs.",
+  "assetStatus": "design_manifest_only",
+  "important": "This is a wardrobe specification, not a claim that every listed garment or shoe is already modelled or selectable in-game. Each asset must be created or sourced with suitable rights, fitted to both character rigs where appropriate, and tested before being presented as available.",
+  "principles": {
+    "genderAvailability": "Clothing and footwear are not hard-locked by gender. Any character can choose any compatible item.",
+    "localIdentity": "Represent Ghanaian everyday fashion and traditional clothing respectfully, including Fugu/Batakari, smocks, Kente, Ankara and locally familiar styling.",
+    "mixAndMatch": "Separate tops, bottoms, dresses, outerwear, footwear and accessories so players can combine items freely.",
+    "colour": "Support multiple colourways and patterns for each suitable item. Include solid colours, two-tone combinations, Ghana flag-inspired palettes, earth tones, bright colours, neutral colours and varied fabric patterns.",
+    "realism": "Use proper fitted 3D clothing meshes with fabric texture, seams, folds and believable silhouettes. Avoid the old cartoon primitive body/clothing look as the final target.",
+    "npcVariation": "NPC clothing should be selected with stable per-NPC outfit seeds, with varied colours and combinations across districts and occupations.",
+    "performance": "Reuse meshes/materials where possible, use texture atlases and LODs, and keep crowd clothing performant on phones.",
+    "culture": "Use appropriate local garment references and avoid treating every Ghanaian character as wearing the same ceremonial outfit."
+  },
+  "categories": [
+    {
+      "id": "traditional-local",
+      "title": "Ghanaian traditional and local wear",
+      "items": [
+        "Fugu / Batakari smocks in short, regular and long lengths",
+        "Northern Ghanaian smock sets with matching trousers",
+        "Kente cloth outfits and Kente-accented shirts",
+        "Ankara / African print shirts and blouses",
+        "African print trousers and matching sets",
+        "Traditional wrap skirts and tops",
+        "Kaftans and senator-style sets",
+        "Traditional dresses",
+        "Locally styled tunics and embroidered tops",
+        "Simple everyday Ghanaian print outfits"
+      ]
+    },
+    {
+      "id": "streetwear",
+      "title": "Modern streetwear",
+      "items": [
+        "Oversized graphic T-shirts",
+        "Plain fitted T-shirts",
+        "Polo shirts",
+        "Hoodies",
+        "Zip-up hoodies",
+        "Sweatshirts",
+        "Varsity jackets",
+        "Denim jackets",
+        "Puffer jackets",
+        "Bomber jackets",
+        "Tracksuits",
+        "Football jerseys",
+        "Basketball jerseys",
+        "Long-sleeve streetwear tops",
+        "Cargo trousers",
+        "Baggy jeans",
+        "Slim jeans",
+        "Straight-leg jeans",
+        "Joggers",
+        "Track pants",
+        "Shorts",
+        "Denim shorts"
+      ]
+    },
+    {
+      "id": "smart-and-formal",
+      "title": "Smart, office and formal clothing",
+      "items": [
+        "Business suits",
+        "Blazers",
+        "Dress shirts",
+        "Chinos",
+        "Formal trousers",
+        "Pencil skirts",
+        "Office dresses",
+        "Smart casual shirts",
+        "Waistcoats",
+        "Ties and bow ties",
+        "Formal traditional-inspired outfits"
+      ]
+    },
+    {
+      "id": "everyday-and-occasion",
+      "title": "Everyday and occasion wear",
+      "items": [
+        "Casual dresses",
+        "Skirts",
+        "Tops and blouses",
+        "Leggings",
+        "Casual matching sets",
+        "Jumpsuits",
+        "Overalls",
+        "Lightweight shirts",
+        "Beachwear",
+        "Party outfits",
+        "Wedding and celebration outfits"
+      ]
+    },
+    {
+      "id": "footwear",
+      "title": "Footwear",
+      "items": [
+        "Sneakers: low-top, high-top, running and chunky styles",
+        "Slides",
+        "Crocs-style clogs and ventilated clogs",
+        "Rubber slippers / flip-flops",
+        "Leather sandals",
+        "Traditional sandals",
+        "Loafers",
+        "Formal dress shoes",
+        "Boots",
+        "Work boots",
+        "Heels",
+        "Flats",
+        "Sports shoes"
+      ]
+    },
+    {
+      "id": "accessories",
+      "title": "Accessories",
+      "items": [
+        "Caps and bucket hats",
+        "Beanies and durags",
+        "Belts",
+        "Watches",
+        "Necklaces and chains",
+        "Bracelets",
+        "Earrings",
+        "Sunglasses",
+        "Backpacks and crossbody bags",
+        "Handbags",
+        "Scarves and headwraps"
+      ]
+    }
+  ],
+  "colourSystem": {
+    "solids": [
+      "black", "white", "red", "yellow", "green", "blue", "navy", "royal blue",
+      "sky blue", "orange", "purple", "pink", "burgundy", "brown", "cream",
+      "beige", "grey", "olive", "teal"
+    ],
+    "patterns": [
+      "Kente-inspired woven patterns",
+      "Ankara prints",
+      "Adinkra-inspired motifs used with cultural care",
+      "stripes",
+      "checks",
+      "colour blocking",
+      "graphic prints",
+      "camouflage",
+      "two-tone panels"
+    ],
+    "customisation": "Where the garment design supports it, let the player select colourways or patterns independently for compatible clothing pieces. Footwear should support different upper, sole, lace and accent colours where practical."
+  },
+  "npcWardrobeRules": {
+    "districts": "Vary looks naturally across Osu, Makola, East Legon, Airport City, Labadi, central Accra, estates, highway towns and Kumasi.",
+    "occupations": "Use suitable uniform sets for police, security, health workers, market traders, drivers, bus attendants, mechanics, cleaners, hospitality staff and office workers.",
+    "uniforms": "Role uniforms have required core pieces, but allow appropriate variation in fit, footwear and approved accessories. Do not dress police or medical staff in random civilian outfits while on duty.",
+    "consistency": "Keep each NPC's outfit and colour choices stable between sessions where NPC persistence is supported.",
+    "diversity": "Avoid obvious copy-paste crowds; vary garment combinations, colours, footwear, hairstyles and accessories."
+  },
+  "playerSystems": {
+    "wardrobe": "Add a wardrobe interface with separate slots for top, bottom, outerwear, footwear and accessories.",
+    "shops": "Support clothing and footwear shops, market stalls and boutiques in the game world.",
+    "barberAndStyle": "Clothing selection should work alongside the hairstyle and barber systems.",
+    "saving": "Persist item IDs, colour choices, patterns and equipped slots in the player appearance save.",
+    "economy": "Items can have prices and shop availability later; do not block basic starter clothing behind premium purchases."
+  },
+  "implementationStages": [
+    "Create a small but high-quality representative set of local wear, streetwear, trousers, sneakers, clogs and slippers for both character rigs.",
+    "Build modular clothing attachment and fit validation for idle, walk, run and seated poses.",
+    "Add colour and pattern variants using reusable materials and texture atlases.",
+    "Create player wardrobe and save/load appearance data.",
+    "Add varied, role-appropriate NPC outfit pools with stable per-NPC selections.",
+    "Expand the catalogue in batches and test crowd performance on iPhone and ordinary computers."
+  ]
+}
