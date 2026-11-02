@@ -39,14 +39,14 @@ const templates=[
  {model:'maleSuit',label:'Male suit',x:1.75,z:2.2},
  {model:'femaleAnkara',label:'Female Ankara',x:5.2,z:2.2}
 ];
-let actors=[],paused=false,loading=false;
+let actors=[],labelMaterials=[],paused=false,loading=false;
 function makeLabel(text,x,z,parent){
  const tex=new B.DynamicTexture('label_'+actors.length,{width:512,height:80},scene,false),ctx=tex.getContext();
  ctx.clearRect(0,0,512,80);ctx.fillStyle='#101820';ctx.fillRect(0,0,512,80);ctx.fillStyle='#f2d27a';ctx.font='bold 31px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,42);tex.update();
  const plane=B.MeshBuilder.CreatePlane('npc_label',{width:2.35,height:.36},scene);plane.parent=parent;plane.position.set(0,2.2,0);plane.billboardMode=B.Mesh.BILLBOARDMODE_ALL;plane.isPickable=false;
- const mat=new B.StandardMaterial('npc_label_mat',scene);mat.diffuseTexture=tex;mat.emissiveTexture=tex;mat.disableLighting=true;mat.backFaceCulling=false;plane.material=mat;
+ const mat=new B.StandardMaterial('npc_label_mat',scene);mat.diffuseTexture=tex;mat.emissiveTexture=tex;mat.disableLighting=true;mat.backFaceCulling=false;plane.material=mat;labelMaterials.push(mat);
 }
-async function clearCrowd(){actors.forEach(actor=>actor.dispose());actors=[]}
+async function clearCrowd(){labelMaterials.forEach(material=>material.dispose(true,true));labelMaterials=[];actors.forEach(actor=>actor.dispose());actors=[]}
 async function loadCrowd(){
  if(loading)return;loading=true;$('reload').disabled=true;await clearCrowd();
  status.textContent='Loading and instantiating eight NPCs…';
