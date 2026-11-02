@@ -989,9 +989,15 @@
       villa: [VX, VZ + 12], airport: [-375, -244],
       "Labadi beach": [-90, 190], "Amoamah estate": [110, -30],
       "Car dealership": [35, -35], "Gold works": [196, 120], "Stone quarry": [190, -150],
-      "Accra North (highway)": [-60, -180], "Nsawam": [-120, -3470],
-      "Suhum": [-120, -6470], "Nkawkaw": [-120, -12970],
-      "Konongo": [-120, -18970], "Ejisu": [-2340, -22470], "Kumasi (Kejetia)": [-2400, -24470]
+      "Accra North (highway)": [-60, -180],
+      "Nsawam": [window.ACCRA_WORLD_LAYOUT.townX("Nsawam"), -3500],
+      "Suhum": [window.ACCRA_WORLD_LAYOUT.townX("Suhum"), -6500],
+      "Bunso": [window.ACCRA_WORLD_LAYOUT.townX("Bunso"), -9500],
+      "Anyinam": [window.ACCRA_WORLD_LAYOUT.townX("Anyinam"), -11200],
+      "Nkawkaw": [window.ACCRA_WORLD_LAYOUT.townX("Nkawkaw"), -13000],
+      "Konongo": [window.ACCRA_WORLD_LAYOUT.townX("Konongo"), -19000],
+      "Ejisu": [window.ACCRA_WORLD_LAYOUT.townX("Ejisu"), -22500],
+      "Kumasi (Kejetia)": [window.ACCRA_WORLD_LAYOUT.townX("Kumasi"), -24500]
     };
 
     function adminPanel() {

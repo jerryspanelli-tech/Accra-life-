@@ -4,17 +4,10 @@
 (function () {
   try {
     const B = BABYLON;
-    const DRIFT = -2400, END = -24500;
-    const S = t => t * t * (3 - 2 * t);
-    const hx = z => DRIFT * S(Math.min(1, Math.max(0, (-z - 165) / (-END - 165))));
-    const TOWNS = [
-      { n: "NSAWAM", z: -3500, landmark: "fish" },
-      { n: "SUHUM", z: -6500, landmark: "hill" },
-      { n: "NKAWKAW", z: -13000, landmark: "roundabout" },
-      { n: "KONONGO", z: -19000, landmark: "gold" },
-      { n: "EJISU", z: -22500, landmark: "gateway" },
-      { n: "KUMASI KEJETIA", z: -24500, landmark: "kejetia" }
-    ];
+    const ROUTE = window.ACCRA_WORLD_LAYOUT;
+    if (!ROUTE) throw new Error("Shared N6 world layout was not loaded");
+    const hx = ROUTE.highwayX;
+    const TOWNS = ROUTE.towns.map(t => ({ n: t.label, z: t.z, landmark: t.landmark }));
 
     // Cache sign materials by label so "FUEL" (used once per town) doesn't create 6 copies.
     const signCache = {};
@@ -34,6 +27,16 @@
     };
 
     const cyl = (d, h, x, y, z, hex, solid, tess) => { const c = B.MeshBuilder.CreateCylinder("tw_cyl", { diameter: d, height: h, tessellation: tess || 10 }, scene); c.position.set(x, y, z); c.material = mat(hex); c.checkCollisions = !!solid; return c; };
+    const palmTree = (x, z) => {
+      const trunk = B.MeshBuilder.CreateCylinder("tw_palm_trunk", { height: 8, diameterTop: .22, diameterBottom: .48, tessellation: 7 }, scene);
+      trunk.position.set(x, 4, z); trunk.material = mat("#76502f"); trunk.checkCollisions = true; trunk.isPickable = false;
+      for (let i = 0; i < 7; i++) {
+        const leaf = B.MeshBuilder.CreateBox("tw_palm_leaf", { width: .42, height: .12, depth: 4.2 }, scene);
+        leaf.position.set(x + Math.sin(i * Math.PI * 2 / 7) * 1.5, 8, z + Math.cos(i * Math.PI * 2 / 7) * 1.5);
+        leaf.rotation.y = i * Math.PI * 2 / 7; leaf.rotation.x = -.22; leaf.material = mat(i % 2 ? "#287345" : "#3b8a4f");
+        leaf.isPickable = false; leaf.checkCollisions = false;
+      }
+    };
 
     TOWNS.forEach(t => {
       const rx = hx(t.z), cx = rx + 220, cz = t.z;
@@ -65,6 +68,14 @@
         box(4, 14, 4, cx + 10, 7, cz - 80, "#f4f1ea", true);
         const sp = B.MeshBuilder.CreateCylinder("tw_spire", { diameterTop: 0, diameterBottom: 4, height: 5, tessellation: 4 }, scene);
         sp.position.set(cx + 10, 16.5, cz - 80); sp.material = mat("#8a1c2b");
+      } else if (t.landmark === "grove") {
+        const grove = B.MeshBuilder.CreateCylinder("tw_bunso_grove", { diameter: 26, height: .5, tessellation: 20 }, scene);
+        grove.position.set(cx + 10, .25, cz - 80); grove.material = mat("#668b43"); grove.isPickable = false;
+        for (let k = -1; k <= 1; k++) palmTree(cx + 10 + k * 9, cz - 80 + (k % 2) * 8);
+      } else if (t.landmark === "market") {
+        box(34, 5, 18, cx + 10, 2.5, cz - 80, "#d9c7a4", true);
+        for (let k = -12; k <= 12; k += 8) box(6, .3, 5, cx + 10 + k, 5.2, cz - 80, ["#c8102e", "#fcd116", "#006b3f"][Math.abs(Math.round(k / 8)) % 3], false);
+        sign("ANYINAM MARKET", cx + 10, 8.5, cz - 80, 22, 3, "#17191c", "#fcd116");
       } else if (t.landmark === "roundabout") {
         const ring = B.MeshBuilder.CreateTorus("tw_round", { diameter: 40, thickness: 6, tessellation: 40 }, scene);
         ring.position.set(cx + 10, .3, cz - 80); ring.scaling.y = .1; ring.material = mat("#4a4f57"); ring.isPickable = false;
@@ -83,7 +94,7 @@
         box(12, 26, 12, cx + 70, 13, cz - 40, "#b8a58a", true);
         sign("KEJETIA MARKET", cx, 11, cz - 49, 40, 6, "#17191c", "#fcd116");
       }
-      palm(cx - 80, cz + 40); palm(cx + 90, cz + 40);
+      palmTree(cx - 80, cz + 40); palmTree(cx + 90, cz + 40);
     });
 
     window.ACCRA_TOWNS = TOWNS.map(t => ({ n: t.n, z: t.z, x: hx(t.z) + 220 }));

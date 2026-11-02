@@ -7,12 +7,11 @@
     const L = window.ACCRA_LIFE && window.ACCRA_LIFE.api;
     if (!L) { console.log("accra-world: life API not ready"); return; }
     const B = BABYLON, { st, cash, pay, note, show, hide, ttl, BS, CLOSE, points, fade, tp } = L;
-    const END = -24500, DRIFT = -2400, CH = 256;
-    const HW_START = -150;   // the highway road begins at the city's north avenue junction
-    const S = t => t * t * (3 - 2 * t);
-    const hx = z => DRIFT * S(Math.min(1, Math.max(0, (-z - 165) / (-END - 165))));        // highway centre line x at z
-    const slope = z => (hx(z - 8) - hx(z + 8)) / 16;
-    const realKm = z => Math.round((-z - 165) / 1000 * 10.2);                               // 1 : 10 scale, so game km x 10.2 = real km
+    const ROUTE = window.ACCRA_WORLD_LAYOUT;
+    if (!ROUTE) throw new Error("Shared N6 world layout was not loaded");
+    const END = ROUTE.highway.endZ, CH = ROUTE.highway.chunkLength;
+    const HW_START = ROUTE.highway.startZ;
+    const hx = ROUTE.highwayX, slope = ROUTE.highwaySlope, realKm = ROUTE.distanceKm;
     const rng = seed => { let s = (seed * 2654435761) >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); };
     const hash = (a, b, c) => ((a * 73856093) ^ (b * 19349663) ^ (c * 83492791)) >>> 0;
 
@@ -27,7 +26,7 @@
       const el = document.getElementById("spd"); if (L.driving && el && sp < 90) el.textContent = Math.round(sp * 3.6) + " km/h"; });
 
     // ---------- 2. chunk streaming ----------
-    const TOWNS = [["Nsawam", -3500, 0], ["Suhum", -6500, 0], ["Nkawkaw", -13000, 0], ["Konongo", -19000, 0], ["Ejisu", -22500, 1], ["Kumasi", -24500, 2]].map(t => ({ n: t[0], z: t[1], big: t[2], x: hx(t[1]) + 220, R: [150, 190, 340][t[2] === 2 ? 2 : t[2]] }));
+    const TOWNS = ROUTE.towns.map(t => ({ n: t.name, z: t.z, big: t.big, x: hx(t.z) + t.offsetX, R: t.radius }));
     const TOLLS = [{ z: -1200, fee: 15, n: "Accra Gate toll" }, { z: -21500, fee: 20, n: "Ejisu toll" }];
     const asphalt = mat("#2f3033"), white = mat("#f2f2f2"), rail = mat("#b8bcc2"), conc = mat("#9a9a96");
     const mk = (w, h, d, x, y, z, m, ry) => { const b = B.MeshBuilder.CreateBox("wb", { width: w, height: h, depth: d }, scene); b.position.set(x, y, z); b.material = typeof m === "string" ? mat(m) : m; if (ry) b.rotation.y = ry; b.isPickable = false; return b; };
@@ -153,7 +152,7 @@
 
     // ---------- 3. intercity buses (fast travel): the stop list and fares ----------
     const STOPS = [["Accra", 14, -185]].concat(TOWNS.map(t => [t.n, t.x + 30, t.z + 30]));
-    const FARE = { Accra: 0, Nsawam: 25, Suhum: 40, Nkawkaw: 70, Konongo: 90, Ejisu: 110, Kumasi: 130 };
+    const FARE = Object.fromEntries([["Accra", 0], ...ROUTE.towns.map(t => [t.name, t.fare])]);
     function bus(here) {
       const draw = () => show(ttl("\uD83D\uDE8C Intercity buses") + "<small>You are in " + here + " \u00B7 cash GH\u00A2" + cash() + "</small>" + STOPS.filter(s => s[0] !== here).map(s => '<button data-d="' + s[0] + '" style="' + BS + '">' + s[0] + " \u00B7 GH\u00A2" + Math.max(FARE[s[0]], FARE[here]) + "</button>").join("") + CLOSE, d => {
         if (d.x) return hide();
