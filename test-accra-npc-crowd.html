@@ -42,10 +42,10 @@ const specs=[
  {file:'AccraLife_Female_Ankara.glb',label:'Female · Ankara',x:3.9,z:1.1}
 ];
 let actors=[],paused=false,loading=false;
-function label(text,x,z){
+function label(text,x,z,parent){
  const tex=new B.DynamicTexture('label_'+text.replace(/\W/g,''),{width:512,height:96},scene,false),ctx=tex.getContext();
  ctx.clearRect(0,0,512,96);ctx.fillStyle='#101820';ctx.fillRect(0,0,512,96);ctx.fillStyle='#f2d27a';ctx.font='bold 34px system-ui';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,256,50);tex.update();
- const m=B.MeshBuilder.CreatePlane('labelPlane',{width:2.5,height:.47},scene);m.position.set(x,2.35,z);m.billboardMode=B.Mesh.BILLBOARDMODE_ALL;m.isPickable=false;
+ const m=B.MeshBuilder.CreatePlane('labelPlane',{width:2.5,height:.47},scene);m.parent=parent;m.position.set(0,2.35,0);m.billboardMode=B.Mesh.BILLBOARDMODE_ALL;m.isPickable=false;
  const mat=new B.StandardMaterial('labelMat',scene);mat.diffuseTexture=tex;mat.emissiveTexture=tex;mat.disableLighting=true;mat.backFaceCulling=false;m.material=mat;
 }
 async function clearActors(){actors.forEach(a=>{(a.groups||[]).forEach(g=>g.dispose());if(a.root&&!a.root.isDisposed())a.root.dispose(false,true)});actors=[]}
@@ -65,7 +65,7 @@ async function loadCrowd(){
    const selected=groups.find(g=>/walk/i.test(g.name))||groups.find(g=>/idle/i.test(g.name))||groups[0];
    if(selected&&!paused)selected.start(true);
    actors.push({root:holder,groups,selected,file:spec.file,height,meshes:result.meshes.length,skeletons:(result.skeletons||[]).length});
-   label(spec.label,spec.x,spec.z);
+   label(spec.label,spec.x,spec.z,holder);
    lines.push('✓ '+spec.file+' | '+height.toFixed(2)+' source units | '+result.meshes.length+' meshes | '+(result.skeletons||[]).length+' skeletons | '+(groups.length?groups.map(g=>g.name).join(', '):'NO ANIMATION CLIPS'));
    status.textContent=lines.join('\n');
   }
