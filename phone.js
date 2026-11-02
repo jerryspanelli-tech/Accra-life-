@@ -37,7 +37,7 @@
  const el=(t,id,cls)=>{const e=document.createElement(t);if(id)e.id=id;if(cls)e.className=cls;document.body.appendChild(e);return e};
  const money=el('div','mny'),navp=el('div','nvp'),tst=el('div','ptoast'),ph=el('div','phone2','p2'),btn=el('button','pbtn2');
  btn.innerHTML='📱<u id="pbdg" class="bg" style="display:none"></u>';
- ph.innerHTML='<div class="sb"><span id="ptm2"></span><span id="psg"></span><span id="pbat">🔋</span></div><div class="hd"><i></i>ACCRA LIFE • v3<i></i></div><div class="bd" id="pbd"></div><div class="nv"><button id="pbk" aria-label="Back">◂</button><button id="phm" aria-label="Home">⌂</button><button id="pcl" aria-label="Close">✕</button></div>';
+ ph.innerHTML='<div class="sb"><span id="ptm2"></span><span class="sb-right"><span id="psg"></span><span class="wifi">◖</span><span id="pbat">▰</span></span></div><div class="hd"><i></i>ACCRA LIFE<i></i></div><div class="bd" id="pbd"></div><div class="nv"><button id="pbk" aria-label="Back">‹</button><button id="phm" aria-label="Home">●</button><button id="pcl" aria-label="Close">×</button></div>';
  let tt;const toast=m=>{tst.textContent=m;tst.style.opacity=1;clearTimeout(tt);tt=setTimeout(()=>tst.style.opacity=0,2400)};
  const paint=()=>{money.textContent='GH₵ '+(num(S.money)?S.money:0).toLocaleString()};paint();
 
@@ -157,7 +157,7 @@
  const SAY=[['Thank you, that was sweet! 😊',3,-1],['Busy but good! How was yours?',2,0],['Ha, that was actually funny!',2,-2]];
 
  function badges(){const n=unread(),b=$('pbdg');if(b){b.style.display=n?'block':'none';b.textContent=n}if(ph.classList.contains('on')&&tab==='home')render()}
- const home=()=>'<div class="ag">'+APPS.map(a=>'<button class="ai" data-app="'+a[0]+'" style="--c:'+a[3]+'"><i>'+a[1]+(a[0]==='msg'&&unread()?'<u class="bg">'+unread()+'</u>':'')+'</i>'+a[2]+'</button>').join('')+'</div><button class="bal" data-app="cedi"><span>GH₵ '+S.money.toLocaleString()+'</span><b>›</b></button>';
+ const home=()=>{const now=new Date(),day=now.toLocaleDateString('en-GH',{weekday:'long',day:'numeric',month:'long'}),time=now.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),apps=APPS.slice(0,9),dock=APPS.slice(9);return '<section class="ios-widget"><div class="iw-date">'+esc(day)+'</div><div class="iw-time">'+time+'</div><div class="iw-greeting">Your life in Accra, at a glance</div><button class="iw-wallet" data-app="cedi"><span>CEDIPAY WALLET</span><b>GH₵ '+S.money.toLocaleString()+'</b><i>View balance　›</i></button></section><div class="ag">'+apps.map(a=>'<button class="ai" data-app="'+a[0]+'" style="--c:'+a[3]+'"><i>'+a[1]+(a[0]==='msg'&&unread()?'<u class="bg">'+unread()+'</u>':'')+'</i><span>'+a[2]+'</span></button>').join('')+'</div><div class="ios-dock">'+dock.map(a=>'<button class="ai" data-app="'+a[0]+'" style="--c:'+a[3]+'" aria-label="'+a[2]+'"><i>'+a[1]+(a[0]==='msg'&&unread()?'<u class="bg">'+unread()+'</u>':'')+'</i><span>'+a[2]+'</span></button>').join('')+'</div>'};
  function render(){const ap=APPS.find(a=>a[0]===tab),bd=$('pbd');$('pbk').style.visibility=tab==='home'?'hidden':'visible';
   bd.innerHTML=ap?'<h3>'+ap[1]+' '+ap[2]+'</h3>'+V2[tab]():home();bd.classList.remove('pin');void bd.offsetWidth;bd.classList.add('pin')}
  const go=t=>{if(t!==tab){stack.push(tab);tab=t}};
