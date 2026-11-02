@@ -1,4 +1,4 @@
-/* Accra Life account authentication and cloud player saves. */
+/* Accra Life account authentication and cloud player saves. Browser-tested in CI. */
 (function () {
   "use strict";
   const SUPABASE_URL = "https://fktvbxmgseojcvztheqz.supabase.co";
