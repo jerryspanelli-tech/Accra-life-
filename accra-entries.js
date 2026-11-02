@@ -16,7 +16,7 @@
       BUILDINGS.forEach(b => {
         const r = I.build(b.id, b.cx, b.cz);
         L.points.push({
-          x: b.door.x, z: b.door.z, r: 2.6, t: "\uD83D\uDEAA Enter " + b.n,
+          x: b.door.x, z: b.door.z, r: b.id === "hospital" ? 5.0 : 2.6, t: "\uD83D\uDEAA Enter " + b.n,
           ok: () => inside === null && !L.busy && !L.seated && !L.driving,
           f: () => L.fade(700, () => { inside = b.id; L.tp(r.inside.x, r.inside.z); }, () => L.note("Welcome to " + b.n))
         });
