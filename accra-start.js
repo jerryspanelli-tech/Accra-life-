@@ -85,10 +85,14 @@
       if (b.id === "sStart") return startGame();
       if (b.dataset.v === "male" || b.dataset.v === "female") { sel.gender = b.dataset.v; render(); }
     });
-    card.addEventListener("input", e => { if (e.target.id === "sName") sel.name = e.target.value.trim();\n      if (e.target.id === "sAge") sel.age = e.target.value; });
+    card.addEventListener("input", e => { if (e.target.id === "sName") sel.name = e.target.value.trim();
+      if (e.target.id === "sAge") sel.age = e.target.value; });
 
     async function startGame() {
-      const name = (sel.name || "").slice(0, 16) || "Citizen";\n      const age = Number(sel.age);\n      if (!Number.isInteger(age) || age < 1 || age > 120) { const ageInput = document.getElementById("sAge"); ageInput.setCustomValidity("Enter an age from 1 to 120."); ageInput.reportValidity(); return; }\n      localStorage.setItem("accra-age", String(age));
+      const name = (sel.name || "").slice(0, 16) || "Citizen";
+      const age = Number(sel.age);
+      if (!Number.isInteger(age) || age < 1 || age > 120) { const ageInput = document.getElementById("sAge"); ageInput.setCustomValidity("Enter an age from 1 to 120."); ageInput.reportValidity(); return; }
+      localStorage.setItem("accra-age", String(age));
       localStorage.setItem("accra-name", name);
       const look = window.ACCRA_AVATAR && window.ACCRA_AVATAR.look;
       if (look) look.gender = sel.gender;
