@@ -160,7 +160,7 @@
     if (!window.supabase || !window.supabase.createClient) {
       await new Promise((resolve, reject) => {
         const script = document.createElement("script");
-        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.js";
+        script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js";
         script.onload = () => window.supabase && window.supabase.createClient ? resolve() : reject(new Error("Supabase library did not initialize"));
         script.onerror = () => reject(new Error("Could not load secure sign-in service"));
         document.head.appendChild(script);
