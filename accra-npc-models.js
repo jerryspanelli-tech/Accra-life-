@@ -38,10 +38,11 @@
   function pickAnimation(groups, preference) {
     if (!groups || !groups.length) return null;
     const wanted = String(preference || "idle").toLowerCase();
-    return groups.find(g => g.name && g.name.toLowerCase().includes(wanted))
-      || groups.find(g => /idle/i.test(g.name || ""))
-      || groups.find(g => /walk/i.test(g.name || ""))
-      || groups[0];
+    const exact = groups.find(g => g.name && g.name.toLowerCase().includes(wanted));
+    if (exact) return exact;
+    if (wanted === "walk") return groups.find(g => /idle/i.test(g.name || "")) || groups[0];
+    if (wanted === "idle") return groups.find(g => /idle/i.test(g.name || "")) || groups[0];
+    return groups[0];
   }
 
   async function create(scene, options) {
@@ -84,17 +85,20 @@
 
     const groups = instance.animationGroups || [];
     let active = null;
+    let disposed = false;
+    const state = sceneCache(scene);
+    state._activeActors = (state._activeActors || 0) + 1;
     function setAnimation(name, loop) {
+      if (disposed) return null;
       groups.forEach(group => group.stop());
       const selected = pickAnimation(groups, name);
       active = selected;
-      if (selected && options.autoplay !== false) selected.start(loop !== false);
+      if (selected) selected.start(loop !== false);
       return selected ? selected.name : null;
     }
 
     if (options.autoplay !== false) setAnimation(options.animation || "idle", true);
 
-    let disposed = false;
     return {
       root,
       model: key,
@@ -114,6 +118,7 @@
         disposed = true;
         groups.forEach(group => group.dispose());
         root.dispose(false, false);
+        state._activeActors = Math.max(0, (state._activeActors || 1) - 1);
       }
     };
   }
@@ -121,8 +126,10 @@
   function clear(scene) {
     const map = cache.get(scene);
     if (!map) return;
-    // Asset containers own the shared source assets; dispose them only when
-    // the scene itself is being torn down and no spawned actors remain.
+    // Never dispose shared source assets while spawned actors still use them.
+    if (map._activeActors > 0) {
+      throw new Error("Cannot clear NPC model cache while " + map._activeActors + " actor(s) are still active");
+    }
     map.forEach(promise => promise.then(container => container.dispose()).catch(() => {}));
     map.clear();
     cache.delete(scene);
