@@ -8,7 +8,7 @@
     const wrap=a=>{while(a>Math.PI)a-=Math.PI*2;while(a< -Math.PI)a+=Math.PI*2;return a;};
     let distance=DEFAULT_DISTANCE,yaw=Math.atan2(-Math.cos(player.rotation.y||0),-Math.sin(player.rotation.y||0));
     let elevation=BASE_ELEVATION,dragging=false,pointerId=null,lastX=0,lastY=0,lastLookAt=-Infinity,smoothedPosition=null;
-    const cam=new BABYLON.UniversalCamera("cam",new BABYLON.Vector3(0,5,-9),scene);
+    cam=new BABYLON.UniversalCamera("cam",new BABYLON.Vector3(0,5,-9),scene);
     cam.minZ=.2;cam.maxZ=60000;cam.speed=0;cam.angularSensibility=800;cam.checkCollisions=false;cam.inputs.clear();
     Object.defineProperty(cam,"alpha",{configurable:true,get:()=>yaw,set:v=>{if(Number.isFinite(v))yaw=v;}});
     Object.defineProperty(cam,"radius",{configurable:true,get:()=>distance,set:v=>{if(Number.isFinite(Number(v)))distance=clamp(Number(v),4,16);}});
