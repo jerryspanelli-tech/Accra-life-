@@ -153,7 +153,7 @@ const { chromium } = require('playwright');
     if(!lobbyText.includes('Returning Citizen')||!lobbyText.includes('26 years old')||!lobbyText.includes('Female citizen'))throw new Error('Returning-player lobby did not restore profile details: '+lobbyText);
     await page.locator('#lobbyContinue').click();
     await page.waitForSelector('#accraSettingsBtn',{timeout:15000});
-    await page.locator('#accraSettingsBtn').click();
+    await page.locator('#accraSettingsBtn').click({force:true});
     await page.waitForSelector('#accraSettings .panel',{timeout:5000});
     await page.locator('#asQuality').selectOption('low');
     await page.locator('#asFog').uncheck();
