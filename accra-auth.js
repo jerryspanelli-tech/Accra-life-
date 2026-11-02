@@ -143,6 +143,7 @@
               session = data.session;
             }
             msg.textContent = "Signed in. Loading your player…";
+            overlay.remove();
             resolve();
           } catch (err) {
             msg.style.color = "#ff9999";
