@@ -24,7 +24,7 @@
   async function loadProfile() {
     if (!session) return null;
     const { data, error } = await client.from("player_profiles")
-      .select("display_name,gender,look,game_save")
+      .select("display_name,gender,age,look,game_save")
       .eq("id", session.user.id).maybeSingle();
     if (error) throw error;
     if (data && data.game_save && typeof data.game_save === "object") {
@@ -36,6 +36,7 @@
     }
     if (data) {
       if (data.display_name) localStorage.setItem("accra-name", data.display_name);
+      if (Number.isInteger(data.age)) localStorage.setItem("accra-age", String(data.age));
       if (data.look && typeof data.look === "object") {
         localStorage.setItem("accra-look", JSON.stringify(data.look));
         if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.look) {
@@ -55,10 +56,13 @@
     const look = details && details.look || (window.ACCRA_AVATAR && window.ACCRA_AVATAR.look) || {};
     const displayName = String(details && details.display_name || localStorage.getItem("accra-name") || "Citizen").trim().slice(0,16) || "Citizen";
     const gender = (details && details.gender || look.gender) === "female" ? "female" : "male";
+    const ageValue = Number(details && details.age != null ? details.age : localStorage.getItem("accra-age"));
+    const age = Number.isInteger(ageValue) && ageValue >= 1 && ageValue <= 120 ? ageValue : null;
     const { error } = await client.from("player_profiles").upsert({
       id: session.user.id,
       display_name: displayName,
       gender,
+      age,
       look,
       game_save: gameSnapshot(),
       updated_at: new Date().toISOString()

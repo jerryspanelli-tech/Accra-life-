@@ -2,13 +2,34 @@
 (async function () {
   try {
     const auth = await window.ACCRA_AUTH_READY;
-    await auth.requireSession();
+    const savedProfile = await auth.requireSession();
     const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const saved = (window.ACCRA_AVATAR && window.ACCRA_AVATAR.look) || {};
     const sel = {
       gender: saved.gender === "female" ? "female" : "male",
-      name: localStorage.getItem("accra-name") || ""
+      name: localStorage.getItem("accra-name") || "",
+      age: localStorage.getItem("accra-age") || (savedProfile && savedProfile.age != null ? String(savedProfile.age) : "")
     };
+
+    if (savedProfile && savedProfile.display_name) {
+      sel.gender = savedProfile.gender === "female" ? "female" : "male";
+      sel.name = savedProfile.display_name;
+      if (savedProfile.age != null) sel.age = String(savedProfile.age);
+      localStorage.setItem("accra-name", sel.name);
+      if (savedProfile.age != null) localStorage.setItem("accra-age", String(savedProfile.age));
+      const look = window.ACCRA_AVATAR && window.ACCRA_AVATAR.look;
+      if (look) { look.gender = sel.gender; if (savedProfile.look) Object.assign(look, savedProfile.look); }
+      const lobby = document.createElement("div");
+      lobby.id = "accraLobby";
+      lobby.style.cssText = "position:fixed;inset:0;z-index:200;background:linear-gradient(145deg,#101820,#18252a 55%,#0b0d10);color:#fff;font:14px system-ui;display:flex;align-items:center;justify-content:center;padding:20px;box-sizing:border-box";
+      lobby.innerHTML = `<div style="width:min(100%,420px);padding:24px;border:1px solid #c9a54a;border-radius:22px;background:rgba(25,29,31,.96);box-shadow:0 20px 70px #0009;text-align:center"><div style="font-size:12px;letter-spacing:4px;color:#c9a54a;font-weight:800">WELCOME BACK</div><div style="font-size:30px;font-weight:900;margin:8px 0;color:#f4d27a">ACCRA LIFE</div><div style="font-size:20px;font-weight:700">${escHtml(sel.name)}</div><div style="color:#aeb8bd;margin:6px 0 22px">${sel.gender === "female" ? "Female citizen" : "Male citizen"}${sel.age ? " · " + escHtml(sel.age) + " years old" : ""}</div><button id="lobbyContinue" style="width:100%;padding:15px;border:0;border-radius:13px;background:#c9a54a;color:#17191c;font:800 16px system-ui">Continue your life</button><button id="lobbyCharacter" style="width:100%;padding:13px;margin-top:10px;border:1px solid #777;border-radius:13px;background:transparent;color:#fff;font:700 14px system-ui">Manage character</button></div>`;
+      document.body.appendChild(lobby);
+      const enter = () => { lobby.remove(); if (window.ACCRA_AVATAR && window.ACCRA_AVATAR.apply) window.ACCRA_AVATAR.apply(); };
+      lobby.querySelector("#lobbyContinue").onclick = enter;
+      lobby.querySelector("#lobbyCharacter").onclick = () => { enter(); setTimeout(() => window.ACCRA_STYLER && window.ACCRA_STYLER("edit"), 250); };
+      (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).start = 1;
+      return;
+    }
 
     const ov = document.createElement("div");
     ov.id = "startScreen";
@@ -49,11 +70,11 @@
           <div style="font:800 22px system-ui;color:#c9a54a;letter-spacing:1px">ACCRA LIFE</div>
           <div style="color:#aaa;font-size:12px">Create your character</div>
         </div>
-        <div style="display:flex;justify-content:center;margin-bottom:10px"><canvas id="sPrev" width="200" height="260" style="width:180px;height:234px;border-radius:14px;touch-action:pan-y"></canvas></div>
+        <div style="display:flex;justify-content:center;margin-bottom:10px"><canvas id="sPrev" width="480" height="624" style="width:180px;height:234px;border-radius:14px;touch-action:pan-y"></canvas></div>
         <div style="margin:8px 0 4px;color:#c9a54a;font-weight:700">Choose your character</div>
         <div style="display:flex;gap:8px">${btn(sel.gender === "male", "male")}${btn(sel.gender === "female", "female")}</div>
-        <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Name</div>
-        <input id="sName" maxlength="16" value="${escHtml(sel.name)}" placeholder="Your name" style="width:100%;box-sizing:border-box;border:0;border-radius:12px;padding:11px 12px;font:600 15px system-ui;background:#fff;color:#111">
+        <div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Your name</div>
+        <input id="sName" maxlength="16" value="${escHtml(sel.name)}" placeholder="Your name" autocomplete="nickname" style="width:100%;box-sizing:border-box;border:0;border-radius:12px;padding:11px 12px;font:600 15px system-ui;background:#fff;color:#111"><div style="margin:10px 0 4px;color:#c9a54a;font-weight:700">Age</div><input id="sAge" type="number" min="1" max="120" step="1" value="${escHtml(sel.age)}" placeholder="Your age" inputmode="numeric" style="width:100%;box-sizing:border-box;border:0;border-radius:12px;padding:11px 12px;font:600 15px system-ui;background:#fff;color:#111">
         <div style="color:#aaa;font-size:11px;margin-top:8px">This is the same 3D character model used in the game. Choose your character here; buy clothes at Accra Galleria Mall and change hairstyles at the barber shop.</div>
         <button id="sStart" style="margin-top:16px;width:100%;border:0;border-radius:16px;padding:14px;font:800 17px system-ui;background:#c9a54a;color:#17191c">Start Game</button>`;
       drawPreview(document.getElementById("sPrev"));
@@ -64,14 +85,18 @@
       if (b.id === "sStart") return startGame();
       if (b.dataset.v === "male" || b.dataset.v === "female") { sel.gender = b.dataset.v; render(); }
     });
-    card.addEventListener("input", e => { if (e.target.id === "sName") sel.name = e.target.value.trim(); });
+    card.addEventListener("input", e => { if (e.target.id === "sName") sel.name = e.target.value.trim();
+      if (e.target.id === "sAge") sel.age = e.target.value; });
 
     async function startGame() {
       const name = (sel.name || "").slice(0, 16) || "Citizen";
+      const age = Number(sel.age);
+      if (!Number.isInteger(age) || age < 1 || age > 120) { const ageInput = document.getElementById("sAge"); ageInput.setCustomValidity("Enter an age from 1 to 120."); ageInput.reportValidity(); return; }
+      localStorage.setItem("accra-age", String(age));
       localStorage.setItem("accra-name", name);
       const look = window.ACCRA_AVATAR && window.ACCRA_AVATAR.look;
       if (look) look.gender = sel.gender;
-      try { await auth.saveProfile({ display_name: name, gender: sel.gender, look: look || { gender: sel.gender } }); }
+      try { await auth.saveProfile({ display_name: name, gender: sel.gender, age, look: look || { gender: sel.gender } }); }
       catch (err) { console.error("[AccraAuth] Could not save player profile:", err); }
       if(previewEngine){previewEngine.stopRenderLoop();previewEngine.dispose();previewEngine=null;previewScene=null;}
       ov.remove();

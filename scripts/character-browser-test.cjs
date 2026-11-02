@@ -26,12 +26,12 @@ const { chromium } = require('playwright');
     await page.addInitScript(()=>{
       window.supabase={createClient:()=>({
         auth:{
-          getSession:async()=>({data:{session:null},error:null}),
+          getSession:async()=>({data:{session:localStorage.getItem('ci-returning')==='1'?{user:{id:'ci-test-user'}}:null},error:null}),
           signUp:async()=>({data:{session:null},error:null}),
           signInWithPassword:async()=>({data:{session:{user:{id:'ci-test-user'} }},error:null})
         },
         from:()=>({
-          select:()=>({eq:()=>({maybeSingle:async()=>({data:null,error:null})})}),
+          select:()=>({eq:()=>({maybeSingle:async()=>({data:localStorage.getItem('ci-returning')==='1'?{display_name:'Returning Citizen',gender:'female',age:26,look:{gender:'female'},game_save:{}}:null,error:null})})}),
           upsert:async()=>({error:null})
         })
       })};
@@ -56,6 +56,7 @@ const { chromium } = require('playwright');
     await page.waitForSelector('#startScreen button[data-v="female"]',{timeout:30000});
     await page.locator('#startScreen button[data-v="female"]').click();
     await page.waitForFunction(()=>window.__accraSelectionPreviewLoaded==='female',null,{timeout:45000});
+    await page.locator('#sAge').fill('26');
     await page.locator('#sStart').click();
     await page.waitForFunction(()=>window.ACCRA_PLAYER_MODEL&&window.ACCRA_PLAYER_MODEL.gender()==='female',null,{timeout:45000});
     const femaleInspection=await page.evaluate(()=>window.ACCRA_PLAYER_MODEL.inspect());
@@ -144,9 +145,25 @@ const { chromium } = require('playwright');
       joy.dispatchEvent(new PointerEvent('pointerup',{bubbles:true,cancelable:true,pointerId:7,pointerType:'touch',clientX:x,clientY:y}));
     },{x:joystick.x+joystick.width/2,y:joystick.y+joystick.height/2});
 
+    await page.evaluate(()=>localStorage.setItem('ci-returning','1'));
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.waitForSelector('#accraLobby',{timeout:30000});
+    if(await page.locator('#startScreen').count())throw new Error('Returning player was incorrectly sent back to character creation');
+    const lobbyText=await page.locator('#accraLobby').innerText();
+    if(!lobbyText.includes('Returning Citizen')||!lobbyText.includes('26 years old')||!lobbyText.includes('Female citizen'))throw new Error('Returning-player lobby did not restore profile details: '+lobbyText);
+    await page.locator('#lobbyContinue').click();
+    await page.waitForSelector('#accraSettingsBtn',{timeout:15000});
+    await page.locator('#accraSettingsBtn').click();
+    await page.waitForSelector('#accraSettings .panel',{timeout:5000});
+    await page.locator('#asQuality').selectOption('low');
+    await page.locator('#asFog').uncheck();
+    const settingsCheck=await page.evaluate(()=>({fog:window.ACCRA_SETTINGS_API.scene.fogEnabled,scale:window.ACCRA_SETTINGS_API.engine.getHardwareScalingLevel()}));
+    if(settingsCheck.fog!==false||settingsCheck.scale<1.5)throw new Error('Graphics settings did not apply: '+JSON.stringify(settingsCheck));
+    await page.locator('#asReset').click();
+    await page.locator('#asClose').click();
     const mainErrors=errors.filter(x=>x.includes('[AccraLifePlayer] Model load failed')||x.includes('[accra-start] 3D preview failed'));
     if(mainErrors.length)throw new Error('Main game character errors: '+mainErrors.join(' | '));
-    console.log(JSON.stringify({pass:true,accountScreenPassed,signupMessage,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,maleAppearanceMaterials,maleWardrobe:'clothing only; no barber options',femaleWardrobe:'clothing only; no barber options',oldMallFittingRoom:'clothing only; no barber options',appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
+    console.log(JSON.stringify({pass:true,accountScreenPassed,signupMessage,maleStatus,femaleStatus,walkStatus,runStatus,selectionPreview:'female GLB preview loaded',playableGender:'female',selectionPreview:'male and female previews loaded',returningLobby:lobbyText,settingsCheck,femaleEyeZ,femaleHairMaterial,maleEyeZ,maleHairMaterial,maleMaterials,maleAppearanceMaterials,maleWardrobe:'clothing only; no barber options',femaleWardrobe:'clothing only; no barber options',oldMallFittingRoom:'clothing only; no barber options',appearanceCheck,keyboardWalk,joystickWalk,joystickRun,mainConsoleErrors:mainErrors},null,2));
   }catch(e){
     const status=await page.locator('#status').innerText().catch(()=>'(no status element)');
     const diagnostics=await page.evaluate(()=>({animation:window.__accraCurrentAnimation,running:window.__accraRunning,position:window.__accraPlayerPosition})).catch(()=>null);
