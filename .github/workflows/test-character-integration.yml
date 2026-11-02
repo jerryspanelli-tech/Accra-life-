@@ -1,7 +1,10 @@
 name: Character browser verification
 on:
   push:
-    branches: [feature/character-selection-sync]
+    branches:
+      - main
+      - 'feature/**'
+      - 'fix/**'
     paths:
       - 'babylon.html'
       - 'online.js'
