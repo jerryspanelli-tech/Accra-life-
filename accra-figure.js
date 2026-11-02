@@ -252,7 +252,11 @@
               return;
             }
             actor.root.parent = h.root.parent;
-            actor.root.position.copyFrom(h.root.position);
+            // Keep the GLB's calculated ground-contact offset; copying the fallback's
+            // y=0 directly would bury models whose source origin is below their feet.
+            actor.root.position.x = h.root.position.x;
+            actor.root.position.y += h.root.position.y;
+            actor.root.position.z = h.root.position.z;
             actor.root.rotation.copyFrom(h.root.rotation);
             actor.setMoving(h.sp > 0);
             handle._actor = actor;
