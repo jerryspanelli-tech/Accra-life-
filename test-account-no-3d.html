@@ -18,7 +18,7 @@ small{color:#aaa}
 <h1>ACCRA LIFE — ACCOUNT TEST</h1>
 <p>This test loads the account system only. It does not load the 3D city, player, NPCs, vehicles, or game world.</p>
 <div id="status">Starting account test…</div>
-<p><small>Keep this page open for at least 30 seconds. If the Sign In screen appears, leave it open and see whether the browser error happens again.</small></p>
+<p><small>Leave the page open. The Sign In form should appear over this page. Do not submit any details yet; just check whether the form stays visible for 30 seconds.</small></p>
 </main>
 <script>
 (function(){
@@ -31,9 +31,15 @@ small{color:#aaa}
 </script>
 <script src="accra-auth.js?v=2"></script>
 <script>
-window.ACCRA_AUTH_READY.then(api=>{
+window.ACCRA_AUTH_READY.then(async api=>{
  const s=document.getElementById("status");
- s.textContent=api.session?"Account service loaded. A saved session is active. No 3D game is running.":"Account service loaded. Sign In screen should be visible. No 3D game is running.";
+ s.textContent="Account service loaded. Opening the Sign In form now…";
+ try {
+   await api.requireSession();
+   s.textContent="Sign-in completed and account profile loaded. No 3D game is running.";
+ } catch(err) {
+   s.textContent="ACCOUNT TEST ERROR: "+(err.message||err);
+ }
 }).catch(err=>{
  document.getElementById("status").textContent="ACCOUNT INITIALIZATION FAILED: "+(err.message||err);
 });
