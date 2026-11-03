@@ -213,3 +213,4 @@
     document.body.appendChild(notice);
   });
 })();
+/* Auth version 2.1 - private resolution without test hooks */
