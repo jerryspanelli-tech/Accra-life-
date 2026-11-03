@@ -118,7 +118,7 @@
         record.ready=true;
         return record;
       });
-      return {root,setMoving,dispose,ready:()=>record.ready,readyPromise,model:()=>record.instance?choice.file:null,animations:()=>record.groups.map(g=>g.name)};
+      return {root,setMoving,dispose,ready:()=>record.ready,readyPromise:record.readyPromise,model:()=>record.instance?choice.file:null,animations:()=>record.groups.map(g=>g.name)};
     }
     window.ACCRA_PEOPLE={
       spawn,
