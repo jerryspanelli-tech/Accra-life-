@@ -17,13 +17,63 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:n
 <div class="pill">ACCRA LIFE · v3 city</div><div class="pill" id="spd" style="display:none"></div>
 <div id="joy"><div id="knob"></div></div>
 <button id="jump" class="pb" aria-label="Jump or brake">⬆</button><button id="act" class="pb" aria-label="Car">🚗</button>
-<script>window.addEventListener('error',e=>{const d=document.createElement('div');d.style.cssText='position:fixed;top:0;left:0;right:0;background:#800;color:#fff;padding:10px;z-index:99999;font:14px system-ui';d.textContent='MAIN ERROR: '+e.message+' (line '+e.lineno+')';document.body.appendChild(d)});</script>
+<div id="startupDiagnostic" style="position:fixed;top:0;left:0;right:0;z-index:100005;background:rgba(16,18,22,0.92);color:#c9a54a;border-bottom:1px solid #555;padding:6px 10px;font:12px/1.4 monospace;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;pointer-events:none"><span id="diagStage">Startup: initializing</span><span id="diagEvents" style="color:#aaa;margin-left:8px">events: listening</span></div>
+<script>
+(function(){
+  const diag = {
+    stage: 'init',
+    history: [],
+    setStage(s){
+      this.stage = s;
+      this.history.push({ t: performance.now(), stage: s });
+      const el = document.getElementById('diagStage');
+      if (el) el.textContent = 'Startup: ' + s;
+    },
+    report(type, msg, isError){
+      const el = document.getElementById('diagEvents');
+      if (el) {
+        el.textContent = (isError ? 'ERR: ' : '') + type + (msg ? ' (' + msg + ')' : '');
+        if (isError) el.style.color = '#ff8888';
+      }
+      if (isError) {
+        const d = document.createElement('div');
+        d.className = 'diag-error-banner';
+        d.style.cssText = 'position:fixed;top:32px;left:0;right:0;background:#8b1111;color:#fff;padding:8px 12px;z-index:100006;font:13px monospace;word-break:break-all';
+        d.textContent = '[' + type + '] ' + msg;
+        document.body.appendChild(d);
+      }
+    }
+  };
+  window.ACCRA_DIAGNOSTICS = diag;
+  diag.setStage('html-loaded');
+
+  window.addEventListener('error', e => {
+    const errText = (e && e.message || 'Error') + (e && e.lineno ? ' line ' + e.lineno : '');
+    diag.report('error', errText, true);
+  });
+  window.addEventListener('unhandledrejection', e => {
+    const reason = e && e.reason ? (e.reason.message || String(e.reason)) : 'Promise rejected';
+    diag.report('unhandledrejection', reason, true);
+  });
+  window.addEventListener('pagehide', e => {
+    diag.report('pagehide', 'persisted=' + (e && e.persisted), false);
+  });
+  window.addEventListener('beforeunload', () => {
+    diag.report('beforeunload', 'navigating', false);
+  });
+  document.addEventListener('visibilitychange', () => {
+    diag.report('visibility', document.visibilityState, false);
+  });
+})();
+</script>
 <script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
 <script>
 window.__useCesiumPlayer=true;
 const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z),C3=h=>BABYLON.Color3.FromHexString(h);
+if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage('babylon-loaded');
 const engine=new BABYLON.Engine($('c'),true,{adaptToDeviceRatio:true});
+if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage('3d-engine-ready');
 if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.0);
 const scene=new BABYLON.Scene(engine);
 scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);scene.collisionsEnabled=true;
@@ -227,9 +277,25 @@ function update(dt){
  $('act').style.display=(near||driving)?'block':'none';
  roof.setEnabled(!(Math.abs(focus.x-VX)<13&&Math.abs(focus.z-VZ)<9));
 }
-engine.runRenderLoop(()=>{update(Math.min(engine.getDeltaTime()/1000,.05));scene.render()});
+window.__accraAuthActive = false;
+let renderLoopPaused = false;
+engine.runRenderLoop(()=>{
+  if (window.__accraAuthActive) {
+    if (!renderLoopPaused) {
+      renderLoopPaused = true;
+      if (window.ACCRA_DIAGNOSTICS) window.ACCRA_DIAGNOSTICS.report('render', 'paused-for-auth', false);
+    }
+    return;
+  }
+  if (renderLoopPaused) {
+    renderLoopPaused = false;
+    if (window.ACCRA_DIAGNOSTICS) window.ACCRA_DIAGNOSTICS.report('render', 'resumed', false);
+  }
+  update(Math.min(engine.getDeltaTime()/1000,.05));
+  scene.render();
+});
 addEventListener('resize',()=>engine.resize());
-</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=41"></script><script src="accra-airport.js?v=49"></script><script src="accra-kumasi-airport.js?v=4"></script><script src="accra-roads.js?v=50"></script><script src="accra-connect.js?v=42"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=55"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=58"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=63"></script><script src="accra-phone-skin.js?v=64"></script><script src="online.js?v=31"></script><script src="accra-assets.js?v=35"></script><script src="accra-figure.js?v=56"></script><script src="accra-people.js?v=65"></script><script src="accra-auth.js?v=1"></script><script src="accra-start.js?v=32"></script><script src="accra-upgrade.js?v=35"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-civic-models.js?v=3"></script><script src="accra-hq.js?v=3"></script><script src="accra-hospital.js?v=3"></script><script src="accra-mall.js?v=1"></script><script src="accra-interiors.js?v=2"></script><script src="accra-entries.js?v=2"></script><script src="accra-settings.js?v=2"></script>
+</script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="landmarks.js?v=41"></script><script src="accra-airport.js?v=49"></script><script src="accra-kumasi-airport.js?v=4"></script><script src="accra-roads.js?v=50"></script><script src="accra-connect.js?v=42"></script><script src="accra-districts.js?v=68"></script><script src="accra-towns.js?v=42"></script><script src="accra-toll.js?v=49"></script><script src="accra-highway.js?v=55"></script><script src="accra-traffic.js?v=71"></script><script src="accra-transport.js?v=63"></script><script src="accra-shaxi.js?v=64"></script><script src="accra-cleanup.js?v=52"></script><script src="accra-camera.js?v=58"></script><script src="accra-market.js?v=58"></script><script src="phone.js?v=63"></script><script src="accra-phone-skin.js?v=64"></script><script src="online.js?v=31"></script><script src="accra-assets.js?v=35"></script><script src="accra-figure.js?v=56"></script><script src="accra-people.js?v=65"></script><script src="accra-auth.js?v=2"></script><script src="accra-start.js?v=32"></script><script src="accra-upgrade.js?v=35"></script><script src="accra-apartments.js?v=77"></script><script src="accra-estate.js?v=69"></script><script src="accra-remove-old.js?v=1"></script><script src="accra-civic-models.js?v=3"></script><script src="accra-hq.js?v=3"></script><script src="accra-hospital.js?v=3"></script><script src="accra-mall.js?v=1"></script><script src="accra-interiors.js?v=2"></script><script src="accra-entries.js?v=2"></script><script src="accra-settings.js?v=2"></script>
 
 
 </body></html>

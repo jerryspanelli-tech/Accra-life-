@@ -98,7 +98,9 @@
   }
 
   function authScreen() {
+    window.__accraAuthActive = true;
     return new Promise(resolve => {
+      window.__accraResolveAuthScreen = resolve;
       const overlay = document.createElement("div");
       overlay.id = "accra-auth-screen";
       overlay.style.cssText = "position:fixed;inset:0;z-index:100000;background:linear-gradient(180deg,#14161a,#090a0c);color:#fff;font:14px system-ui;display:flex;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;overflow:auto";
@@ -147,6 +149,8 @@
               session = data.session;
             }
             msg.textContent = "Signed in. Loading your player…";
+            window.__accraAuthActive = false;
+            delete window.__accraResolveAuthScreen;
             overlay.remove();
             resolve();
           } catch (err) {
@@ -166,6 +170,7 @@
     });
   }
 
+  if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-init");
   window.ACCRA_AUTH_READY = (async function () {
     if (!window.supabase || !window.supabase.createClient) {
       await new Promise((resolve, reject) => {
@@ -185,14 +190,27 @@
     const api = {
       get session() { return session; },
       async requireSession() {
-        if (!session) await authScreen();
+        if (!session) {
+          if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-screen-active");
+          await authScreen();
+        }
         if (!session) throw new Error("Please sign in to continue.");
+        if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-loading-profile");
         const profile = await loadProfile();
+        if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-complete");
         attachAutosave();
         return profile;
       },
       saveProfile,
       signOut: async () => { await flushSave(); await client.auth.signOut(); session = null; }
+    };
+    api.__testResolveAuth = async (mockSession) => {
+      session = mockSession || { user: { id: "test-user-id" } };
+      window.__accraAuthActive = false;
+      const overlay = document.getElementById("accra-auth-screen");
+      if (overlay) overlay.remove();
+      if (window.__accraResolveAuthScreen) { const r = window.__accraResolveAuthScreen; delete window.__accraResolveAuthScreen; r(); }
+      return session;
     };
     window.ACCRA_AUTH = api;
     return api;
