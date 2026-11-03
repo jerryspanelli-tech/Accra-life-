@@ -43,7 +43,7 @@ var scene,engine;
   await Promise.all(actors.map(a=>a.actor.readyPromise));
   actors.forEach((a,i)=>{
    a.actor.setMoving(i%2===0?2:0);
-   window.__npcTestResults.push({label:a.spec.label,model:a.actor.model(),ready:a.actor.ready(),animations:(a.actor.readyPromise&&a.actor.readyPromise.then?[]:[])});
+   window.__npcTestResults.push({label:a.spec.label,model:a.actor.model(),ready:a.actor.ready(),animations:a.actor.animations()});
   });
   window.__npcTestReady=true;
   document.getElementById('status').textContent=window.__npcTestResults.length+' NPC models loaded · walk/idle animations active';
