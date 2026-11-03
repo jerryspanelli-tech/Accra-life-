@@ -4,7 +4,7 @@
  // outfit: 0 tee+trousers, 1 suit+tie, 2 dress, 3 hoodie+shorts, 4 kaftan (batik), 5 Ghana jersey, 6 kente shirt, 7 leather jacket
  // hair: 0 bald, 1 fade, 2 afro, 3 dreads, 4 braids, 5 cornrows, 6 locs, 7 mohawk, 8 low cut, 9 twists
  // accessories: 0 none, 1 gold chain, 2 cap, 3 beanie, 4 sunglasses, 5 kente headwrap
- function human(l){ if (window.AccraFigure) return window.AccraFigure.human(l);
+ function human(l){ if (window.ACCRA_PEOPLE && window.ACCRA_PEOPLE.spawn) return window.ACCRA_PEOPLE.spawn(null,l); if (window.AccraFigure) return window.AccraFigure.human(l);
   l=Object.assign({skin:1,hair:1,hcol:0,top:3,pants:0,style:0,acc:0,shoe:0},l||{});
   const root=new BABYLON.TransformNode('hu',scene);
   const g=new BABYLON.TransformNode('hg',scene);g.parent=root;g.scaling.setAll(.85);
@@ -58,7 +58,7 @@
   if(st==2)P('Cylinder',{height:.75,diameterTop:.75,diameterBottom:1.1,tessellation:8},0,.95,0,ts);
   const pk=[B(.07,1,.07,0,-.95,.14,'#6b4a2e',ar),B(.6,.1,.1,0,-1.45,.14,'#9aa0a8',ar)];pk.forEach(m=>m.setEnabled(false));   // pickaxe, only shown while mining
   return{root,g,al,ar,ll,lr,pk,ph:0}}
- function walk(h,sp,dt){const k=Math.min(1,sp/1.1),run=Math.min(1,sp/5.5);h.ph+=sp*dt*2.3;   // stride follows real distance: no foot sliding
+ function walk(h,sp,dt){if(h&&typeof h.setMoving==='function'){h.setMoving(sp>0.18?sp:0);return;}const k=Math.min(1,sp/1.1),run=Math.min(1,sp/5.5);h.ph+=sp*dt*2.3;   // stride follows real distance: no foot sliding
   const s=Math.sin(h.ph)*(.5+.6*run)*k;
   h.ll.rotation.x=s;h.lr.rotation.x=-s;h.al.rotation.x=-s*.9;h.ar.rotation.x=s*.9;
   h.g.rotation.x=(.03+.17*run)*k;                                                            // lean into the run
