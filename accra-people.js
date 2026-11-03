@@ -87,10 +87,9 @@
       const dispose=()=>{
         if(record.disposed)return;record.disposed=true;spawned.delete(record);
         if(record.groups)record.groups.forEach(g=>g.dispose());
-        if(record.instance)record.instance.rootNodes.forEach(n=>n.dispose(false,true));
-        if(record.legacy&&record.legacy.root)record.legacy.root.dispose(false,true);
         root.dispose(false,true);
       };
+      record.dispose=dispose;
       record.readyPromise=loadContainer(choice.file).then(container=>{
         if(record.disposed)return;
         const instance=container.instantiateModelsToScene(n=>"npc"+id+"_"+n,true);
@@ -126,7 +125,7 @@
       ready:()=>true,
       count:()=>spawned.size,
       loadedModels:()=>Array.from(containers.keys()),
-      disposeAll:()=>Array.from(spawned).forEach(p=>p.disposed=false)
+      disposeAll:()=>Array.from(spawned).forEach(p=>p.dispose&&p.dispose())
     };
     if(window.AccraAssets){
       window.AccraAssets.createCharacter=(scn,o)=>spawn(null,o);
