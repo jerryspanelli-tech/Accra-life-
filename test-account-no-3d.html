@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#101216">
+<title>Accra Life — Account Loading Test</title>
+<style>
+html,body{margin:0;min-height:100%;background:#101216;color:#fff;font:15px system-ui,sans-serif}
+main{max-width:520px;margin:0 auto;padding:24px 18px}
+h1{color:#c9a54a;font-size:22px;letter-spacing:1px}
+#status{padding:14px;border:1px solid #555;border-radius:12px;background:#1c2025;line-height:1.5;overflow-wrap:anywhere}
+small{color:#aaa}
+</style>
+</head>
+<body>
+<main>
+<h1>ACCRA LIFE — ACCOUNT TEST</h1>
+<p>This test loads the account system only. It does not load the 3D city, player, NPCs, vehicles, or game world.</p>
+<div id="status">Starting account test…</div>
+<p><small>Keep this page open for at least 30 seconds. If the Sign In screen appears, leave it open and see whether the browser error happens again.</small></p>
+</main>
+<script>
+(function(){
+ const status=document.getElementById("status");
+ function report(message){status.textContent=message;}
+ window.addEventListener("error",e=>report("BROWSER SCRIPT ERROR: "+(e.message||"Unknown error")+" at "+(e.filename||"")+" line "+(e.lineno||"")));
+ window.addEventListener("unhandledrejection",e=>report("UNHANDLED PROMISE ERROR: "+(e.reason&&e.reason.message||e.reason||"Unknown error")));
+ setTimeout(()=>{if(status.textContent==="Starting account test…")report("Still waiting for the account service. The 3D game is not running on this page.")},12000);
+})();
+</script>
+<script src="accra-auth.js?v=2"></script>
+<script>
+window.ACCRA_AUTH_READY.then(api=>{
+ const s=document.getElementById("status");
+ s.textContent=api.session?"Account service loaded. A saved session is active. No 3D game is running.":"Account service loaded. Sign In screen should be visible. No 3D game is running.";
+}).catch(err=>{
+ document.getElementById("status").textContent="ACCOUNT INITIALIZATION FAILED: "+(err.message||err);
+});
+</script>
+</body>
+</html>
