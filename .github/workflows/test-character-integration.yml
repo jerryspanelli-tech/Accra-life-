@@ -12,6 +12,9 @@ on:
       - 'accra-auth.js'
       - 'accra-settings.js'
       - 'accra-people.js'
+      - 'accra-crime.js'
+      - 'test-accra-npc-preview.html'
+      - 'scripts/npc-browser-test.cjs'
       - 'People/AccraLife/**'
       - 'test-accra-characters.html'
       - 'scripts/character-browser-test.cjs'
@@ -37,6 +40,9 @@ jobs:
           node --check accra-auth.js
           node --check accra-start.js
           node --check accra-settings.js
+          node --check accra-people.js
+          node --check online.js
+          node --check accra-crime.js
       - name: Start local game server
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/accra-http.log 2>&1 &
@@ -49,3 +55,5 @@ jobs:
           exit 1
       - name: Test male, female, Walk and Run in Babylon.js
         run: node scripts/character-browser-test.cjs
+      - name: Test real 3D NPC models and animations
+        run: node scripts/npc-browser-test.cjs
