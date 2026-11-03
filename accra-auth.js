@@ -214,3 +214,4 @@
   });
 })();
 /* Auth version 2.1 - private resolution without test hooks */
+/* Production update: PR #48 sync */
