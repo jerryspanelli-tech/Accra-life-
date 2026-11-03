@@ -215,9 +215,57 @@
 
     if (window.AccraAssets) {
       window.AccraAssets.createCharacter = (scn, o) => {
+        o = o || {};
         const h = human(o);
         autos.push(h);
-        return { root: h.root, setMoving: v => { h.sp = v ? 3 : 0; } };
+        const handle = {
+          _actor: null,
+          _disposed: false,
+          get root() { return this._actor ? this._actor.root : h.root; },
+          setMoving(v) {
+            h.sp = v ? 3 : 0;
+            if (this._actor) this._actor.setMoving(!!v);
+          },
+          dispose() {
+            this._disposed = true;
+            if (this._actor) this._actor.dispose();
+            if (h.root && !h.root.isDisposed()) h.root.dispose(false, true);
+          }
+        };
+
+        // Replace civilian placeholder figures with the cached realistic GLB models.
+        // Police remain on their uniformed fallback until a dedicated police GLB exists.
+        if (!o.police && window.AccraNPCModels && typeof window.AccraNPCModels.create === "function") {
+          const gender = o.gender === "female" ? "female" : (o.gender === "male" ? "male" : (Math.random() < .5 ? "female" : "male"));
+          const model = o.kente ? "maleKente" :
+            (o.outfit === "suit" ? (gender === "female" ? "femaleSuit" : "maleSuit") :
+            (o.outfit === "ankara" ? "femaleAnkara" : gender));
+          window.AccraNPCModels.create(scn, {
+            model,
+            height: 1.8 * (Number.isFinite(o.scale) ? o.scale : 1),
+            position: [h.root.position.x, h.root.position.y, h.root.position.z],
+            rotationY: h.root.rotation.y,
+            animation: h.sp > 0 ? "walk" : "idle"
+          }).then(actor => {
+            if (handle._disposed || !h.root || h.root.isDisposed()) {
+              actor.dispose();
+              return;
+            }
+            actor.root.parent = h.root.parent;
+            // Keep the GLB's calculated ground-contact offset; copying the fallback's
+            // y=0 directly would bury models whose source origin is below their feet.
+            actor.root.position.x = h.root.position.x;
+            actor.root.position.y += h.root.position.y;
+            actor.root.position.z = h.root.position.z;
+            actor.root.rotation.copyFrom(h.root.rotation);
+            actor.setMoving(h.sp > 0);
+            handle._actor = actor;
+            h.root.dispose(false, true);
+          }).catch(error => {
+            console.warn("[AccraFigure] Realistic civilian GLB unavailable; keeping safe fallback:", error && error.message || error);
+          });
+        }
+        return handle;
       };
     }
 
