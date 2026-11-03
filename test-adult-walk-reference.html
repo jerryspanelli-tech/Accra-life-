@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<title>Accra Life · Adult Walk Reference Lab</title>
+<title>Accra Life · Character & NPC Walk Test</title>
 <style>
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#111820;color:#f3f4f6;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 #renderCanvas{width:100%;height:100%;display:block;touch-action:none;outline:none}
@@ -18,8 +18,8 @@ h1{font-size:16px;margin:0 0 6px;color:#ffd166}p{font-size:12px;line-height:1.45
 <body>
 <canvas id="renderCanvas"></canvas>
 <section id="panel">
-<h1>Adult walk · reference motion</h1>
-<p>This is a separate reference character and animation, not a change to the Accra Life player. Use it to inspect a natural adult walk from the front, side and rear before we retarget the motion.</p>
+<h1>Character & NPC · walk test</h1>
+<p>This test loads the locally stored CesiumMan GLB from this repository. It is isolated from the live game and lets us verify model loading, animation, camera views and mobile rendering.</p>
 <div class="row" id="cadence">
 <button data-rate="100">100 steps/min</button><button class="active" data-rate="110">110 steps/min</button><button data-rate="120">120 steps/min</button>
 </div>
@@ -27,9 +27,9 @@ h1{font-size:16px;margin:0 0 6px;color:#ffd166}p{font-size:12px;line-height:1.45
 <button class="active" data-alpha="1.57">Side</button><button data-alpha="0">Front</button><button data-alpha="3.14">Rear</button>
 </div>
 <div class="row"><button id="pause">Pause</button><button id="restart">Restart</button></div>
-<div id="status">Loading reference model…</div>
+<div id="status">Loading local character model…</div>
 </section>
-<div id="foot">Reference: “Relaxed walk – Sam”, CC0 public-domain asset. The 2-second loop is retimed for the selected cadence. Check for balanced posture, opposite arm/leg swing, heel-to-toe contact and smooth weight transfer. This page does not modify the production game.</div>
+<div id="foot">Test asset: People/CesiumMan/CesiumMan.glb (stored in this repository). This page is a diagnostic sandbox only; it does not modify the production game.</div>
 <script src="https://cdn.babylonjs.com/babylon.js?version=7.34.0"></script>
 <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js?version=7.34.0"></script>
 <script>
@@ -48,15 +48,15 @@ const target=new BABYLON.TransformNode('target',scene);
 const camera=new BABYLON.ArcRotateCamera('camera',Math.PI/2,1.22,4.4,new BABYLON.Vector3(0,.9,0),scene);
 camera.attachControl(canvas,true);camera.lowerRadiusLimit=2.5;camera.upperRadiusLimit=8;camera.wheelPrecision=50;camera.panningSensibility=0;
 let group=null,loaded=false,paused=false,rate=110;
-const modelUrl='https://files.innerscene.com/library/relaxed-walk-sam-3d-person-animated-732f1206/b11d02f72ad777e03d68/relaxed-walk-sam-3d-person-animated.glb';
-BABYLON.SceneLoader.ImportMeshAsync('', 'https://files.innerscene.com/library/relaxed-walk-sam-3d-person-animated-732f1206/b11d02f72ad777e03d68/','relaxed-walk-sam-3d-person-animated.glb',scene).then(res=>{
+const modelUrl='People/CesiumMan/CesiumMan.glb';
+BABYLON.SceneLoader.ImportMeshAsync('', 'People/CesiumMan/','CesiumMan.glb',scene).then(res=>{
  const root=res.meshes.find(m=>m.name==='__root__')||res.meshes[0];
  const bounds=root.getHierarchyBoundingVectors(true),height=bounds.max.y-bounds.min.y;
  if(height>0)root.scaling.setAll(1.75/height);
  root.position.y=-bounds.min.y*(height>0?1.75/height:1);
  if(res.animationGroups.length){group=res.animationGroups[0];group.start(true);group.speedRatio=rate/60;}
  loaded=true;status.textContent='Loaded · '+(res.animationGroups.length||0)+' animation clip(s) · '+rate+' steps/min target';
-}).catch(err=>{console.error(err);status.textContent='Could not load the reference model. Check connection or try again later.';});
+}).catch(err=>{console.error(err);status.textContent='Could not load local character. Check that People/CesiumMan/CesiumMan.glb exists and that the page is served from GitHub Pages.';});
 function setRate(v){rate=v;if(group)group.speedRatio=rate/60;document.querySelectorAll('#cadence button').forEach(b=>b.classList.toggle('active',Number(b.dataset.rate)===v));status.textContent=loaded?'Playing · '+rate+' steps/min target':status.textContent;}
 document.querySelectorAll('#cadence button').forEach(b=>b.addEventListener('click',()=>setRate(Number(b.dataset.rate))));
 document.querySelectorAll('#views button').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('#views button').forEach(x=>x.classList.toggle('active',x===b));camera.alpha=Number(b.dataset.alpha);camera.beta=1.22;}));
