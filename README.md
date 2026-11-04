@@ -8,6 +8,7 @@ Accra Life is a browser-based Babylon.js game. The production entry point is ind
 - babylon.html — production Babylon.js scene and ordered runtime loader.
 - characters/ — player/NPC character runtime, profile and wardrobe code.
 - world/region/ — world map, districts, towns, landmarks and weather.
+- assets/ — shared Babylon.js asset/model factory API.
 - world/transport/ — roads, airports, traffic, tolls, public transport and road connections.
 - world/buildings/ — apartments, estates, markets, mall, civic buildings and interiors.
 - interface/ — in-game phone, phone styling, camera and settings.

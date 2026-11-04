@@ -16,6 +16,7 @@
 | characters/ | Character figure, rigged people/NPC pipeline and player profile |
 | characters/legacy/ | Older character implementations preserved for reference |
 | world/region/ | Main world map, districts, highway towns, landmarks and weather |
+| assets/ | Shared Babylon.js asset/model factory API |
 | world/transport/ | Airports, roads, traffic, tolls, highway lighting, taxis, trotros and road connections |
 | world/buildings/ | Apartments, estate, market, mall, civic models, hospital, police HQ and interiors |
 | interface/ | Phone apps, phone visual skin, third-person camera and settings |
@@ -31,7 +32,7 @@
 - accra-start.js — authentication-gated character selection/startup.
 - accra-upgrade.js — game upgrade/bootstrap loader.
 - accra-life.js — core life system and optional module loader.
-- accra-assets.js — shared asset and model API.
+- assets/accra-assets.js — shared asset and model API.
 - world/region/AccraLocations.js — Labadi Beach swimming zone and regional location API, dynamically loaded by the upgrade loader.
 - systems/cleanup/accra-cleanup.js and systems/cleanup/accra-remove-old.js — startup cleanup compatibility and legacy-object removal.
 

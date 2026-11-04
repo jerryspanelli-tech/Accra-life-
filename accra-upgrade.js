@@ -1,6 +1,6 @@
 /* accra-upgrade.js — loads AFTER the game script and upgrades the look.
  * It does not change your game logic. To undo, remove its <script> line.
- * Needs accra-assets.js loaded first. */
+ * Needs assets/accra-assets.js loaded first. */
 (function () {
   const banner = m => { try { const d = document.createElement("div"); d.style.cssText = "position:fixed;left:8px;right:8px;top:calc(env(safe-area-inset-top,0px) + 110px);background:#8b1a1a;color:#fff;padding:8px 10px;border-radius:10px;font:12px system-ui;z-index:99;max-width:92vw"; d.textContent = "\u26A0 " + m + " (tap to hide)"; d.onclick = () => d.remove(); document.body.appendChild(d); } catch (e) {} };
   // touch: stop iOS page-zoom and accidental pinch, keep UI buttons independent of the canvas
