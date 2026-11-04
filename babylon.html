@@ -62,9 +62,28 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:n
   diag.setStage('html-loaded');
 
   window.addEventListener('error', e => {
-    const errText = (e && e.message || 'Error') + (e && e.lineno ? ' line ' + e.lineno : '');
+    const target = e && e.target;
+    const source = target && target.src ? ' [' + target.src.split('/').slice(-1)[0] + ']' : '';
+    const errText = (e && e.message || 'Resource failed') + source + (e && e.lineno ? ' line ' + e.lineno : '');
     diag.report('error', errText, true);
-  });
+  }, true);
+  window.addEventListener('load', e => {
+    const target = e && e.target;
+    if (target && target.tagName === 'SCRIPT' && target.src) {
+      const file = target.src.split('/').slice(-1)[0].split('?')[0];
+      diag.setStage('script-loaded: ' + file);
+    }
+  }, true);
+  const gameCanvas = document.getElementById('c');
+  if (gameCanvas) {
+    gameCanvas.addEventListener('webglcontextlost', e => {
+      e.preventDefault();
+      diag.report('webgl-context-lost', 'The browser lost the 3D graphics context; device memory or GPU limits may be involved.', true);
+    }, false);
+    gameCanvas.addEventListener('webglcontextrestored', () => {
+      diag.report('webgl-context-restored', 'The 3D graphics context returned.', false);
+    }, false);
+  }
   window.addEventListener('unhandledrejection', e => {
     const reason = e && e.reason ? (e.reason.message || String(e.reason)) : 'Promise rejected';
     diag.report('unhandledrejection', reason, true);
@@ -307,6 +326,10 @@ engine.runRenderLoop(()=>{
   scene.render();
 });
 addEventListener('resize',()=>engine.resize());
+if (window.ACCRA_DIAGNOSTICS) {
+  window.ACCRA_DIAGNOSTICS.setStage('world-initialized');
+  window.ACCRA_DIAGNOSTICS.report('graphics', 'WebGL engine and base city scene initialized.', false);
+}
 </script><script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script><script src="world/region/landmarks.js?v=41"></script><script src="world/transport/accra-airport.js?v=49"></script><script src="world/transport/accra-kumasi-airport.js?v=4"></script><script src="world/transport/accra-roads.js?v=50"></script><script src="world/transport/accra-connect.js?v=42"></script><script src="world/region/accra-districts.js?v=68"></script><script src="world/region/accra-towns.js?v=42"></script><script src="world/transport/accra-toll.js?v=49"></script><script src="world/transport/accra-highway.js?v=55"></script><script src="world/transport/accra-traffic.js?v=71"></script><script src="world/transport/accra-transport.js?v=63"></script><script src="world/transport/accra-shaxi.js?v=64"></script><script src="systems/cleanup/accra-cleanup.js?v=52"></script><script src="interface/accra-camera.js?v=58"></script><script src="world/buildings/accra-market.js?v=58"></script><script src="interface/phone.js?v=63"></script><script src="interface/accra-phone-skin.js?v=64"></script><script src="systems/online/online.js?v=31"></script><script src="assets/accra-assets.js?v=35"></script><script src="characters/accra-figure.js?v=56"></script><script src="characters/accra-people.js?v=65"></script><script src="systems/online/accra-auth.js?v=2"></script><script src="accra-start.js?v=32"></script><script src="accra-upgrade.js?v=35"></script><script src="world/buildings/accra-apartments.js?v=77"></script><script src="world/buildings/accra-estate.js?v=69"></script><script src="systems/cleanup/accra-remove-old.js?v=1"></script><script src="world/buildings/accra-civic-models.js?v=3"></script><script src="world/buildings/accra-hq.js?v=3"></script><script src="world/buildings/accra-hospital.js?v=3"></script><script src="world/buildings/accra-mall.js?v=1"></script><script src="world/buildings/accra-interiors.js?v=2"></script><script src="world/buildings/accra-entries.js?v=2"></script><script src="interface/accra-settings.js?v=2"></script>
 
 
