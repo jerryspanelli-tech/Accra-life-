@@ -275,7 +275,7 @@ joy.addEventListener('pointermove',e=>{if(e.pointerId===jid)jm(e)});
 const jend=e=>{if(e.pointerId!==jid)return;jid=null;jx=jy=0;kn.style.transform='translate(0,0)'};
 joy.addEventListener('pointerup',jend);joy.addEventListener('pointercancel',jend);
 $('jump').addEventListener('pointerdown',e=>{e.preventDefault();jump=1});
-const K={};addEventListener('keydown',e=>{K[e.key.toLowerCase()]=1;if(e.key===' ')jump=1;if(e.key==='e')toggleCar()});addEventListener('keyup',e=>K[e.key.toLowerCase()]=0);
+const K={};addEventListener('keydown',e=>{if(!e||typeof e.key!=='string')return;const key=e.key.toLowerCase();if(!key)return;K[key]=1;if(key===' ')jump=1;if(key==='e')toggleCar()});addEventListener('keyup',e=>{if(!e||typeof e.key!=='string')return;const key=e.key.toLowerCase();if(key)K[key]=0});
 function toggleCar(){
  if(!driving){if(BABYLON.Vector3.Distance(player.position,car.position)>6)return;driving=true;player.setEnabled(false);spd=0}
  else{driving=false;player.setEnabled(true);const r=V(Math.cos(heading),0,-Math.sin(heading));player.position.copyFrom(car.position.add(r.scale(3)));player.position.y=.91;vy=0;spd=0}}
