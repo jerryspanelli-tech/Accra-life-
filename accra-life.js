@@ -974,7 +974,7 @@
 
     // Load optional modules
     ["accra-decor.js", "accra-crime.js", "accra-pub.js", "accra-fx.js", "accra-mining.js",
-     "accra-world.js", "accra-weather.js", "accra-profile.js", "accra-carskin.js", "accra-model.js"
+     "accra-world.js", "accra-weather.js", "characters/accra-profile.js", "accra-carskin.js", "characters/legacy/accra-model.js"
     ].forEach(f => {
       const s = document.createElement("script");
       s.src = f + "?v=" + (window.ACCRA_BUILD || 0);
