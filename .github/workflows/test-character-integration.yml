@@ -15,6 +15,7 @@ on:
       - 'gameplay/**'
       - 'world/**'
       - 'assets/**'
+      - 'test-*.html'
       - 'test-accra-npc-preview.html'
       - 'scripts/npc-browser-test.cjs'
       - 'People/AccraLife/**'
