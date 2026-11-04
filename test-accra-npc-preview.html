@@ -36,7 +36,7 @@ var scene,engine;
  ];
  try{
   const actors=specs.map(s=>{
-   const actor=window.ACCRA_PEOPLE.spawn(null,s.options);
+   const actor=window.ACCRA_PEOPLE.spawn(scene,s.options);
    actor.root.position.x=s.x;
    return {spec:s,actor};
   });
