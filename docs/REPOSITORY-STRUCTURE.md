@@ -21,6 +21,7 @@
 | interface/ | Phone apps, phone visual skin, third-person camera and settings |
 | gameplay/ | Crime, pub, mining, effects and disabled custom car-skin toggle |
 | systems/online/ | Multiplayer and Supabase account authentication |
+| systems/cleanup/ | Startup cleanup compatibility and obsolete-building removal |
 | People/AccraLife/ | Active male/female GLB player models and outfit variants |
 | archive/ | Historical game pages and preserved older implementations |
 
@@ -31,8 +32,8 @@
 - accra-upgrade.js — game upgrade/bootstrap loader.
 - accra-life.js — core life system and optional module loader.
 - accra-assets.js — shared asset and model API.
-- AccraLocations.js — location API dynamically loaded by the upgrade loader.
-- accra-cleanup.js and accra-remove-old.js — startup cleanup compatibility and legacy-object removal.
+- world/region/AccraLocations.js — Labadi Beach swimming zone and regional location API, dynamically loaded by the upgrade loader.
+- systems/cleanup/accra-cleanup.js and systems/cleanup/accra-remove-old.js — startup cleanup compatibility and legacy-object removal.
 
 ## Changes in this organization branch
 
