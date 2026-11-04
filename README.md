@@ -13,6 +13,7 @@ Accra Life is a browser-based Babylon.js game. The production entry point is ind
 - interface/ — in-game phone, phone styling, camera and settings.
 - gameplay/ — optional crime, pub, mining and gameplay-effect modules.
 - systems/online/ — multiplayer and account authentication.
+- systems/cleanup/ — startup cleanup compatibility and obsolete-building removal.
 - People/ — locally hosted GLB character models.
 - archive/ — historical pages and preserved older implementations.
 - docs/ — project audits, asset licenses and repository documentation.
