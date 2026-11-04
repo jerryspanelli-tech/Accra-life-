@@ -15,7 +15,8 @@ Accra Life is a browser-based Babylon.js game. The production entry point is ind
 - systems/online/ — multiplayer and account authentication.
 - People/ — locally hosted GLB character models.
 - archive/ — historical pages and preserved older implementations.
-- docs/ and development scripts — project documentation and validation work.
+- docs/ — project audits, asset licenses and repository documentation.
+- tests/ — automated browser validation scripts; standalone HTML test pages remain at the root for now because their local asset paths are rooted there.
 
 Core bootstrap files such as accra-start.js, accra-upgrade.js, accra-life.js, and accra-assets.js remain at the root because the startup and dynamic loading chain depends on their current page-relative paths.
 

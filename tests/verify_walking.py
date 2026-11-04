@@ -2,11 +2,14 @@ import time
 import subprocess
 import os
 import sys
+from pathlib import Path
 from playwright.sync_api import sync_playwright
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 def run_tests():
     # Start python http server on 8089 if not running
-    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '8089'])
+    srv = subprocess.Popen([sys.executable, '-m', 'http.server', '8089'], cwd=REPO_ROOT)
     time.sleep(1.2)
 
     try:
