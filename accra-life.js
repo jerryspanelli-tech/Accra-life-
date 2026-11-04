@@ -973,7 +973,7 @@
     };
 
     // Load optional modules
-    ["accra-decor.js", "accra-crime.js", "accra-pub.js", "accra-fx.js", "accra-mining.js",
+    ["world/buildings/accra-decor.js", "accra-crime.js", "accra-pub.js", "accra-fx.js", "accra-mining.js",
      "world/region/accra-world.js", "world/region/accra-weather.js", "characters/accra-profile.js", "accra-carskin.js", "characters/legacy/accra-model.js"
     ].forEach(f => {
       const s = document.createElement("script");
