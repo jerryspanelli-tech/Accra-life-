@@ -7,7 +7,7 @@
 3. Character code lives in characters/; character GLB assets remain in People/AccraLife/.
 4. World, building, interface, online and other runtime modules are grouped by responsibility.
 5. accra-life.js dynamically loads optional gameplay and decoration modules. These paths are relative to the game page, so update them whenever a module moves.
-6. accra-upgrade.js dynamically loads accra-life.js and AccraLocations.js; these bootstrap/data files remain at the repository root intentionally.
+6. accra-upgrade.js dynamically loads accra-life.js and world/region/AccraLocations.js; accra-life.js remains at the repository root; the regional location module is in world/region/.
 
 ## Folder responsibilities
 
