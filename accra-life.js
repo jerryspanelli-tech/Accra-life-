@@ -973,8 +973,8 @@
     };
 
     // Load optional modules
-    ["world/buildings/accra-decor.js", "accra-crime.js", "accra-pub.js", "accra-fx.js", "accra-mining.js",
-     "world/region/accra-world.js", "world/region/accra-weather.js", "characters/accra-profile.js", "accra-carskin.js", "characters/legacy/accra-model.js"
+    ["world/buildings/accra-decor.js", "gameplay/accra-crime.js", "gameplay/accra-pub.js", "gameplay/accra-fx.js", "gameplay/accra-mining.js",
+     "world/region/accra-world.js", "world/region/accra-weather.js", "characters/accra-profile.js", "gameplay/accra-carskin.js", "characters/legacy/accra-model.js"
     ].forEach(f => {
       const s = document.createElement("script");
       s.src = f + "?v=" + (window.ACCRA_BUILD || 0);
