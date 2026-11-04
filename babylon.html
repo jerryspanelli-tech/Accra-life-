@@ -20,12 +20,22 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:n
 <div id="startupDiagnostic" style="position:fixed;top:0;left:0;right:0;z-index:100005;background:rgba(16,18,22,0.92);color:#c9a54a;border-bottom:1px solid #555;padding:6px 10px;font:12px/1.4 monospace;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;pointer-events:none"><span id="diagStage">Startup: initializing</span><span id="diagEvents" style="color:#aaa;margin-left:8px">events: listening</span></div>
 <script>
 (function(){
+  const BREADCRUMB_KEY = 'accra-startup-breadcrumbs';
+  let history = [];
+  try {
+    const raw = localStorage.getItem(BREADCRUMB_KEY);
+    if (raw) history = JSON.parse(raw).slice(-10);
+  } catch(e){}
+
   const diag = {
     stage: 'init',
-    history: [],
+    history: history,
     setStage(s){
       this.stage = s;
-      this.history.push({ t: performance.now(), stage: s });
+      const entry = { t: Date.now(), stage: s };
+      this.history.push(entry);
+      if (this.history.length > 20) this.history.shift();
+      try { localStorage.setItem(BREADCRUMB_KEY, JSON.stringify(this.history)); } catch(e){}
       const el = document.getElementById('diagStage');
       if (el) el.textContent = 'Startup: ' + s;
     },
@@ -35,6 +45,10 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:n
         el.textContent = (isError ? 'ERR: ' : '') + type + (msg ? ' (' + msg + ')' : '');
         if (isError) el.style.color = '#ff8888';
       }
+      const entry = { t: Date.now(), type, msg, isError };
+      this.history.push(entry);
+      if (this.history.length > 20) this.history.shift();
+      try { localStorage.setItem(BREADCRUMB_KEY, JSON.stringify(this.history)); } catch(e){}
       if (isError) {
         const d = document.createElement('div');
         d.className = 'diag-error-banner';
@@ -71,9 +85,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#9fd3ee;touch-action:n
 <script>
 window.__useCesiumPlayer=true;
 const $=id=>document.getElementById(id),V=(x,y,z)=>new BABYLON.Vector3(x,y,z),C3=h=>BABYLON.Color3.FromHexString(h);
-if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage('babylon-loaded');
 const engine=new BABYLON.Engine($('c'),true,{adaptToDeviceRatio:true});
-if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage('3d-engine-ready');
 if(/iPhone|iPad|Android/i.test(navigator.userAgent))engine.setHardwareScalingLevel(1.0);
 const scene=new BABYLON.Scene(engine);
 scene.clearColor=new BABYLON.Color4(.5,.71,.9,1);scene.collisionsEnabled=true;
