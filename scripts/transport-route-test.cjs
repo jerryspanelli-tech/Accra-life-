@@ -74,6 +74,8 @@ assert.equal(tripFare("Suhum", "Bunso"), 15, "Short Suhum-to-Bunso trip must cha
 assert.equal(tripFare("Accra", "Kumasi"), 130, "Accra-to-Kumasi fare must remain GH¢130");
 assert.equal(tripFare("Kumasi", "Accra"), 130, "Return journey fare must be symmetric");
 assert.ok(worldTransit.includes("Math.abs(FARE[d.d] - FARE[here])"), "Bus booking must charge the difference between cumulative stop fares");
+assert.ok(world.includes("Math.abs(FARE[s[0]] - FARE[here])"), "Intercity ticket buttons must display the actual fare difference, not the destination total");
+assert.ok(!world.includes("Math.max(FARE[s[0]], FARE[here])"), "Intercity ticket buttons must not overstate fares for shorter trips");
 console.log("Intercity distance-based fare contracts passed.");
 
 const cityTransport = fs.readFileSync("world/transport/accra-transport.js", "utf8");
