@@ -24,8 +24,13 @@ for (const [name, z, fare] of route) {
 }
 
 const expectedOrder = route.map(([name]) => name);
-const worldOrder = route.filter(([name, z]) => world.includes(`["${name}", ${z},`)).map(([name]) => name);
-assert.deepEqual(worldOrder, expectedOrder, "World towns are not in the expected Accra-to-Kumasi order");
+const worldOrder = route.map(([name, z]) => world.indexOf(`["${name}", ${z},`));
+const landmarkOrder = route.map(([name, z]) => {
+  const label = name === "Kumasi" ? "KUMASI KEJETIA" : name.toUpperCase();
+  return towns.indexOf(`{ n: "${label}", z: ${z},`);
+});
+assert.ok(worldOrder.every((at, i) => at >= 0 && (i === 0 || at > worldOrder[i - 1])), "World towns are missing or out of Accra-to-Kumasi order");
+assert.ok(landmarkOrder.every((at, i) => at >= 0 && (i === 0 || at > landmarkOrder[i - 1])), "Town landmarks are missing or out of Accra-to-Kumasi order");
 
 assert.ok(towns.includes('sign("BUNSO FOREST RESERVE"'), "Bunso Forest Reserve entrance landmark is missing");
 console.log(`Transport route contract passed: Accra -> ${expectedOrder.join(" -> ")}`);
