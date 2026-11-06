@@ -153,6 +153,22 @@ const { chromium } = require('playwright');
     if(!lobbyText.includes('Returning Citizen')||!lobbyText.includes('26 years old')||!lobbyText.includes('Female citizen'))throw new Error('Returning-player lobby did not restore profile details: '+lobbyText);
     await page.locator('#lobbyContinue').click();
     await page.waitForSelector('#accraSettingsBtn',{timeout:15000});
+    // Verify the actual game scene has finished loading its transport modules.
+    await page.waitForFunction(()=>window.ACCRA_TRANSPORT&&window.ACCRA_WORLD&&window.ACCRA_TRAFFIC_CARS&&window.ACCRA_SHAXI&&window.ACCRA_AIRPORT&&window.ACCRA_AYALOLO,null,{timeout:45000});
+    const transportCheck=await page.evaluate(()=>({
+      cityTrotros:window.ACCRA_TRANSPORT.vehicles,
+      cityStops:window.ACCRA_TRANSPORT.stops,
+      trafficCars:window.ACCRA_TRAFFIC_CARS.count,
+      intercityTowns:window.ACCRA_WORLD.towns.map(t=>t.n),
+      tollPlazas:window.ACCRA_WORLD.tolls.length,
+      shaxiDestinations:window.ACCRA_SHAXI.destinations,
+      ayaloloStops:window.ACCRA_AYALOLO.stops.map(s=>s.n),
+      kotoka:window.ACCRA_AIRPORT.name
+    }));
+    if(transportCheck.cityTrotros!==4||transportCheck.cityStops.length!==5)throw new Error('City trotro fleet/stops did not initialise: '+JSON.stringify(transportCheck));
+    if(transportCheck.trafficCars!==8)throw new Error('NPC traffic fleet did not initialise: '+JSON.stringify(transportCheck));
+    if(transportCheck.intercityTowns.length!==8||transportCheck.intercityTowns[2]!=='Bunso'||transportCheck.intercityTowns[3]!=='Anyinam')throw new Error('Intercity town stream is incomplete or out of order: '+JSON.stringify(transportCheck));
+    if(transportCheck.tollPlazas!==2||!transportCheck.shaxiDestinations.length||!transportCheck.ayaloloStops.length||!transportCheck.kotoka.includes('Kotoka'))throw new Error('A transport service did not initialise: '+JSON.stringify(transportCheck));
     await page.locator('#accraSettingsBtn').click();
     await page.waitForSelector('#accraSettings .panel',{timeout:5000});
     await page.locator('#asQuality').selectOption('low');
