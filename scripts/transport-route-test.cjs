@@ -42,3 +42,10 @@ assert.ok(!connectors.includes('"airport-gate"'), "Stale disconnected airport-ga
 assert.ok(traffic.includes("ns: makeHead(") && traffic.includes("ew: makeHead("), "Each junction must have separate north-south and east-west signal heads");
 assert.ok(traffic.includes("h.ns[k].material = s.ns === k") && traffic.includes("h.ew[k].material = s.ew === k"), "Traffic lights must display the correct phase for both directions");
 console.log("Transport access-road and directional-signal contracts passed.");
+
+const kotoka = fs.readFileSync("world/transport/accra-airport.js", "utf8");
+const kumasiAirport = fs.readFileSync("world/transport/accra-kumasi-airport.js", "utf8");
+assert.ok(kotoka.includes('{ dest: "Kumasi (Prempeh I)", x: -2000, z: -24000'), "Kotoka must route flights to the built Kumasi airport");
+assert.ok(!kotoka.includes('dest: "Takoradi"') && !kotoka.includes('dest: "Tamale"'), "Do not sell flights to airports that are not built yet");
+assert.ok(kumasiAirport.includes('dest: "Accra (Kotoka)"') && kumasiAirport.includes('x: -420, z: -240'), "Kumasi airport return flight must route to Kotoka's terminal approach");
+console.log("Airport route endpoint contracts passed.");
