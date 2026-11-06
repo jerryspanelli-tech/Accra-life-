@@ -155,7 +155,7 @@
     const STOPS = [["Accra", 14, -185]].concat(TOWNS.map(t => [t.n, t.x + 30, t.z + 30]));
     const FARE = { Accra: 0, Nsawam: 25, Suhum: 40, Bunso: 55, Anyinam: 62, Nkawkaw: 70, Konongo: 90, Ejisu: 110, Kumasi: 130 };
     function bus(here) {
-      const draw = () => show(ttl("\uD83D\uDE8C Intercity buses") + "<small>You are in " + here + " \u00B7 cash GH\u00A2" + cash() + "</small>" + STOPS.filter(s => s[0] !== here).map(s => '<button data-d="' + s[0] + '" style="' + BS + '">' + s[0] + " \u00B7 GH\u00A2" + Math.max(FARE[s[0]], FARE[here]) + "</button>").join("") + CLOSE, d => {
+      const draw = () => show(ttl("\uD83D\uDE8C Intercity buses") + "<small>You are in " + here + " \u00B7 cash GH\u00A2" + cash() + "</small>" + STOPS.filter(s => s[0] !== here).map(s => '<button data-d="' + s[0] + '" style="' + BS + '">' + s[0] + " \u00B7 GH\u00A2" + Math.abs(FARE[s[0]] - FARE[here]) + "</button>").join("") + CLOSE, d => {
         if (d.x) return hide();
         if (window.ACCRA_CRIME && window.ACCRA_CRIME.wanted >= 2) return note("Police are watching the bus station.");
         const s = STOPS.find(q => q[0] === d.d), f = Math.abs(FARE[d.d] - FARE[here]);
