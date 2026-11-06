@@ -75,3 +75,9 @@ assert.equal(tripFare("Accra", "Kumasi"), 130, "Accra-to-Kumasi fare must remain
 assert.equal(tripFare("Kumasi", "Accra"), 130, "Return journey fare must be symmetric");
 assert.ok(worldTransit.includes("Math.abs(FARE[d.d] - FARE[here])"), "Bus booking must charge the difference between cumulative stop fares");
 console.log("Intercity distance-based fare contracts passed.");
+
+const cityTransport = fs.readFileSync("world/transport/accra-transport.js", "utf8");
+assert.ok(cityTransport.includes("const routePoint = at(s.d)"), "Trotro stop signage must retain the route direction vector");
+assert.ok(cityTransport.includes("Math.atan2(-routePoint.fz, routePoint.fx)"), "Trotro stop signs must use finite route direction values");
+assert.ok(!cityTransport.includes("Math.atan2(-p.fz, p.fx) + Math.PI / 2"), "Do not read direction fields from the offset curb position");
+console.log("Trotro stop-sign orientation contract passed.");
