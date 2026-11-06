@@ -3,8 +3,12 @@
  * lights using the same signal timer as accra-roads.js (window.ACCRA_TRAFFIC), and keep a gap from the car ahead.
  * Cars only drive on the grid roads, never through buildings. */
 (function () {
-  try {
-    const B = BABYLON;
+  const start = () => {
+    try {
+      // This file loads before accra-assets.js in babylon.html. Wait for the shared
+      // vehicle factory and live scene instead of registering an empty traffic fleet.
+      if (!window.AccraAssets || !window.AccraAssets.createCar || !window.ACCRA_LIFE || !window.ACCRA_LIFE.api || typeof scene === "undefined" || typeof engine === "undefined") return false;
+      const B = BABYLON;
     const CRUISE = 9, GAP = 9, STOP_ZONE = 14, SIDE = 2.2;   // m/s, following gap, distance to start stopping, lane offset
     const routes = {
       outer: [{ x: -150, z: -150 }, { x: 150, z: -150 }, { x: 150, z: 150 }, { x: -150, z: 150 }],
@@ -91,8 +95,9 @@
         let target = CRUISE;
         const nj = nextJunction(path, c.d);
         const signal = nj.axis === "ew" ? sig.ew : sig.ns;
-        if (nj.dist < STOP_ZONE && nj.dist > 1 && signal === "red") target = 0;
-        if (nj.dist < STOP_ZONE && nj.dist > 1 && signal === "yellow" && c.v < 6) target = 0;
+        const inSignalZone = nj.dist < STOP_ZONE && nj.dist > 0;
+        const stopForSignal = inSignalZone && (signal === "red" || (signal === "yellow" && c.v < 6));
+        if (stopForSignal) target = 0;
         // car following: find the nearest car ahead on the same loop (distance measured round the loop)
         let lead = null, lgap = 1e9;
         live.forEach(o => {
@@ -106,7 +111,9 @@
           else target = Math.min(target, Math.max(0, lead.v + (lgap - 6) * 1.1));
         }
         c.v += (target - c.v) * Math.min(1, dt * 2.5);
-        c.d += c.v * dt;
+        // Never let the smoothed speed carry an NPC through a red/yellow stop line.
+        const travel = c.v * dt;
+        c.d += stopForSignal ? Math.min(travel, Math.max(0, nj.dist - 2.5)) : travel;
 
         // place the car in its lane: keep to the right of the direction of travel
         const p = at(path, c.d);
@@ -119,5 +126,8 @@
     window.ACCRA_TRAFFIC_CARS = { count: live.length };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).traffic = 1;
     console.log("NPC traffic ready:", live.length, "cars");
-  } catch (err) { console.error("accra-traffic failed:", err); }
+      return true;
+    } catch (err) { console.error("accra-traffic failed:", err); return true; }
+  };
+  const timer = setInterval(() => { if (start()) clearInterval(timer); }, 400);
 })();

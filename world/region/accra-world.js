@@ -1,7 +1,7 @@
 /* accra-world.js - THE BIG MAP.
  * World = 12 km wide x 27 km long (about 324 sq km, roughly 4x the land of GTA V).
  * Accra stays exactly where it is. North of it (negative z) a 24.5 km highway runs to Kumasi (scale 1 : 10 of the real 250 km),
- * streamed in 256 m chunks: road, guard rails, trees, farms, signs, toll plazas, and six towns. Loaded by accra-life.js. */
+ * streamed in 256 m chunks: road, guard rails, trees, farms, signs, toll plazas, and eight towns. Loaded by accra-life.js. */
 (function () {
   try {
     const L = window.ACCRA_LIFE && window.ACCRA_LIFE.api;
@@ -27,7 +27,7 @@
       const el = document.getElementById("spd"); if (L.driving && el && sp < 90) el.textContent = Math.round(sp * 3.6) + " km/h"; });
 
     // ---------- 2. chunk streaming ----------
-    const TOWNS = [["Nsawam", -3500, 0], ["Suhum", -6500, 0], ["Nkawkaw", -13000, 0], ["Konongo", -19000, 0], ["Ejisu", -22500, 1], ["Kumasi", -24500, 2]].map(t => ({ n: t[0], z: t[1], big: t[2], x: hx(t[1]) + 220, R: [150, 190, 340][t[2] === 2 ? 2 : t[2]] }));
+    const TOWNS = [["Nsawam", -3500, 0], ["Suhum", -6500, 0], ["Bunso", -9500, 0], ["Anyinam", -11000, 0], ["Nkawkaw", -13000, 0], ["Konongo", -19000, 0], ["Ejisu", -22500, 1], ["Kumasi", -24500, 2]].map(t => ({ n: t[0], z: t[1], big: t[2], x: hx(t[1]) + 220, R: [150, 190, 340][t[2] === 2 ? 2 : t[2]] }));
     const TOLLS = [{ z: -1200, fee: 15, n: "Accra Gate toll" }, { z: -21500, fee: 20, n: "Ejisu toll" }];
     const asphalt = mat("#2f3033"), white = mat("#f2f2f2"), rail = mat("#b8bcc2"), conc = mat("#9a9a96");
     const mk = (w, h, d, x, y, z, m, ry) => { const b = B.MeshBuilder.CreateBox("wb", { width: w, height: h, depth: d }, scene); b.position.set(x, y, z); b.material = typeof m === "string" ? mat(m) : m; if (ry) b.rotation.y = ry; b.isPickable = false; return b; };
@@ -153,12 +153,12 @@
 
     // ---------- 3. intercity buses (fast travel): the stop list and fares ----------
     const STOPS = [["Accra", 14, -185]].concat(TOWNS.map(t => [t.n, t.x + 30, t.z + 30]));
-    const FARE = { Accra: 0, Nsawam: 25, Suhum: 40, Nkawkaw: 70, Konongo: 90, Ejisu: 110, Kumasi: 130 };
+    const FARE = { Accra: 0, Nsawam: 25, Suhum: 40, Bunso: 55, Anyinam: 62, Nkawkaw: 70, Konongo: 90, Ejisu: 110, Kumasi: 130 };
     function bus(here) {
-      const draw = () => show(ttl("\uD83D\uDE8C Intercity buses") + "<small>You are in " + here + " \u00B7 cash GH\u00A2" + cash() + "</small>" + STOPS.filter(s => s[0] !== here).map(s => '<button data-d="' + s[0] + '" style="' + BS + '">' + s[0] + " \u00B7 GH\u00A2" + Math.max(FARE[s[0]], FARE[here]) + "</button>").join("") + CLOSE, d => {
+      const draw = () => show(ttl("\uD83D\uDE8C Intercity buses") + "<small>You are in " + here + " \u00B7 cash GH\u00A2" + cash() + "</small>" + STOPS.filter(s => s[0] !== here).map(s => '<button data-d="' + s[0] + '" style="' + BS + '">' + s[0] + " \u00B7 GH\u00A2" + Math.abs(FARE[s[0]] - FARE[here]) + "</button>").join("") + CLOSE, d => {
         if (d.x) return hide();
         if (window.ACCRA_CRIME && window.ACCRA_CRIME.wanted >= 2) return note("Police are watching the bus station.");
-        const s = STOPS.find(q => q[0] === d.d), f = Math.max(FARE[d.d], FARE[here]);
+        const s = STOPS.find(q => q[0] === d.d), f = Math.abs(FARE[d.d] - FARE[here]);
         if (cash() < f) return note("Not enough cash for the ticket (GH\u00A2" + f + ").");
         hide(); pay(f, "Bus to " + d.d); fade(3000, () => { tp(s[1], s[2]); L.vitals({ hu: -15, hy: -8, en: 15 }); }, () => note("Arrived in " + d.d + ". Long ride, you feel rested but hungry."));
       }); draw();
@@ -177,7 +177,7 @@
       ayaBodies.forEach(b => { b.t = (b.t + dt / 900) % 1; const u = b.dir > 0 ? b.t : 1 - b.t, z = -165 - u * (24500 - 165), x = hx(z);
         b.m.position.set(x, 0, z); b.m.rotation.y = -Math.atan(slope(z)) + (b.dir > 0 ? 0 : Math.PI); });
     });
-    const ayaBoard = s => show(ttl("\uD83D\uDE8C " + AYA.line) + "<small>Fare GH\u00A2" + AYA.fare + " to any stop, a bus about every 5 minutes. You are at " + s.n + ". Cash GH\u00A2" + cash() + "</small>" +
+    const ayaBoard = s => show(ttl("\uD83D\uDE8C " + AYA.line) + "<small>Fare GH\u00A2" + AYA.fare + " to any stop, a bus about every 15 minutes. You are at " + s.n + ". Cash GH\u00A2" + cash() + "</small>" +
       aStops.filter(q => q.n !== s.n).map(q => '<button data-a="' + q.n + '" style="' + BS + '">' + q.n + " \u00B7 GH\u00A2" + AYA.fare + "</button>").join("") + CLOSE, d => {
         if (d.x) return hide();
         const to = aStops.find(q => q.n === d.a); if (!to) return;

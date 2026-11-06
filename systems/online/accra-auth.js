@@ -98,6 +98,7 @@
   }
 
   function authScreen() {
+    window.__accraAuthActive = true;
     return new Promise(resolve => {
       const overlay = document.createElement("div");
       overlay.id = "accra-auth-screen";
@@ -147,6 +148,7 @@
               session = data.session;
             }
             msg.textContent = "Signed in. Loading your player…";
+            window.__accraAuthActive = false;
             overlay.remove();
             resolve();
           } catch (err) {
@@ -166,6 +168,7 @@
     });
   }
 
+  if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-init");
   window.ACCRA_AUTH_READY = (async function () {
     if (!window.supabase || !window.supabase.createClient) {
       await new Promise((resolve, reject) => {
@@ -185,9 +188,14 @@
     const api = {
       get session() { return session; },
       async requireSession() {
-        if (!session) await authScreen();
+        if (!session) {
+          if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-screen-active");
+          await authScreen();
+        }
         if (!session) throw new Error("Please sign in to continue.");
+        if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-loading-profile");
         const profile = await loadProfile();
+        if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("auth-complete");
         attachAutosave();
         return profile;
       },

@@ -973,8 +973,8 @@
     };
 
     // Load optional modules
-    ["accra-decor.js", "accra-crime.js", "accra-pub.js", "accra-fx.js", "accra-mining.js",
-     "accra-world.js", "accra-weather.js", "accra-profile.js", "accra-carskin.js", "accra-model.js"
+    ["world/buildings/accra-decor.js", "gameplay/accra-crime.js", "gameplay/accra-pub.js", "gameplay/accra-fx.js", "gameplay/accra-mining.js",
+     "world/region/accra-world.js", "world/region/accra-weather.js", "characters/accra-profile.js", "gameplay/accra-carskin.js", "characters/legacy/accra-model.js"
     ].forEach(f => {
       const s = document.createElement("script");
       s.src = f + "?v=" + (window.ACCRA_BUILD || 0);
@@ -984,14 +984,21 @@
 
     // ---------- admin ----------
     const ADMIN_CODE = "ACCRA-ADMIN-2026";
+    // Match the streamed highway's westward curve and each town's bus-stop coordinates.
+    const highwayTown = z => {
+      const t = Math.max(0, Math.min(1, (-z - 165) / (24500 - 165)));
+      return [-2400 * t * t * (3 - 2 * t) + 250, z + 30];
+    };
     const TELE = {
       mall: [35, 12], stadium: [110, 12], hospital: [110, 80], police: [35, 80],
       villa: [VX, VZ + 12], airport: [-375, -244],
       "Labadi beach": [-90, 190], "Amoamah estate": [110, -30],
       "Car dealership": [35, -35], "Gold works": [196, 120], "Stone quarry": [190, -150],
-      "Accra North (highway)": [-60, -180], "Nsawam": [-120, -3470],
-      "Suhum": [-120, -6470], "Nkawkaw": [-120, -12970],
-      "Konongo": [-120, -18970], "Ejisu": [-2340, -22470], "Kumasi (Kejetia)": [-2400, -24470]
+      "Accra North (highway)": [-60, -180],
+      "Nsawam": highwayTown(-3500), "Suhum": highwayTown(-6500),
+      "Bunso": highwayTown(-9500), "Anyinam": highwayTown(-11000),
+      "Nkawkaw": highwayTown(-13000), "Konongo": highwayTown(-19000),
+      "Ejisu": highwayTown(-22500), "Kumasi (Kejetia)": highwayTown(-24500)
     };
 
     function adminPanel() {

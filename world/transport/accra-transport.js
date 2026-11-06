@@ -39,11 +39,12 @@
 
       // stop signs: a pole and a board, like the trotro stops in Accra
       STOPS.forEach((s, i) => {
-        const p = beside(at(s.d), CURB);
+        const routePoint = at(s.d);
+        const p = beside(routePoint, CURB);
         const pole = B.MeshBuilder.CreateCylinder("tr_pole" + i, { diameter: .16, height: 3.2, tessellation: 6 }, scene);
-        pole.position.set(p.x, 1.6, p.z); pole.material = new B.StandardMaterial("tr_poleM" + i, scene); pole.material.diffuseColor = B.Color3.FromHexString("#6b7178"); pole.isPickable = false;
+        pole.position.set(p.x, 1.6, p.z); pole.material = new B.StandardMaterial("tr_poleM" + i, scene); pole.material.diffuseColor = B.Color3.FromHexString("#6b7178"); pole.isPickable = false; pole.checkCollisions = false;
         const sb = board(4, 1.8, [["TROTRO STOP", 46, 60], [s.n.toUpperCase(), 62, 150]], "stop" + i);
-        sb.position.set(p.x, 3.5, p.z); sb.rotation.y = Math.atan2(-p.fz, p.fx) + Math.PI / 2;
+        sb.position.set(p.x, 3.5, p.z); sb.rotation.y = Math.atan2(-routePoint.fz, routePoint.fx) + Math.PI / 2;
         s.p = p;
       });
 

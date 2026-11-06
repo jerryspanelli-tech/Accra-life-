@@ -76,10 +76,10 @@
       desired.start(true);
       record.active=desired;
     }
-    function spawn(parent,options){
+    function spawn(scene,options){
+      if(!scene||typeof scene.getEngine!=="function") throw new Error("A Babylon scene is required to create a character.");
       const o=options||{},id=++sequence,choice=choose(o);
       const root=new B.TransformNode("accraNpc_"+id,scene);
-      if(parent)root.parent=parent;
       root.position.y=0;
       const record={id,root,groups:[],active:null,ready:false,speed:0,instance:null,legacy:null,disposed:false};
       spawned.add(record);
@@ -128,7 +128,7 @@
       disposeAll:()=>Array.from(spawned).forEach(p=>p.dispose&&p.dispose())
     };
     if(window.AccraAssets){
-      window.AccraAssets.createCharacter=(scn,o)=>spawn(null,o);
+      window.AccraAssets.createCharacter=(scn,o)=>spawn(scn,o);
     }
     (window.ACCRA_MODULES=window.ACCRA_MODULES||{}).people=1;
     console.log("[AccraPeople] Rigged AccraLife 3D NPC pipeline ready.");

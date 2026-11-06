@@ -1,6 +1,7 @@
 /* accra-start.js - character selection uses the same 3D male/female GLBs as the playable character. */
 (async function () {
   try {
+    if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("start-awaiting-auth");
     const auth = await window.ACCRA_AUTH_READY;
     const savedProfile = await auth.requireSession();
     const escHtml = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -12,6 +13,7 @@
     };
 
     if (savedProfile && savedProfile.display_name) {
+      if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("lobby-screen");
       sel.gender = savedProfile.gender === "female" ? "female" : "male";
       sel.name = savedProfile.display_name;
       if (savedProfile.age != null) sel.age = String(savedProfile.age);
@@ -31,6 +33,7 @@
       return;
     }
 
+    if(window.ACCRA_DIAGNOSTICS)window.ACCRA_DIAGNOSTICS.setStage("character-selection-screen");
     const ov = document.createElement("div");
     ov.id = "startScreen";
     ov.style.cssText = "position:fixed;inset:0;z-index:200;background:linear-gradient(180deg,#14161a,#0b0c0f);color:#fff;font:14px system-ui;overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:18px 12px;box-sizing:border-box";

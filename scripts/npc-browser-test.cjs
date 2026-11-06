@@ -8,7 +8,9 @@ const { chromium } = require('playwright');
   page.on('console',m=>{if(m.type()==='error')errors.push('console: '+m.text());});
   try{
     await page.goto('http://127.0.0.1:4173/test-accra-npc-preview.html',{waitUntil:'domcontentloaded'});
-    await page.waitForFunction(()=>window.__npcTestReady===true,null,{timeout:90000});
+    await page.waitForFunction(()=>window.__npcTestReady===true||(window.__npcTestErrors&&window.__npcTestErrors.length>0),null,{timeout:90000});
+    const state=await page.evaluate(()=>({ready:window.__npcTestReady,errors:window.__npcTestErrors||[],status:document.querySelector('#status')?.textContent||''}));
+    if(!state.ready)throw new Error('NPC preview failed: '+state.errors.join(' | ')+'; status: '+state.status);
     const results=await page.evaluate(()=>window.__npcTestResults);
     if(results.length!==5)throw new Error('Expected five NPCs, got '+results.length);
     for(const npc of results){
