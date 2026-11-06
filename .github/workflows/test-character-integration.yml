@@ -21,6 +21,7 @@ on:
       - 'People/AccraLife/**'
       - 'test-accra-characters.html'
       - 'scripts/character-browser-test.cjs'
+      - 'scripts/transport-route-test.cjs'
       - '.github/workflows/test-character-integration.yml'
   workflow_dispatch:
 permissions:
