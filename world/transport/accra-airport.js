@@ -200,7 +200,7 @@
     function openFlightMenu() {
       if (!window.ACCRA_KIT) return;
       const K = window.ACCRA_KIT; const cash = K.cash();
-      const FLIGHTS = [{ dest: "Kumasi", x: -2000, z: -24000, cost: 250 }, { dest: "Takoradi", x: -1500, z: 1200, cost: 300 }, { dest: "Tamale", x: 800, z: -8000, cost: 400 }];
+      const FLIGHTS = [{ dest: "Kumasi (Prempeh I)", x: -2000, z: -24000, cost: 250 }];
       const draw = () => K.show(K.ttl("\u2708\uFE0F Kotoka Departures") + `<small>Cash: GH\u00A2${cash}</small><br><br>` + FLIGHTS.map((f, i) => `<button data-f="${i}" style="${K.BS}">Fly to ${f.dest} \u00B7 GH\u00A2${f.cost}</button>`).join("") + K.CLOSE,
         d => {
           if (d.x) return K.hide();
