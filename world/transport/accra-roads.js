@@ -28,31 +28,34 @@
     const heads = [];
     const sourceLamp = B.MeshBuilder.CreateSphere("sig_src", { diameter: .34, segments: 8 }, scene);
     sourceLamp.isVisible = false;
-    RR.forEach(x => RR.forEach(z => {
-      const px = x + 6.8, pz = z + 6.8;
-      const pole = B.MeshBuilder.CreateCylinder("sig_pole", { diameter: .26, height: 5.6, tessellation: 8 }, scene);
+    function makeHead(px, pz, tag) {
+      const pole = B.MeshBuilder.CreateCylinder("sig_pole_" + tag, { diameter: .26, height: 5.6, tessellation: 8 }, scene);
       pole.position.set(px, 2.8, pz); pole.material = poleM; pole.checkCollisions = false; pole.isPickable = false;
-      const head = B.MeshBuilder.CreateBox("sig_box", { width: .5, height: 1.5, depth: .5 }, scene);
+      const head = B.MeshBuilder.CreateBox("sig_box_" + tag, { width: .5, height: 1.5, depth: .5 }, scene);
       head.position.set(px, 5.4, pz); head.material = poleM; head.isPickable = false; head.checkCollisions = false;
       const lamps = {};
       ["red", "yellow", "green"].forEach((k, n) => {
-        const l = sourceLamp.clone("sig_" + k);
+        const l = sourceLamp.clone("sig_" + tag + "_" + k);
         l.isVisible = true;
         l.position.set(px, 5.85 - n * .45, pz - .3); l.isPickable = false;
         lamps[k] = l;
       });
-      heads.push({ lamps });
+      return lamps;
+    }
+    RR.forEach(x => RR.forEach(z => {
+      // Separate signal heads represent the two crossing directions at each junction.
+      heads.push({
+        ns: makeHead(x + 6.8, z + 6.8, "ns"),
+        ew: makeHead(x - 6.8, z - 6.8, "ew")
+      });
     }));
 
     function paintLights(t) {
       const s = state(t);
-      // Every junction uses the SAME phase (per the file's own header comment).
-      // The old code alternated phases by head index, so a player driving north
-      // hit green at one block and red at the very next block, stop-and-go forever.
       heads.forEach(h => {
         ["red", "yellow", "green"].forEach(k => {
-          const lit = (s.ns === "green" && k === "green") || (s.ns === "yellow" && k === "yellow") || (s.ns === "red" && k === "red");
-          h.lamps[k].material = lit ? on[k] : off[k];
+          h.ns[k].material = s.ns === k ? on[k] : off[k];
+          h.ew[k].material = s.ew === k ? on[k] : off[k];
         });
       });
     }
@@ -84,6 +87,6 @@
 
     window.ACCRA_TRAFFIC = { state: () => state(clock), clock: () => clock, cycle: CYCLE };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).roads = 1;
-    console.log("Accra roads ready:", heads.length, "signals");
+    console.log("Accra roads ready:", heads.length * 2, "directional signal heads");
   } catch (err) { console.error("accra-roads failed:", err); }
 })();
