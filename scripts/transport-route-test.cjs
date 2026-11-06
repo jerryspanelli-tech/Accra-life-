@@ -65,3 +65,13 @@ const worldTransit = fs.readFileSync("world/region/accra-world.js", "utf8");
 assert.ok(worldTransit.includes("a bus about every 15 minutes"), "Ayalolo timetable must match the 15-minute route loop");
 assert.ok(!worldTransit.includes("a bus about every 5 minutes"), "Do not advertise an unsupported 5-minute Ayalolo frequency");
 console.log("Ayalolo timetable contract passed.");
+
+const fareMatch = worldTransit.match(/const FARE = \{([^}]+)\};/);
+assert.ok(fareMatch, "Intercity fare schedule must exist");
+const fares = Object.fromEntries([...fareMatch[1].matchAll(/([A-Za-z]+):\s*(\d+)/g)].map(m => [m[1], Number(m[2])]));
+const tripFare = (from, to) => Math.abs(fares[to] - fares[from]);
+assert.equal(tripFare("Suhum", "Bunso"), 15, "Short Suhum-to-Bunso trip must charge only the fare difference");
+assert.equal(tripFare("Accra", "Kumasi"), 130, "Accra-to-Kumasi fare must remain GH¢130");
+assert.equal(tripFare("Kumasi", "Accra"), 130, "Return journey fare must be symmetric");
+assert.ok(worldTransit.includes("Math.abs(FARE[d.d] - FARE[here])"), "Bus booking must charge the difference between cumulative stop fares");
+console.log("Intercity distance-based fare contracts passed.");
