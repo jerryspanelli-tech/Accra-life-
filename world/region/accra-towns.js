@@ -10,6 +10,8 @@
     const TOWNS = [
       { n: "NSAWAM", z: -3500, landmark: "fish" },
       { n: "SUHUM", z: -6500, landmark: "hill" },
+      { n: "BUNSO", z: -9500, landmark: "forest" },
+      { n: "ANYINAM", z: -11000, landmark: "roadside" },
       { n: "NKAWKAW", z: -13000, landmark: "roundabout" },
       { n: "KONONGO", z: -19000, landmark: "gold" },
       { n: "EJISU", z: -22500, landmark: "gateway" },
@@ -65,6 +67,18 @@
         box(4, 14, 4, cx + 10, 7, cz - 80, "#f4f1ea", true);
         const sp = B.MeshBuilder.CreateCylinder("tw_spire", { diameterTop: 0, diameterBottom: 4, height: 5, tessellation: 4 }, scene);
         sp.position.set(cx + 10, 16.5, cz - 80); sp.material = mat("#8a1c2b");
+      } else if (t.landmark === "forest") {
+        // Bunso Forest Reserve entrance: a clear green gateway and a small native-tree grove.
+        box(3, 10, 3, cx - 8, 5, cz - 80, "#5a3a22", true);
+        box(3, 10, 3, cx + 28, 5, cz - 80, "#5a3a22", true);
+        box(40, 2.2, 3, cx + 10, 10.5, cz - 80, "#0b6b3a", false);
+        sign("BUNSO FOREST RESERVE", cx + 10, 13, cz - 82, 34, 3.4, "#0b6b3a", "#ffffff");
+        [-28, -14, 0, 14, 28].forEach((o, i) => {
+          cyl(1.2, 7 + (i % 2) * 2, cx + 10 + o, 4, cz - 112 - (i % 2) * 5, "#6b4b2b", true, 8);
+          const crown = B.MeshBuilder.CreateSphere("bunso_tree", { diameter: 10 + (i % 2) * 2, segments: 6 }, scene);
+          crown.position.set(cx + 10 + o, 9 + (i % 2), cz - 112 - (i % 2) * 5);
+          crown.material = mat(i % 2 ? "#286b39" : "#3f8f4a"); crown.isPickable = false;
+        });
       } else if (t.landmark === "roundabout") {
         const ring = B.MeshBuilder.CreateTorus("tw_round", { diameter: 40, thickness: 6, tessellation: 40 }, scene);
         ring.position.set(cx + 10, .3, cz - 80); ring.scaling.y = .1; ring.material = mat("#4a4f57"); ring.isPickable = false;
