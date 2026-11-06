@@ -60,3 +60,8 @@ const trafficCars = fs.readFileSync("world/transport/accra-traffic.js", "utf8");
 assert.ok(trafficCars.includes("const stopForSignal = inSignalZone"), "NPC traffic must identify red/yellow stop phases");
 assert.ok(trafficCars.includes("Math.max(0, nj.dist - 2.5)"), "NPC cars must clamp movement before the signal stop line");
 console.log("NPC traffic signal stop-line contract passed.");
+
+const worldTransit = fs.readFileSync("world/region/accra-world.js", "utf8");
+assert.ok(worldTransit.includes("a bus about every 15 minutes"), "Ayalolo timetable must match the 15-minute route loop");
+assert.ok(!worldTransit.includes("a bus about every 5 minutes"), "Do not advertise an unsupported 5-minute Ayalolo frequency");
+console.log("Ayalolo timetable contract passed.");
