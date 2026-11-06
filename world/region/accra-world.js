@@ -177,7 +177,7 @@
       ayaBodies.forEach(b => { b.t = (b.t + dt / 900) % 1; const u = b.dir > 0 ? b.t : 1 - b.t, z = -165 - u * (24500 - 165), x = hx(z);
         b.m.position.set(x, 0, z); b.m.rotation.y = -Math.atan(slope(z)) + (b.dir > 0 ? 0 : Math.PI); });
     });
-    const ayaBoard = s => show(ttl("\uD83D\uDE8C " + AYA.line) + "<small>Fare GH\u00A2" + AYA.fare + " to any stop, a bus about every 5 minutes. You are at " + s.n + ". Cash GH\u00A2" + cash() + "</small>" +
+    const ayaBoard = s => show(ttl("\uD83D\uDE8C " + AYA.line) + "<small>Fare GH\u00A2" + AYA.fare + " to any stop, a bus about every 15 minutes. You are at " + s.n + ". Cash GH\u00A2" + cash() + "</small>" +
       aStops.filter(q => q.n !== s.n).map(q => '<button data-a="' + q.n + '" style="' + BS + '">' + q.n + " \u00B7 GH\u00A2" + AYA.fare + "</button>").join("") + CLOSE, d => {
         if (d.x) return hide();
         const to = aStops.find(q => q.n === d.a); if (!to) return;
