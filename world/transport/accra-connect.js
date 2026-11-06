@@ -1,6 +1,6 @@
 /* accra-connect.js - joins every road in the city into one network.
  * Adds driveways from the grid roads to the mall, police, hospital, stadium, dealership, Amoamah, the villa,
- * the beach and the airport gate. The driveways are flat strips that sit flush with the grid; they are not solid,
+ * the beach and the Kotoka airport access road. The driveways are flat strips that sit flush with the grid; they are not solid,
  * so walking and driving over them is smooth. Toll payment is handled only by accra-world.js and accra-toll.js. */
 (function () {
   try {
@@ -29,7 +29,7 @@
       ["amoamah", 106, 114, -66, -56],       // Amoamah lots (110, -56) to the avenue at z -70
       ["villa", 106, 114, -105, -74],        // villa (110, -95) to the avenue at z -70
       ["beach", -4, 4, 147, 187],            // from the avenue at z 150 down to the beach sand
-      ["airport-gate", -236, -228, -248, -240] // joins the airport gate road and the drop-off road
+      ["airport-access", -430, -150, -160, -140] // westbound link from the city avenue to Kotoka airport road at x=-420
     ];
     driveways.forEach(d => strip(d[0], d[1], d[2], d[3], d[4]));
 
