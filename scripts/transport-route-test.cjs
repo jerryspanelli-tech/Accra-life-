@@ -49,3 +49,9 @@ assert.ok(kotoka.includes('{ dest: "Kumasi (Prempeh I)", x: -2000, z: -24000'), 
 assert.ok(!kotoka.includes('dest: "Takoradi"') && !kotoka.includes('dest: "Tamale"'), "Do not sell flights to airports that are not built yet");
 assert.ok(kumasiAirport.includes('dest: "Accra (Kotoka)"') && kumasiAirport.includes('x: -420, z: -240'), "Kumasi airport return flight must route to Kotoka's terminal approach");
 console.log("Airport route endpoint contracts passed.");
+
+const shaxi = fs.readFileSync("world/transport/accra-shaxi.js", "utf8");
+assert.ok(shaxi.includes('const pickup = { x: player.position.x, z: player.position.z }'), "Shaxi must save the player's exact pickup position");
+assert.ok(shaxi.includes('o.phase = "approachPick"') && shaxi.includes('o.phase = "toRoad"'), "Shaxi must approach the player, board, then rejoin the road");
+assert.ok(shaxi.includes("operate within central Accra only"), "Shaxi must not dispatch across the distant intercity map");
+console.log("Shaxi exact-pickup contract passed.");
