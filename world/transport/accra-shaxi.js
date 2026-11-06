@@ -52,7 +52,7 @@
       const rows = DEST.map((s, i) => ["shaxi", "taxi"].map(m =>
         '<button data-ride-dest="' + i + '" data-ride-mode="' + m + '" style="display:block;width:100%;margin:6px 0;padding:10px;border:none;border-radius:12px;background:' + MODES[m].colour + ';color:' + (m === "taxi" ? "#17191c" : "#fff") + ';font:700 13px system-ui">' +
         s.n + " \u00B7 " + MODES[m].name + " \u00B7 GH\u00A2" + fareFor(m, here, s.d) + "</button>").join("")).join("");
-      return '<div class="cd"><b>Where to?</b><br><small>Pick a destination and a ride. Your pickup is where you are standing.</small></div>' +
+      return '<div class="cd"><b>Where to?</b><br><small>Pick a destination and a ride. The driver comes to your exact pickup point within central Accra.</small></div>' +
         rows + '<div class="cd" id="rideStatus" style="margin-top:8px"><small>' + (status || "No ride on the way.") + "</small></div>";
     };
 
@@ -60,13 +60,16 @@
     function order_(mode, destIndex) {
       if (order) return L.note("You already have a ride on the way.");
       const pick = nearestD(player.position.x, player.position.z), dest = DEST[destIndex];
+      const roadPoint = beside(at(pick), LANE);
+      const pickup = { x: player.position.x, z: player.position.z };
+      if (Math.hypot(pickup.x - roadPoint.x, pickup.z - roadPoint.z) > 180) return L.note("Shaxi and taxis currently operate within central Accra only.");
       const fare = fareFor(mode, pick, dest.d);
       if (L.cash() < fare) return L.note("Not enough cash for this ride (GH\u00A2" + fare + ").");
       L.pay(fare, MODES[mode].name + " to " + dest.n);
       const car = window.AccraAssets.createCar(scene, "sedan", { color: MODES[mode].colour });
       car.getChildMeshes().forEach(m => { m.checkCollisions = false; m.isPickable = false; });
-      order = { mode, car, d: pick - 300, pick, dest, fare, phase: "toPick" };       // the car starts 300 m behind you
-      setStatus(MODES[mode].name + " to " + dest.n + " is on the way. Please wait at your pickup point.");
+      order = { mode, car, d: pick - 300, pick, roadPoint, pickup, dest, fare, phase: "toPick" }; // starts 300 m behind, then leaves the road for the exact pickup
+      setStatus(MODES[mode].name + " to " + dest.n + " is on the way to your pickup point.");
       L.note(MODES[mode].name + " ordered to " + dest.n + " \u00B7 GH\u00A2" + fare + ". Please wait.");
     }
     document.addEventListener("click", e => {
@@ -82,16 +85,53 @@
       if (o.phase === "toPick") {
         o.d += spd * dt;
         const gap = forward(o.d, o.pick);
-        if (gap < 2 || gap > TOTAL - 2) { o.d = o.pick; o.phase = "waiting"; setStatus("Your ride is here. Get in to go to " + o.dest.n + "."); }
-        else if (gap < 30) setStatus("Your ride is arriving: " + Math.round(gap) + " m away.");
-        const p = at(o.d), q = beside(p, LANE);
-        o.car.position.set(q.x, 0, q.z); o.car.rotation.y = Math.atan2(-p.fz, p.fx);
+        if (gap < 2 || gap > TOTAL - 2) {
+          o.d = o.pick;
+          const p = at(o.d);
+          const q = beside(p, LANE);
+          o.car.position.set(q.x, 0, q.z);
+          o.car.rotation.y = Math.atan2(-p.fz, p.fx);
+          o.phase = "approachPick";
+          setStatus("Your ride is leaving the road to reach your pickup point.");
+        } else {
+          if (gap < 30) setStatus("Your ride is arriving: " + Math.round(gap) + " m away.");
+          const p = at(o.d), q = beside(p, LANE);
+          o.car.position.set(q.x, 0, q.z); o.car.rotation.y = Math.atan2(-p.fz, p.fx);
+        }
+      } else if (o.phase === "approachPick") {
+        const dx = o.pickup.x - o.car.position.x, dz = o.pickup.z - o.car.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 1.5) {
+          o.car.position.set(o.pickup.x, 0, o.pickup.z);
+          o.phase = "waiting";
+          setStatus("Your ride is here. Get in to go to " + o.dest.n + ".");
+        } else {
+          const step = Math.min(dist, spd * dt);
+          o.car.position.x += dx / dist * step;
+          o.car.position.z += dz / dist * step;
+          o.car.rotation.y = Math.atan2(-dz, dx);
+        }
       } else if (o.phase === "waiting") {
-        const p = at(o.d), q = beside(p, LANE);
-        o.car.position.set(q.x, 0, q.z); o.car.rotation.y = Math.atan2(-p.fz, p.fx);
-        // getting in: when you are next to the car, you ride
-        const dx = player.position.x - q.x, dz = player.position.z - q.z;
-        if (Math.hypot(dx, dz) < 8) { o.phase = "ride"; player.setEnabled(false); setStatus("On the way to " + o.dest.n + "."); }
+        const dx = player.position.x - o.car.position.x, dz = player.position.z - o.car.position.z;
+        // Getting in: the driver has reached the exact saved pickup point.
+        if (Math.hypot(dx, dz) < 8) {
+          o.phase = "toRoad";
+          player.setEnabled(false);
+          setStatus("Getting onto the road. On the way to " + o.dest.n + ".");
+        }
+      } else if (o.phase === "toRoad") {
+        const dx = o.roadPoint.x - o.car.position.x, dz = o.roadPoint.z - o.car.position.z;
+        const dist = Math.hypot(dx, dz);
+        if (dist < 1.5) {
+          o.car.position.set(o.roadPoint.x, 0, o.roadPoint.z);
+          o.phase = "ride";
+        } else {
+          const step = Math.min(dist, spd * dt);
+          o.car.position.x += dx / dist * step;
+          o.car.position.z += dz / dist * step;
+          o.car.rotation.y = Math.atan2(-dz, dx);
+        }
+        player.position.set(o.car.position.x, .91, o.car.position.z);
       } else if (o.phase === "ride") {
         o.d += spd * dt;
         const p = at(o.d), q = beside(p, LANE);
