@@ -34,3 +34,11 @@ assert.ok(landmarkOrder.every((at, i) => at >= 0 && (i === 0 || at > landmarkOrd
 
 assert.ok(towns.includes('sign("BUNSO FOREST RESERVE"'), "Bunso Forest Reserve entrance landmark is missing");
 console.log(`Transport route contract passed: Accra -> ${expectedOrder.join(" -> ")}`);
+
+const connectors = fs.readFileSync("world/transport/accra-connect.js", "utf8");
+const traffic = fs.readFileSync("world/transport/accra-roads.js", "utf8");
+assert.ok(connectors.includes('["airport-access", -430, -150, -160, -140]'), "Kotoka airport access road must connect the city avenue to the airport road");
+assert.ok(!connectors.includes('"airport-gate"'), "Stale disconnected airport-gate strip must be removed");
+assert.ok(traffic.includes("ns: makeHead(") && traffic.includes("ew: makeHead("), "Each junction must have separate north-south and east-west signal heads");
+assert.ok(traffic.includes("h.ns[k].material = s.ns === k") && traffic.includes("h.ew[k].material = s.ew === k"), "Traffic lights must display the correct phase for both directions");
+console.log("Transport access-road and directional-signal contracts passed.");
