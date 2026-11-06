@@ -55,3 +55,8 @@ assert.ok(shaxi.includes('const pickup = { x: player.position.x, z: player.posit
 assert.ok(shaxi.includes('o.phase = "approachPick"') && shaxi.includes('o.phase = "toRoad"'), "Shaxi must approach the player, board, then rejoin the road");
 assert.ok(shaxi.includes("operate within central Accra only"), "Shaxi must not dispatch across the distant intercity map");
 console.log("Shaxi exact-pickup contract passed.");
+
+const trafficCars = fs.readFileSync("world/transport/accra-traffic.js", "utf8");
+assert.ok(trafficCars.includes("const stopForSignal = inSignalZone"), "NPC traffic must identify red/yellow stop phases");
+assert.ok(trafficCars.includes("Math.max(0, nj.dist - 2.5)"), "NPC cars must clamp movement before the signal stop line");
+console.log("NPC traffic signal stop-line contract passed.");
