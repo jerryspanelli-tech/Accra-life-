@@ -158,7 +158,7 @@
       const draw = () => show(ttl("\uD83D\uDE8C Intercity buses") + "<small>You are in " + here + " \u00B7 cash GH\u00A2" + cash() + "</small>" + STOPS.filter(s => s[0] !== here).map(s => '<button data-d="' + s[0] + '" style="' + BS + '">' + s[0] + " \u00B7 GH\u00A2" + Math.max(FARE[s[0]], FARE[here]) + "</button>").join("") + CLOSE, d => {
         if (d.x) return hide();
         if (window.ACCRA_CRIME && window.ACCRA_CRIME.wanted >= 2) return note("Police are watching the bus station.");
-        const s = STOPS.find(q => q[0] === d.d), f = Math.max(FARE[d.d], FARE[here]);
+        const s = STOPS.find(q => q[0] === d.d), f = Math.abs(FARE[d.d] - FARE[here]);
         if (cash() < f) return note("Not enough cash for the ticket (GH\u00A2" + f + ").");
         hide(); pay(f, "Bus to " + d.d); fade(3000, () => { tp(s[1], s[2]); L.vitals({ hu: -15, hy: -8, en: 15 }); }, () => note("Arrived in " + d.d + ". Long ride, you feel rested but hungry."));
       }); draw();
