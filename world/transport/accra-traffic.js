@@ -3,8 +3,12 @@
  * lights using the same signal timer as accra-roads.js (window.ACCRA_TRAFFIC), and keep a gap from the car ahead.
  * Cars only drive on the grid roads, never through buildings. */
 (function () {
-  try {
-    const B = BABYLON;
+  const start = () => {
+    try {
+      // This file loads before accra-assets.js in babylon.html. Wait for the shared
+      // vehicle factory and live scene instead of registering an empty traffic fleet.
+      if (!window.AccraAssets || !window.AccraAssets.createCar || !window.ACCRA_LIFE || !window.ACCRA_LIFE.api || typeof scene === "undefined" || typeof engine === "undefined") return false;
+      const B = BABYLON;
     const CRUISE = 9, GAP = 9, STOP_ZONE = 14, SIDE = 2.2;   // m/s, following gap, distance to start stopping, lane offset
     const routes = {
       outer: [{ x: -150, z: -150 }, { x: 150, z: -150 }, { x: 150, z: 150 }, { x: -150, z: 150 }],
@@ -122,5 +126,8 @@
     window.ACCRA_TRAFFIC_CARS = { count: live.length };
     (window.ACCRA_MODULES = window.ACCRA_MODULES || {}).traffic = 1;
     console.log("NPC traffic ready:", live.length, "cars");
-  } catch (err) { console.error("accra-traffic failed:", err); }
+      return true;
+    } catch (err) { console.error("accra-traffic failed:", err); return true; }
+  };
+  const timer = setInterval(() => { if (start()) clearInterval(timer); }, 400);
 })();
